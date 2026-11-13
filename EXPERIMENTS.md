@@ -3,15 +3,16 @@
 Goal: train an agent to chop as many oak logs as possible in one episode.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-13 13:28._
+_Tables last updated 2026-11-13 13:52._
 
 ## Summary
 
-All evaluation episodes pooled per agent, best first.
+One row per agent. **Mean logs** is the real score: the average over all `evaluate.py` episodes for that agent (max 32). **Training avg** is the last-20-episode average seen during training. It's a useful hint, but the agent was still exploring then, so evaluate before trusting it. **vs random** = how many times more logs than random actions.
 
-| Agent | Episodes | Mean logs | Min | Max | vs random |
-| --- | --- | --- | --- | --- | --- |
-| `random` | 3 | 3.00 | 0 | 5 | baseline |
+| Agent | Training avg | Eval episodes | Mean logs | Min | Max | vs random |
+| --- | --- | --- | --- | --- | --- | --- |
+| Random actions (baseline) | – | 3 | **3.00** | 0 | 5 | baseline |
+| `chop_ppo_20261113_131702` | 31.40 | 24 | **31.67** | 31 | 32 | **10.6×** |
 
 ## Training runs
 
@@ -27,6 +28,9 @@ One row per `evaluate.py` run, newest first.
 
 | When | Agent | Episodes | Mean logs | Min | Max | Per episode |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-13T13:52:31 | `runs/chop_ppo_20261113_131702/model.zip` | 2 | 32.00 | 32 | 32 | 32 32 |
+| 2026-11-13T13:50:12 | `runs/chop_ppo_20261113_131702/model.zip` | 2 | 32.00 | 32 | 32 | 32 32 |
+| 2026-11-13T13:46:35 | `runs/chop_ppo_20261113_131702/model.zip` | 20 | 31.60 | 31 | 32 | 31 31 31 32 31 31 32 32 32 32 31 31 32 32 32 32 32 32 32 31 |
 | 2026-11-13T13:12:10 | `random` | 3 | 3.00 | 0 | 5 | 5 0 4 |
 
 ## Environment setup

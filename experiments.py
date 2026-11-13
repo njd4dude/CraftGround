@@ -84,29 +84,56 @@ def setup_section() -> str:
     return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
 
 
-def summary_section(evals: list[dict]) -> str:
-    if not evals:
-        return "## Summary\n\n_No evaluations yet. Run `run.bat evaluate.py --random` for a baseline._"
-    by_agent: dict[str, list[dict]] = {}
+def normalize_agent(agent: str) -> str:
+    """'runs\\x\\model.zip', './runs/x/model.zip' and 'runs/x/model.zip' are the same agent."""
+    return agent if agent == "random" else Path(agent).as_posix().removeprefix("./")
+
+
+def summary_section(evals: list[dict], runs: list[dict]) -> str:
+    by_agent: dict[str, list[int]] = {}
     for r in evals:
-        by_agent.setdefault(r["agent"], []).append(r)
+        by_agent.setdefault(normalize_agent(r["agent"]), []).extend(int(x) for x in r["per_episode"].split())
 
-    def pooled(rows: list[dict]) -> list[int]:
-        return [int(x) for r in rows for x in r["per_episode"].split()]
-
-    random_eps = pooled(by_agent.get("random", []))
+    random_eps = by_agent.get("random", [])
     random_mean = sum(random_eps) / len(random_eps) if random_eps else None
 
-    out = []
-    for agent, rows in by_agent.items():
-        eps = pooled(rows)
+    def eval_cells(eps: list[int], is_random: bool) -> list:
         mean = sum(eps) / len(eps)
-        vs = "baseline" if agent == "random" else (
-            f"{mean / random_mean:.1f}× random" if random_mean else "n/a")
-        out.append([f"`{agent}`", len(eps), f"{mean:.2f}", min(eps), max(eps), vs])
-    out.sort(key=lambda r: -float(r[2]))
-    return ("## Summary\n\nAll evaluation episodes pooled per agent, best first.\n\n"
-            + table(["Agent", "Episodes", "Mean logs", "Min", "Max", "vs random"], out))
+        vs = "baseline" if is_random else (f"**{mean / random_mean:.1f}×**" if random_mean else "no baseline yet")
+        return [len(eps), f"**{mean:.2f}**", min(eps), max(eps), vs]
+
+    rows = []
+    if random_eps:
+        rows.append(["Random actions (baseline)", "–", *eval_cells(random_eps, True)])
+    else:
+        rows.append(["Random actions (baseline)", "–", "_not evaluated: `run.bat evaluate.py --random --episodes 20`_",
+                     "", "", "", ""])
+
+    listed = {"random"}
+    for run in reversed(runs):  # newest first
+        model = normalize_agent(run["model"])
+        listed.add(model)
+        name = Path(model).parent.name
+        eps = by_agent.get(model)
+        if eps:
+            rows.append([f"`{name}`", run["last20_avg_logs"], *eval_cells(eps, False)])
+        else:
+            rows.append([f"`{name}`", run["last20_avg_logs"],
+                         f"_not evaluated: `run.bat evaluate.py {model} --episodes 20`_", "", "", "", ""])
+
+    # Evaluated models that aren't from a recorded training run (e.g. a checkpoint).
+    for agent, eps in by_agent.items():
+        if agent not in listed:
+            rows.append([f"`{agent}`", "–", *eval_cells(eps, False)])
+
+    return (
+        "## Summary\n\n"
+        "One row per agent. **Mean logs** is the real score: the average over all `evaluate.py` "
+        f"episodes for that agent (max {tree_env.MAX_LOGS}). **Training avg** is the last-20-episode "
+        "average seen during training. It's a useful hint, but the agent was still exploring then, "
+        "so evaluate before trusting it. **vs random** = how many times more logs than random actions.\n\n"
+        + table(["Agent", "Training avg", "Eval episodes", "Mean logs", "Min", "Max", "vs random"], rows)
+    )
 
 
 def evals_section(evals: list[dict]) -> str:
@@ -136,7 +163,7 @@ def update_report() -> None:
     evals, runs = read_rows(EVAL_CSV), read_rows(TRAIN_CSV)
     generated = "\n\n".join([
         f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._",
-        summary_section(evals),
+        summary_section(evals, runs),
         training_section(runs),
         evals_section(evals),
         setup_section(),
