@@ -46,6 +46,9 @@ ARENA_RADIUS = 13  # walls sit at +/- this many blocks from the centre
 WALL_HEIGHT = 3
 
 MAX_LOGS = len(TREE_POSITIONS) * TRUNK_HEIGHT  # 32
+# Describe the reward here whenever you change it in step(): every training run
+# records this text, and EXPERIMENTS.md flags the run where it changed.
+REWARD = "+1 per log chopped"
 
 # Blocks whose "mined" statistic counts as a chopped log.
 LOG_KEYS = ["oak_log"]

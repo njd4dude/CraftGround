@@ -9,6 +9,7 @@ Run it by hand to rebuild the tables:  python experiments.py
 """
 
 import csv
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -78,7 +79,7 @@ def setup_section() -> str:
         ["Spawn", "Arena centre, random facing (15° steps)"],
         ["Observation", f"RGB image {tree_env.IMAGE_WIDTH}×{tree_env.IMAGE_HEIGHT}"],
         ["Actions", f"{len(tree_env.ACTION_NAMES)} discrete: " + ", ".join(tree_env.ACTION_NAMES)],
-        ["Reward", "+1 per log chopped"],
+        ["Reward", tree_env.REWARD],
         ["Episode length", f"{tree_env.EPISODE_STEPS} steps (or all logs chopped)"],
     ]
     return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
@@ -136,6 +137,67 @@ def summary_section(evals: list[dict], runs: list[dict]) -> str:
     )
 
 
+def load_config(model: str) -> dict | None:
+    """The config.json train.py saves next to each run's model.zip."""
+    path = Path(model).parent / "config.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def agents_section(evals: list[dict], runs: list[dict]) -> str:
+    """One subsection per trained agent: how long it trained, its settings, and what was
+    different about it (hyperparameters changed from the defaults, environment/reward changes
+    since the previous run, and the run's notes)."""
+    if not runs:
+        return "## Agents\n\n_None yet._"
+    by_agent: dict[str, list[int]] = {}
+    for r in evals:
+        by_agent.setdefault(normalize_agent(r["agent"]), []).extend(int(x) for x in r["per_episode"].split())
+
+    blocks = []
+    prev_env = None
+    for run in runs:  # oldest first, so environment changes are compared with the run before
+        model = normalize_agent(run["model"])
+        cfg = load_config(model)
+        lines = [f"### `{Path(model).parent.name}`", ""]
+        target = f" of {int(cfg['timesteps_target']):,} planned" if cfg else ""
+        lines.append(f"- **Trained:** {int(run['timesteps_done']):,} steps{target}, {run['episodes']} episodes, "
+                     f"{run['minutes']} min ({run['status']})")
+        if run.get("resumed_from"):
+            lines.append(f"- **Resumed from:** `{run['resumed_from']}`")
+        eps = by_agent.get(model)
+        score = (f"{sum(eps) / len(eps):.2f} logs/episode over {len(eps)} eval episodes" if eps
+                 else "not evaluated yet")
+        lines.append(f"- **Result:** {score} (training last-20 avg {run['last20_avg_logs']})")
+
+        if cfg is None:
+            lines.append("- _No config.json for this run, so its settings weren't recorded._")
+        else:
+            changed = cfg.get("changed_from_defaults", {})
+            ppo = ", ".join(f"**{k}={v}**" if k in changed else f"{k}={v}" for k, v in cfg["ppo"].items())
+            lines.append(f"- **PPO settings:** {ppo}")
+            special = [f"{k}: {c['default']} → **{c['used']}**" for k, c in changed.items()]
+            env = cfg.get("env", {})
+            if prev_env is not None:
+                special += [f"env {k}: {prev_env.get(k)} → **{v}** (changed since previous run)"
+                            for k, v in env.items() if prev_env.get(k) != v]
+            same = ("first recorded run, default settings (the baseline)" if prev_env is None
+                    else "nothing, default settings and same environment as the previous run")
+            prev_env = env
+            lines.append("- **What's special:** " + ("; ".join(special) if special else same))
+            if cfg.get("notes"):
+                lines.append(f"- **Notes:** {cfg['notes']}")
+        blocks.append("\n".join(lines))
+
+    return ("## Agents\n\nOne section per trained agent, newest first. Hyperparameters changed from the "
+            "defaults in `train.py` are in bold. Environment changes (reward, episode length, trees...) are "
+            "flagged on the first run that used them. Add notes with `train.py --notes \"...\"`, or edit "
+            "`notes` in the run's `config.json` and rerun `python experiments.py`.\n\n"
+            + "\n\n".join(reversed(blocks)))
+
+
 def evals_section(evals: list[dict]) -> str:
     if not evals:
         return "## Evaluation runs\n\n_None yet._"
@@ -164,6 +226,7 @@ def update_report() -> None:
     generated = "\n\n".join([
         f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._",
         summary_section(evals, runs),
+        agents_section(evals, runs),
         training_section(runs),
         evals_section(evals),
         setup_section(),

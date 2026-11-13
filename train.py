@@ -4,6 +4,11 @@
     python train.py --timesteps 500000    # train longer
     python train.py --resume runs/chop_ppo_20261113_131800/checkpoints/ppo_chop_100000_steps.zip
     python train.py --no-wandb            # train without logging to Weights & Biases
+    python train.py --learning-rate 1e-4 --n-epochs 8 --notes "slower lr, more epochs"
+
+Every PPO setting in PPO_SETTINGS has a flag (--n-steps, --batch-size, --n-epochs,
+--learning-rate, --gamma, --ent-coef, --clip-range). Use --notes to say what's
+special about a run (e.g. a reward change); it shows up in EXPERIMENTS.md.
 
 Live graphs (logs chopped per episode, reward, losses) go to Weights & Biases,
 project "craftground-chop-trees". Log in once first with:  wandb login
@@ -11,6 +16,7 @@ project "craftground-chop-trees". Log in once first with:  wandb login
 Every run gets one folder with everything in it:
 
     runs/chop_ppo_20261113_131800/
+        config.json            this run's settings, changes from the defaults, notes
         model.zip              final model (saved on finish, Ctrl+C or crash)
         checkpoints/           a model every 20,000 steps
         monitor.monitor.csv    one line per training episode
@@ -22,6 +28,7 @@ to its W&B page.
 """
 
 import argparse
+import json
 import sys
 import time
 from datetime import datetime
@@ -102,7 +109,14 @@ def main():
     parser.add_argument("--port", type=int, default=8023)
     parser.add_argument("--name", type=str, default="chop_ppo", help="run folder prefix")
     parser.add_argument("--no-wandb", action="store_true", help="don't log to Weights & Biases")
+    parser.add_argument("--notes", type=str, default="", help="what's special about this run")
+    for key, default in PPO_SETTINGS.items():
+        parser.add_argument("--" + key.replace("_", "-"), type=type(default), default=None,
+                            help=f"PPO {key} (default {default})")
     args = parser.parse_args()
+    # Only the flags given on the command line, so a resumed model keeps its own saved settings.
+    overrides = {k: getattr(args, k) for k in PPO_SETTINGS if getattr(args, k) is not None}
+    ppo_settings = {**PPO_SETTINGS, **overrides}
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Training on {device}")
@@ -112,17 +126,41 @@ def main():
     run_dir.mkdir(parents=True)
     print(f"Run folder: {run_dir}")
 
+    run_config = {
+        "run": run_dir.name,
+        "started": started.isoformat(timespec="seconds"),
+        "timesteps_target": args.timesteps,
+        "resumed_from": args.resume or "",
+        "notes": args.notes,
+        "ppo": ppo_settings,
+        "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
+                                  for k, v in overrides.items() if v != PPO_SETTINGS[k]},
+        "env": {
+            "reward": tree_env.REWARD,
+            "episode_steps": tree_env.EPISODE_STEPS,
+            "image": f"{tree_env.IMAGE_WIDTH}x{tree_env.IMAGE_HEIGHT}",
+            "trees": len(tree_env.TREE_POSITIONS),
+            "logs_per_tree": tree_env.TRUNK_HEIGHT,
+            "max_logs": tree_env.MAX_LOGS,
+            "arena_radius": tree_env.ARENA_RADIUS,
+            "actions": tree_env.ACTION_NAMES,
+        },
+    }
+    (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
+
     wandb.init(
         project=WANDB_PROJECT,
         name=run_dir.name,
         dir=str(run_dir),
+        notes=args.notes or None,
         mode="disabled" if args.no_wandb else "online",
         config={
             "algorithm": "PPO",
             "policy": "CnnPolicy",
             "timesteps": args.timesteps,
             "resumed_from": args.resume,
-            **PPO_SETTINGS,
+            **ppo_settings,
+            "env/reward": tree_env.REWARD,
             "env/image": f"{tree_env.IMAGE_WIDTH}x{tree_env.IMAGE_HEIGHT}",
             "env/episode_steps": tree_env.EPISODE_STEPS,
             "env/trees": len(tree_env.TREE_POSITIONS),
@@ -138,10 +176,10 @@ def main():
     env = Monitor(make_env(port=args.port), filename=str(run_dir / "monitor"), info_keywords=("logs_chopped",))
 
     if args.resume:
-        model = PPO.load(args.resume, env=env, device=device)
-        print(f"Resumed from {args.resume}")
+        model = PPO.load(args.resume, env=env, device=device, **overrides)
+        print(f"Resumed from {args.resume}" + (f" with {overrides}" if overrides else ""))
     else:
-        model = PPO("CnnPolicy", env, device=device, verbose=1, **PPO_SETTINGS)
+        model = PPO("CnnPolicy", env, device=device, verbose=1, **ppo_settings)
     model.set_logger(Logger(folder=str(run_dir), output_formats=[HumanOutputFormat(sys.stdout), WandbOutputFormat()]))
 
     chop_stats = LogsChoppedCallback()

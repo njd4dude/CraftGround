@@ -3,7 +3,7 @@
 Goal: train an agent to chop as many oak logs as possible in one episode.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-13 13:52._
+_Tables last updated 2026-11-13 14:15._
 
 ## Summary
 
@@ -12,7 +12,28 @@ One row per agent. **Mean logs** is the real score: the average over all `evalua
 | Agent | Training avg | Eval episodes | Mean logs | Min | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | – | 3 | **3.00** | 0 | 5 | baseline |
+| `chop_ppo_20261113_135620` | 24.85 | 20 | **26.85** | 23 | 30 | **9.0×** |
 | `chop_ppo_20261113_131702` | 31.40 | 24 | **31.67** | 31 | 32 | **10.6×** |
+
+## Agents
+
+One section per trained agent, newest first. Hyperparameters changed from the defaults in `train.py` are in bold. Environment changes (reward, episode length, trees...) are flagged on the first run that used them. Add notes with `train.py --notes "..."`, or edit `notes` in the run's `config.json` and rerun `python experiments.py`.
+
+### `chop_ppo_20261113_135620`
+
+- **Trained:** 51,200 steps of 50,000 planned, 51 episodes, 4.3 min (completed)
+- **Result:** 26.85 logs/episode over 20 eval episodes (training last-20 avg 24.85)
+- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** nothing, default settings and same environment as the previous run
+- **Notes:** Short 50k-step run, first one logged to W&B (recorded after the fact).
+
+### `chop_ppo_20261113_131702`
+
+- **Trained:** 200,704 steps of 200,000 planned, 206 episodes, 11.1 min (completed)
+- **Result:** 31.67 logs/episode over 24 eval episodes (training last-20 avg 31.40)
+- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** first recorded run, default settings (the baseline)
+- **Notes:** First run (recorded after the fact).
 
 ## Training runs
 
@@ -20,6 +41,7 @@ One row per `train.py` run, newest first.
 
 | Started | Steps | Episodes | Minutes | Last-20 avg logs | Best episode | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-13T13:56:20 | 51200 | 51 | 4.3 | 24.85 | 28 | completed | `runs/chop_ppo_20261113_135620/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/9te3935j) |
 | 2026-11-13T13:17:02 | 200704 | 206 | 11.1 | 31.40 | 32 | completed | `runs/chop_ppo_20261113_131702/model.zip` | – |
 
 ## Evaluation runs
@@ -28,6 +50,7 @@ One row per `evaluate.py` run, newest first.
 
 | When | Agent | Episodes | Mean logs | Min | Max | Per episode |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-13T14:13:19 | `runs/chop_ppo_20261113_135620/model.zip` | 20 | 26.85 | 23 | 30 | 27 29 28 24 27 26 27 26 26 23 30 28 25 25 25 27 28 29 30 27 |
 | 2026-11-13T13:52:31 | `runs/chop_ppo_20261113_131702/model.zip` | 2 | 32.00 | 32 | 32 | 32 32 |
 | 2026-11-13T13:50:12 | `runs/chop_ppo_20261113_131702/model.zip` | 2 | 32.00 | 32 | 32 | 32 32 |
 | 2026-11-13T13:46:35 | `runs/chop_ppo_20261113_131702/model.zip` | 20 | 31.60 | 31 | 32 | 31 31 31 32 31 31 32 32 32 32 31 31 32 32 32 32 32 32 32 31 |
