@@ -13,6 +13,9 @@ at real Minecraft speed (20 steps per second) and open in any video player, so y
 can pause, scrub and slow them down. They go in the model's run folder under videos/
 (random agent: runs/random/videos/).
 
+The agent acts every tick, so real speed looks frantic. --video-fps 5 makes the
+videos play at quarter speed (each step shown for 1/5 s).
+
 Compare the trained model against the random baseline: that gap is what the
 agent actually learned. Every run is appended to results/eval_results.csv
 and the tables in EXPERIMENTS.md are refreshed.
@@ -61,10 +64,10 @@ def video_frame(image: np.ndarray, step: int, logs: int, action: int) -> np.ndar
     return np.asarray(frame)
 
 
-def save_video(frames: list[np.ndarray], path: Path) -> None:
+def save_video(frames: list[np.ndarray], path: Path, fps: int = VIDEO_FPS) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     # H.264 + yuv420p plays in Windows' Media Player, VS Code, browsers and VLC.
-    with imageio.get_writer(path, fps=VIDEO_FPS, codec="libx264", quality=8,
+    with imageio.get_writer(path, fps=fps, codec="libx264", quality=8,
                             pixelformat="yuv420p", macro_block_size=8) as writer:
         for frame in frames:
             writer.append_data(frame)
@@ -78,6 +81,8 @@ def main():
     parser.add_argument("--episodes", type=int, default=5)
     parser.add_argument("--port", type=int, default=8023)
     parser.add_argument("--record", type=int, default=0, metavar="N", help="save the first N episodes as MP4 videos")
+    parser.add_argument("--video-fps", type=int, default=VIDEO_FPS,
+                        help=f"video playback rate; {VIDEO_FPS} = real speed, 5 = quarter speed")
     args = parser.parse_args()
     if not args.random and not args.model:
         parser.error("give a model path, or --random for the baseline")
@@ -109,7 +114,9 @@ def main():
             results.append(info["logs_chopped"])
             print(f"episode {ep + 1}: {info['logs_chopped']} / {MAX_LOGS} logs")
             if frames:
-                save_video(frames, video_dir / f"eval_{stamp}_ep{ep + 1}_{info['logs_chopped']}logs.mp4")
+                speed = "" if args.video_fps == VIDEO_FPS else f"_{args.video_fps}fps"
+                save_video(frames, video_dir / f"eval_{stamp}_ep{ep + 1}_{info['logs_chopped']}logs{speed}.mp4",
+                           fps=args.video_fps)
     finally:
         env.close()
 
