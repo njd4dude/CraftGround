@@ -3,7 +3,7 @@
 Goal: train an agent to chop as many oak logs as possible in one episode.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-14 14:21._
+_Tables last updated 2026-11-14 14:56._
 
 ## Summary
 
@@ -12,7 +12,7 @@ One row per agent. **Mean logs** is the real score: the average over all `evalua
 | Agent | Training avg | Eval episodes | Mean logs | Min | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | – | 3 | **3.00** | 0 | 5 | baseline |
-| `chop_ppo_20261113_135620` | 24.85 | 129 | **26.05** | 21 | 30 | **8.7×** |
+| `chop_ppo_20261113_135620` | 24.85 | 429 | **26.20** | 18 | 31 | **8.7×** |
 | `chop_ppo_20261113_131702` | 31.40 | 24 | **31.67** | 31 | 32 | **10.6×** |
 
 ## Agents
@@ -22,7 +22,7 @@ One section per trained agent, newest first. Hyperparameters changed from the de
 ### `chop_ppo_20261113_135620`
 
 - **Trained:** 51,200 steps of 50,000 planned, 51 episodes, 4.3 min (completed)
-- **Result:** 26.05 logs/episode over 129 eval episodes (training last-20 avg 24.85)
+- **Result:** 26.20 logs/episode over 429 eval episodes (training last-20 avg 24.85)
 - **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
 - **What's special:** nothing, default settings and same environment as the previous run
 - **Notes:** Short 50k-step run, first one logged to W&B (recorded after the fact).
@@ -50,6 +50,9 @@ One row per `evaluate.py` run, newest first.
 
 | When | Agent | Episodes | Mean logs | Min | Max | Per episode |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-14T14:56:13 | `runs/chop_ppo_20261113_135620/model.zip` | 100 | 26.53 | 23 | 30 | 28 28 24 25 26 24 26 26 28 24 26 28 28 26 26 27 29 26 24 27 27 27 27 28 26 26 27 26 25 27 25 27 25 23 29 29 26 27 26 28 27 23 25 25 28 25 28 29 26 28 27 27 28 28 27 23 26 28 27 28 25 28 27 28 26 28 26 25 27 28 30 24 23 25 29 25 29 27 25 28 24 28 27 26 24 27 27 30 27 24 28 29 29 27 27 26 25 26 26 23 |
+| 2026-11-14T14:49:56 | `runs/chop_ppo_20261113_135620/model.zip` | 100 | 26.67 | 23 | 31 | 26 29 24 28 24 27 27 23 26 28 27 25 28 26 29 24 24 25 26 27 26 27 25 25 28 26 24 25 27 28 24 27 27 25 27 26 26 29 30 23 26 27 26 26 30 28 27 29 26 26 27 27 25 26 28 27 25 26 27 27 28 27 29 27 28 26 27 23 29 24 30 25 24 27 31 28 27 26 28 26 28 29 31 27 29 24 25 29 25 26 27 28 25 26 29 30 27 25 28 25 |
+| 2026-11-14T14:44:44 | `runs/chop_ppo_20261113_135620/model.zip` | 100 | 25.60 | 18 | 30 | 26 28 27 26 26 23 26 26 26 22 24 22 27 26 26 28 28 25 27 25 26 26 24 26 27 23 24 26 25 23 24 18 22 26 26 24 25 25 27 27 25 25 28 25 26 24 23 26 24 28 25 27 26 23 29 23 26 25 28 24 30 24 25 29 23 25 28 26 26 26 28 26 28 25 26 27 25 25 25 27 27 25 28 27 26 27 24 26 26 24 26 26 24 30 22 24 28 25 26 27 |
 | 2026-11-14T14:21:57 | `runs/chop_ppo_20261113_135620/model.zip` | 100 | 26.00 | 21 | 30 | 25 27 28 27 26 30 27 26 25 25 26 25 28 26 27 26 25 27 25 26 28 26 29 24 25 30 28 27 28 24 26 27 27 27 25 27 28 26 22 25 27 24 25 25 25 24 30 29 26 24 25 27 24 29 27 26 23 26 26 28 25 24 24 26 30 25 21 25 23 24 25 28 26 25 26 26 27 27 30 28 26 25 26 26 28 27 24 24 25 23 24 25 25 25 25 27 25 26 24 29 |
 | 2026-11-14T13:52:20 | `runs/chop_ppo_20261113_135620/model.zip` | 5 | 25.00 | 23 | 26 | 25 23 26 26 25 |
 | 2026-11-14T13:36:22 | `runs/chop_ppo_20261113_135620/model.zip` | 2 | 23.00 | 22 | 24 | 22 24 |
