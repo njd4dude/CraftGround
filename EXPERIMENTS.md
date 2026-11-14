@@ -3,7 +3,7 @@
 Goal: train an agent to chop as many oak logs as possible in one episode.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-13 14:50._
+_Tables last updated 2026-11-14 13:52._
 
 ## Summary
 
@@ -12,7 +12,7 @@ One row per agent. **Mean logs** is the real score: the average over all `evalua
 | Agent | Training avg | Eval episodes | Mean logs | Min | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | – | 3 | **3.00** | 0 | 5 | baseline |
-| `chop_ppo_20261113_135620` | 24.85 | 20 | **26.85** | 23 | 30 | **9.0×** |
+| `chop_ppo_20261113_135620` | 24.85 | 29 | **26.21** | 22 | 30 | **8.7×** |
 | `chop_ppo_20261113_131702` | 31.40 | 24 | **31.67** | 31 | 32 | **10.6×** |
 
 ## Agents
@@ -22,7 +22,7 @@ One section per trained agent, newest first. Hyperparameters changed from the de
 ### `chop_ppo_20261113_135620`
 
 - **Trained:** 51,200 steps of 50,000 planned, 51 episodes, 4.3 min (completed)
-- **Result:** 26.85 logs/episode over 20 eval episodes (training last-20 avg 24.85)
+- **Result:** 26.21 logs/episode over 29 eval episodes (training last-20 avg 24.85)
 - **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
 - **What's special:** nothing, default settings and same environment as the previous run
 - **Notes:** Short 50k-step run, first one logged to W&B (recorded after the fact).
@@ -50,6 +50,9 @@ One row per `evaluate.py` run, newest first.
 
 | When | Agent | Episodes | Mean logs | Min | Max | Per episode |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-14T13:52:20 | `runs/chop_ppo_20261113_135620/model.zip` | 5 | 25.00 | 23 | 26 | 25 23 26 26 25 |
+| 2026-11-14T13:36:22 | `runs/chop_ppo_20261113_135620/model.zip` | 2 | 23.00 | 22 | 24 | 22 24 |
+| 2026-11-14T13:34:49 | `runs/chop_ppo_20261113_135620/model.zip` | 2 | 26.00 | 26 | 26 | 26 26 |
 | 2026-11-13T14:13:19 | `runs/chop_ppo_20261113_135620/model.zip` | 20 | 26.85 | 23 | 30 | 27 29 28 24 27 26 27 26 26 23 30 28 25 25 25 27 28 29 30 27 |
 | 2026-11-13T13:52:31 | `runs/chop_ppo_20261113_131702/model.zip` | 2 | 32.00 | 32 | 32 | 32 32 |
 | 2026-11-13T13:50:12 | `runs/chop_ppo_20261113_131702/model.zip` | 2 | 32.00 | 32 | 32 | 32 32 |

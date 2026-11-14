@@ -2,19 +2,26 @@
 
     python evaluate.py --random                              # baseline: random actions
     python evaluate.py runs/chop_ppo_20261113_131800/model.zip               # a trained model
-    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --episodes 10
-    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --record 2    # also save videos of 2 episodes
+    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --episodes 10 # quick check (default 100)
+    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --record 0    # no videos
+
+Runs 100 episodes by default so the mean is stable (about 4-5 minutes plus
+Minecraft startup). Every run counts toward the agent's score in EXPERIMENTS.md,
+so to just grab a couple of videos use a small --episodes, e.g. --episodes 2.
 
 (The model path for each training run is listed in EXPERIMENTS.md.)
 
---record N saves the first N episodes as MP4 videos of what the agent sees, enlarged
-4x, with the step, logs chopped and current action written on each frame. They play
-at real Minecraft speed (20 steps per second) and open in any video player, so you
-can pause, scrub and slow them down. They go in the model's run folder under videos/
+Every episode is saved as an MP4 video by default (--record N keeps only the
+first N, --record 0 none). Each video is ~5 MB at real speed and ~7 MB at 5 fps,
+so a default 100-episode run writes ~1.2 GB. The videos show what the agent sees,
+enlarged 4x, with the step, logs chopped and current action written on each frame.
+They open in any video player and go in the model's run folder under videos/
 (random agent: runs/random/videos/).
 
-The agent acts every tick, so real speed looks frantic. --video-fps 5 makes the
-videos play at quarter speed (each step shown for 1/5 s).
+The agent acts every tick, so real speed looks frantic. By default each
+recorded episode is saved twice from the same frames: at real speed and at
+quarter speed (5 fps, each step shown for 1/5 s, file name ends in _5fps).
+--video-fps picks the speeds: --video-fps 20 for real speed only, --video-fps 5 10 20 for three.
 
 Compare the trained model against the random baseline: that gap is what the
 agent actually learned. Every run is appended to results/eval_results.csv
@@ -78,11 +85,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("model", nargs="?", help="path to a saved model .zip")
     parser.add_argument("--random", action="store_true", help="use random actions instead of a model")
-    parser.add_argument("--episodes", type=int, default=5)
+    parser.add_argument("--episodes", type=int, default=100, help="episodes to run (default 100, for a stable mean)")
     parser.add_argument("--port", type=int, default=8023)
-    parser.add_argument("--record", type=int, default=0, metavar="N", help="save the first N episodes as MP4 videos")
-    parser.add_argument("--video-fps", type=int, default=VIDEO_FPS,
-                        help=f"video playback rate; {VIDEO_FPS} = real speed, 5 = quarter speed")
+    parser.add_argument("--record", type=int, default=None, metavar="N",
+                        help="save only the first N episodes as MP4 videos (default: every episode; 0 = none)")
+    parser.add_argument("--video-fps", type=int, nargs="+", default=[VIDEO_FPS, 5],
+                        help=f"one video per playback rate given; {VIDEO_FPS} = real speed, 5 = quarter speed")
     args = parser.parse_args()
     if not args.random and not args.model:
         parser.error("give a model path, or --random for the baseline")
@@ -97,7 +105,7 @@ def main():
     try:
         for ep in range(args.episodes):
             obs, info = env.reset()
-            recording = ep < args.record
+            recording = args.record is None or ep < args.record
             frames = []
             done = False
             step = 0
@@ -113,10 +121,10 @@ def main():
                     frames.append(video_frame(obs, step, info["logs_chopped"], int(action)))
             results.append(info["logs_chopped"])
             print(f"episode {ep + 1}: {info['logs_chopped']} / {MAX_LOGS} logs")
-            if frames:
-                speed = "" if args.video_fps == VIDEO_FPS else f"_{args.video_fps}fps"
+            for fps in dict.fromkeys(args.video_fps) if frames else []:  # same frames, one file per speed
+                speed = "" if fps == VIDEO_FPS else f"_{fps}fps"
                 save_video(frames, video_dir / f"eval_{stamp}_ep{ep + 1}_{info['logs_chopped']}logs{speed}.mp4",
-                           fps=args.video_fps)
+                           fps=fps)
     finally:
         env.close()
 
