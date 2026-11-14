@@ -5,6 +5,13 @@
     python train.py --resume runs/chop_ppo_20261113_131800/checkpoints/ppo_chop_100000_steps.zip
     python train.py --no-wandb            # train without logging to Weights & Biases
     python train.py --learning-rate 1e-4 --n-epochs 8 --notes "slower lr, more epochs"
+    python train.py --n-envs 4            # run 4 Minecraft instances instead of 6
+
+Training runs --n-envs Minecraft instances side by side (default 6). Each needs
+~2.2 GB of RAM and a lot of CPU. On this machine (8-core 7700X) total speed goes
+1 -> 451, 2 -> 714, 4 -> 858, 8 -> 1076 raw env steps/s, and 8 maxes out the CPU.
+--n-steps is the rollout size summed over all instances, so changing --n-envs
+keeps each PPO update the same size (each instance collects n_steps / n_envs).
 
 Every PPO setting in PPO_SETTINGS has a flag (--n-steps, --batch-size, --n-epochs,
 --learning-rate, --gamma, --ent-coef, --clip-range). Use --notes to say what's
@@ -19,7 +26,7 @@ Every run gets one folder with everything in it:
         config.json            this run's settings, changes from the defaults, notes
         model.zip              final model (saved on finish, Ctrl+C or crash)
         checkpoints/           a model every 20,000 steps
-        monitor.monitor.csv    one line per training episode
+        monitor_0.monitor.csv  one line per training episode (one file per instance)
         wandb/                 W&B's local copy of the run
 
 Press Ctrl+C at any time: the current model is saved before exiting.
@@ -41,6 +48,8 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback
 from stable_baselines3.common.logger import HumanOutputFormat, KVWriter, Logger
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.save_util import load_from_zip_file
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
 import tree_env
 from experiments import TRAIN_CSV, append_row, update_report
@@ -52,7 +61,7 @@ TRAIN_FIELDS = ["started", "timesteps_done", "episodes", "minutes", "last20_avg_
                 "best_episode_logs", "status", "resumed_from", "model", "wandb_url"]
 
 PPO_SETTINGS = dict(
-    n_steps=2048,        # steps collected before each update (~2 episodes)
+    n_steps=2048,        # steps collected before each update, summed over all envs (~2 episodes)
     batch_size=256,
     n_epochs=4,
     learning_rate=2.5e-4,
@@ -60,6 +69,13 @@ PPO_SETTINGS = dict(
     ent_coef=0.01,       # keeps the agent exploring
     clip_range=0.2,
 )
+
+
+def env_factory(port: int, monitor_file: str):
+    """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker."""
+    def _make():
+        return Monitor(make_env(port=port), filename=monitor_file, info_keywords=("logs_chopped",))
+    return _make
 
 
 class WandbOutputFormat(KVWriter):
@@ -106,7 +122,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--timesteps", type=int, default=200_000)
     parser.add_argument("--resume", type=str, default=None, help="checkpoint .zip to continue from")
-    parser.add_argument("--port", type=int, default=8023)
+    parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
+    parser.add_argument("--n-envs", type=int, default=6, help="Minecraft instances to run in parallel")
     parser.add_argument("--name", type=str, default="chop_ppo", help="run folder prefix")
     parser.add_argument("--no-wandb", action="store_true", help="don't log to Weights & Biases")
     parser.add_argument("--notes", type=str, default="", help="what's special about this run")
@@ -117,6 +134,13 @@ def main():
     # Only the flags given on the command line, so a resumed model keeps its own saved settings.
     overrides = {k: getattr(args, k) for k in PPO_SETTINGS if getattr(args, k) is not None}
     ppo_settings = {**PPO_SETTINGS, **overrides}
+    if args.resume and "n_steps" not in overrides:
+        # Keep the resumed model's own rollout size (stored per env, so multiply back up).
+        saved, _, _ = load_from_zip_file(args.resume, load_data=True, device="cpu")
+        ppo_settings["n_steps"] = saved["n_steps"] * saved.get("n_envs", 1)
+    # SB3's n_steps is per env; ours is the total, so split it across the instances.
+    steps_per_env = max(ppo_settings["n_steps"] // args.n_envs, 1)
+    sb3_settings = {**ppo_settings, "n_steps": steps_per_env}
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Training on {device}")
@@ -132,6 +156,8 @@ def main():
         "timesteps_target": args.timesteps,
         "resumed_from": args.resume or "",
         "notes": args.notes,
+        "n_envs": args.n_envs,
+        "rollout_steps": steps_per_env * args.n_envs,
         "ppo": ppo_settings,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
@@ -159,6 +185,7 @@ def main():
             "policy": "CnnPolicy",
             "timesteps": args.timesteps,
             "resumed_from": args.resume,
+            "n_envs": args.n_envs,
             **ppo_settings,
             "env/reward": tree_env.REWARD,
             "env/image": f"{tree_env.IMAGE_WIDTH}x{tree_env.IMAGE_HEIGHT}",
@@ -173,19 +200,23 @@ def main():
     wandb.define_metric("*", step_metric="global_step")
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
 
-    env = Monitor(make_env(port=args.port), filename=str(run_dir / "monitor"), info_keywords=("logs_chopped",))
+    factories = [env_factory(args.port + 10 * i, str(run_dir / f"monitor_{i}")) for i in range(args.n_envs)]
+    env = SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories)
+    print(f"{args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
+          f"({steps_per_env * args.n_envs} total)")
 
     if args.resume:
-        model = PPO.load(args.resume, env=env, device=device, **overrides)
+        model = PPO.load(args.resume, env=env, device=device, **{**overrides, "n_steps": steps_per_env})
         print(f"Resumed from {args.resume}" + (f" with {overrides}" if overrides else ""))
     else:
-        model = PPO("CnnPolicy", env, device=device, verbose=1, **ppo_settings)
+        model = PPO("CnnPolicy", env, device=device, verbose=1, **sb3_settings)
     model.set_logger(Logger(folder=str(run_dir), output_formats=[HumanOutputFormat(sys.stdout), WandbOutputFormat()]))
 
     chop_stats = LogsChoppedCallback()
     callbacks = [
         chop_stats,
-        CheckpointCallback(save_freq=20_000, save_path=str(run_dir / "checkpoints"), name_prefix="ppo_chop"),
+        # save_freq counts vec-env steps, each of which is n_envs env steps.
+        CheckpointCallback(save_freq=max(20_000 // args.n_envs, 1), save_path=str(run_dir / "checkpoints"), name_prefix="ppo_chop"),
     ]
 
     t0 = time.time()

@@ -163,8 +163,10 @@ def agents_section(evals: list[dict], runs: list[dict]) -> str:
         cfg = load_config(model)
         lines = [f"### `{Path(model).parent.name}`", ""]
         target = f" of {int(cfg['timesteps_target']):,} planned" if cfg else ""
+        n_envs = cfg.get("n_envs", 1) if cfg else 1
+        envs = f", {n_envs} parallel envs" if n_envs > 1 else ""
         lines.append(f"- **Trained:** {int(run['timesteps_done']):,} steps{target}, {run['episodes']} episodes, "
-                     f"{run['minutes']} min ({run['status']})")
+                     f"{run['minutes']} min{envs} ({run['status']})")
         if run.get("resumed_from"):
             lines.append(f"- **Resumed from:** `{run['resumed_from']}`")
         eps = by_agent.get(model)

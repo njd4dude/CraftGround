@@ -3,7 +3,7 @@
 Goal: train an agent to chop as many oak logs as possible in one episode.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-13 14:15._
+_Tables last updated 2026-11-13 14:50._
 
 ## Summary
 
@@ -79,3 +79,4 @@ Write your observations, ideas and next steps here. This section is never overwr
 - **2026-11-13:** The random baseline is only 3 episodes (5, 0, 4), which is too few to trust. Rerun with `run.bat evaluate.py --random --episodes 20` before comparing.
 - **2026-11-13:** Speed: training runs at about 300 steps/s, and 200k steps took 11 minutes. (The earlier "60 steps/s" estimate was wrong because Minecraft's startup time dominated that 3-episode run.)
 - **2026-11-13, run 1 (`chop_ppo_20261113_131702`):** PPO learned fast. Logs per episode went 3.5 → 18 → 25 → 28 over the first 70 episodes and finished at a last-20 average of 31.4/32. The task may now be too easy, so next ideas are harder layouts, more trees or random tree positions. Still needs a proper 20-episode evaluation against a 20-episode random baseline.
+- **2026-11-13:** Parallel envs: `train.py` now runs 6 Minecraft instances by default (`--n-envs`). Steady training speed went from ~300 to ~740 steps/s (2.5×). Startup takes ~2.5 min instead of ~75 s. Raw env benchmark (random actions): 1 env 451, 2 → 714, 4 → 858, 8 → 1076 steps/s, with 8 using 92% CPU and 17 GB RAM. The CPU is the limit; the GPU stays under 40%. `--n-steps` is now the total across all envs, so each update is still 2048 steps (2046 with 6 envs).
