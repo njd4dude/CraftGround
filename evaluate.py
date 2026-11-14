@@ -4,6 +4,7 @@
     python evaluate.py runs/chop_ppo_20261113_131800/model.zip               # a trained model
     python evaluate.py runs/chop_ppo_20261113_131800/model.zip --episodes 10 # quick check (default 100)
     python evaluate.py runs/chop_ppo_20261113_131800/model.zip --record 0    # no videos
+    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --record 100  # video of every episode
 
 Runs 100 episodes by default so the mean is stable. Every run counts toward the
 agent's score in EXPERIMENTS.md, so to just grab a couple of videos use a small
@@ -18,9 +19,10 @@ an episode ends early once every log is chopped.)
 
 (The model path for each training run is listed in EXPERIMENTS.md.)
 
-Every episode is saved as an MP4 video by default (--record N keeps only the
-first N, --record 0 none). Each video is ~5 MB at real speed and ~7 MB at 5 fps,
-so a default 100-episode run writes ~1.2 GB. The videos show what the agent sees,
+The first 20 episodes are saved as MP4 videos by default (--record N for the
+first N, --record 0 for none). All episodes still count toward the score; only
+the videos are limited. Each video is ~5 MB at real speed and ~7 MB at 5 fps,
+so the default 20 recordings take ~240 MB. The videos show what the agent sees,
 enlarged 4x, with the step, logs chopped and current action written on each frame.
 They open in any video player and go in the model's run folder under videos/
 (random agent: runs/random/videos/).
@@ -112,8 +114,8 @@ def main():
     parser.add_argument("--episodes", type=int, default=100, help="episodes to run (default 100, for a stable mean)")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
     parser.add_argument("--n-envs", type=int, default=6, help="Minecraft instances to run in parallel")
-    parser.add_argument("--record", type=int, default=None, metavar="N",
-                        help="save only the first N episodes as MP4 videos (default: every episode; 0 = none)")
+    parser.add_argument("--record", type=int, default=20, metavar="N",
+                        help="save the first N episodes as MP4 videos (default 20; 0 = none)")
     parser.add_argument("--video-fps", type=int, nargs="+", default=[VIDEO_FPS, 5],
                         help=f"one video per playback rate given; {VIDEO_FPS} = real speed, 5 = quarter speed")
     args = parser.parse_args()
@@ -154,7 +156,7 @@ def main():
                     continue  # this instance has played its share; whatever it does now doesn't count
                 steps[i] += 1
                 ep = episode_id[i]
-                recording = args.record is None or ep < args.record
+                recording = ep < args.record
                 if recording:
                     # On the last step obs[i] is already the next episode's first frame.
                     image = infos[i]["terminal_observation"] if dones[i] else obs[i]
