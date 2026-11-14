@@ -49,7 +49,7 @@ from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback
 from stable_baselines3.common.logger import HumanOutputFormat, KVWriter, Logger
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.save_util import load_from_zip_file
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnvWrapper
 
 import tree_env
 from experiments import TRAIN_CSV, append_row, update_report
@@ -115,6 +115,66 @@ class LogsChoppedCallback(BaseCallback):
                         "chop/episode": self.episodes,
                     })
                 print(f"[{self.num_timesteps:>8} steps] episode done: {logs:2d} logs (last-20 avg {avg:.1f})")
+        return True
+
+
+class StepTimer(VecEnvWrapper):
+    """Adds up the wall time spent inside env.step (all Minecraft instances, including resets)."""
+
+    def __init__(self, venv):
+        super().__init__(venv)
+        self.seconds = 0.0
+        self._t = 0.0
+
+    def step_async(self, actions):
+        self._t = time.perf_counter()
+        self.venv.step_async(actions)
+
+    def step_wait(self):
+        result = self.venv.step_wait()
+        self.seconds += time.perf_counter() - self._t
+        return result
+
+    def reset(self):
+        return self.venv.reset()
+
+
+class SpeedCallback(BaseCallback):
+    """Logs current training speed per PPO iteration (SB3's time/fps averages over the whole run).
+
+    time/env_fps              env steps/s counting only time inside env.step: pure Minecraft speed
+    time/rollout_fps          env steps/s while collecting, summed over all instances
+                              (Minecraft + policy inference + callbacks, incl. checkpoint saves)
+    time/rollout_fps_per_env  rollout_fps / n_envs (one instance's effective speed)
+    time/iter_fps             env steps/s over rollout + PPO update (real training throughput);
+                              measured start-to-start, so it describes the previous iteration
+    """
+
+    def __init__(self, n_envs: int, step_timer: StepTimer):
+        super().__init__()
+        self.n_envs = n_envs
+        self.step_timer = step_timer
+        self.rollout_start = None
+        self.rollout_start_steps = 0
+
+    def _on_rollout_start(self) -> None:
+        now = time.perf_counter()
+        if self.rollout_start is not None:
+            steps = self.num_timesteps - self.rollout_start_steps
+            self.logger.record("time/iter_fps", steps / (now - self.rollout_start))
+        self.rollout_start = now
+        self.rollout_start_steps = self.num_timesteps
+        self.step_timer.seconds = 0.0
+
+    def _on_rollout_end(self) -> None:
+        steps = self.num_timesteps - self.rollout_start_steps
+        if self.step_timer.seconds > 0:
+            self.logger.record("time/env_fps", steps / self.step_timer.seconds)
+        fps = steps / (time.perf_counter() - self.rollout_start)
+        self.logger.record("time/rollout_fps", fps)
+        self.logger.record("time/rollout_fps_per_env", fps / self.n_envs)
+
+    def _on_step(self) -> bool:
         return True
 
 
@@ -201,7 +261,8 @@ def main():
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
 
     factories = [env_factory(args.port + 10 * i, str(run_dir / f"monitor_{i}")) for i in range(args.n_envs)]
-    env = SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories)
+    step_timer = StepTimer(SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories))
+    env = step_timer
     print(f"{args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
           f"({steps_per_env * args.n_envs} total)")
 
@@ -215,6 +276,7 @@ def main():
     chop_stats = LogsChoppedCallback()
     callbacks = [
         chop_stats,
+        SpeedCallback(args.n_envs, step_timer),
         # save_freq counts vec-env steps, each of which is n_envs env steps.
         CheckpointCallback(save_freq=max(20_000 // args.n_envs, 1), save_path=str(run_dir / "checkpoints"), name_prefix="ppo_chop"),
     ]
