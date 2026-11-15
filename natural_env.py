@@ -50,7 +50,10 @@ HOP_TRIES = 12        # landings near the last spot before searching the whole w
 FAR_RANGE = 25_000    # then: anywhere in this square around 0, 0
 MAX_TRIES = 60
 REPLY_TIMEOUT_S = 60.0  # wall-clock wait for one command's reply (new terrain is slow)
-CHECK_TIMEOUT_S = 3.0   # the forest check only replies when it passes, so a miss is a timeout
+# The forest check only replies when it passes, so a miss is a timeout. A pass has always
+# replied within 0.31 s, teleport included (results/benchmark_resets.csv), so this leaves
+# 2x margin; a pass that came later would only cost one extra try.
+CHECK_TIMEOUT_S = 0.75
 # After the teleport, idle until the view stops changing: chunks appear a few at a time
 # (in wall-clock time, not ticks), so "drawn" = no new terrain for RENDER_STABLE_S.
 RENDER_STABLE_S = 1.5

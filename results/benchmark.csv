@@ -13,3 +13,4 @@ timestamp,env,n_envs,steps_per_instance,seconds,steps_per_s,per_instance,resets,
 2026-11-15T14:45:07,natural,1,10000,206.5,48,48,10,18.64,0.90,2.84,143,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,1.59,8.10,86.41
 2026-11-15T14:51:04,natural,2,10000,166.2,120,60,20,8.89,0.53,2.82,152,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,1.61,6.68,43.33
 2026-11-15T14:56:30,natural,4,10000,248.5,161,40,40,10.22,0.41,3.33,214,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,1.62,7.26,29.44
+2026-11-15T15:38:04,natural,4,10000,170.5,235,59,40,5.69,0.33,3.03,182,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,1.63,4.42,41.63
