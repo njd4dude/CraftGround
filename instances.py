@@ -12,7 +12,7 @@ each, 25 of 25 test rounds started cleanly, just as fast.
 
 env_path_for(port):
   * returns C:/Users/<you>/craftground_instances/mc121_port<port>, copying it from
-    the installed package the first time (about 50 MB) and building it (mod code and
+    the installed package the first time (~50 MB, ~210 MB once built) and building it (mod code and
     native library, ~1-2 min, once; new copies build one at a time). Folders go by
     port because every running instance needs its own port anyway, so two scripts
     running at once (say training and an evaluation) never share a folder.
@@ -87,6 +87,31 @@ def _build(folder: Path) -> None:
         (folder / BUILT_MARKER).write_text("ok")
 
 
+def _built_here(folder: Path) -> bool:
+    """True if the copy was built and built *in this folder*. CMake records the folder's
+    full path in CMakeCache.txt and refuses to build after the folder is moved or renamed
+    ("CMakeCache.txt directory ... is different"), so a moved copy must be rebuilt."""
+    if not (folder / BUILT_MARKER).exists():
+        return False
+    cache = folder / "CMakeCache.txt"
+    if not cache.exists():
+        return False
+    for line in cache.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("CMAKE_CACHEFILE_DIR:"):
+            recorded = line.split("=", 1)[1].strip()
+            return Path(recorded).resolve() == folder.resolve()  # Windows paths compare case-insensitively
+    return False
+
+
+def _forget_build(folder: Path) -> None:
+    """Remove the marker and CMake's build files (which hold the old path), so _build starts fresh."""
+    (folder / BUILT_MARKER).unlink(missing_ok=True)
+    for name in SKIP_FILES:
+        (folder / name).unlink(missing_ok=True)
+    for name in ("CMakeFiles", "_deps"):
+        shutil.rmtree(folder / name, ignore_errors=True)
+
+
 def instance_folder(port: int) -> Path:
     """The copy used by the instance on this port, created and built from the installed package if missing."""
     target = ROOT / f"mc121_port{port}"
@@ -97,8 +122,11 @@ def instance_folder(port: int) -> Path:
         shutil.copytree(SOURCE, tmp, ignore=_ignore)
         (tmp / "run" / "saves").mkdir(parents=True, exist_ok=True)
         tmp.rename(target)  # only complete copies get the real name
-    if not (target / BUILT_MARKER).exists():
-        _build(target)  # built at its final path: Gradle treats a moved folder as a new project
+    if not _built_here(target):
+        if (target / BUILT_MARKER).exists():
+            print(f"[instances] {target.name} was built in another folder (moved or renamed); rebuilding", flush=True)
+        _forget_build(target)
+        _build(target)  # built at its final path: Gradle and CMake treat a moved folder as a new project
     return target
 
 

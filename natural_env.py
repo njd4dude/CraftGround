@@ -224,5 +224,5 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
 
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None) -> NaturalChopTreesEnv:
-    """env_path: game folder to run from (instances.instance_path(i)); None = CraftGround's shared one."""
+    """env_path: game folder to run from (instances.env_path_for(port)); None = CraftGround's shared one."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path)

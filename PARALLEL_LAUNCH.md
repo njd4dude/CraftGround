@@ -236,13 +236,18 @@ instances. See BENCHMARK.md.
 ready to launch:
 
 1. **Copy:** `C:\Users\njdon\craftground_instances\mc121_port<port>`, copied from
-   CraftGround's installed folder if it does not exist yet (~50 MB). Old world saves
+   CraftGround's installed folder if it does not exist yet (~50 MB; ~210 MB after
+   the build below, mostly a C++ library CMake downloads). Old world saves
    and logs are left out, as are CMake build files, which store the original
    folder's location.
 2. **Build once:** the first time, it compiles the mod and its native library in
    the copy (`gradlew classes compileCpp`), **one copy at a time** using a lock that
    all processes share. Then it writes a `.craftground_built` marker so it never
    builds again. The output goes to `build_first_use.log` in the copy.
+   Before trusting the marker, it checks that CMake's cache (`CMakeCache.txt`)
+   points at this folder. CMake stores the full folder path and refuses to build
+   once a folder is moved or renamed, so a moved copy is rebuilt automatically (see
+   "Moving or renaming a copy" below).
 3. **Clean old worlds:** it deletes the copy's old world saves. CraftGround never
    removes them; the shared folder had 194 saves, about 1 GB.
 4. **Clean stale Loom locks** (`clear_stale_loom_locks`): it deletes locks in
@@ -274,8 +279,17 @@ never share a folder.
 - **After upgrading CraftGround:** delete `C:\Users\njdon\craftground_instances\`
   (or call `instances.refresh_instances()`) so the copies are made again from the
   new version.
-- **Disk:** about 50 MB per copy. Ports 8023 to 8073 (training and evaluation) and
-  8523 to 8573 (benchmark and tests) are built: 12 copies.
+- **Disk:** about 210 MB per built copy (Minecraft itself and its assets stay in
+  Gradle's shared cache, so they are not copied). Ports 8023 to 8073 (training and evaluation) are
+  built. The benchmark's default ports (8523 to 8573) build on first use.
+- **Moving or renaming a copy:** don't. The test copies were first named
+  `mc121_0` to `mc121_5` and later renamed to `mc121_port8523` and so on, with the
+  built marker added by hand. CMake's cache still pointed at `mc121_0`, so every
+  launch from them failed with *"CMakeCache.txt directory ... is different"*, and the
+  marker stopped `instances.py` from rebuilding. It surfaced when a benchmark run on
+  the default ports could not start Minecraft. Those copies were deleted, and
+  `instances.py` now detects a moved copy and rebuilds it. To start over, delete a
+  copy (or the whole folder) and it is made fresh on next use.
 
 ## Still open
 
