@@ -178,12 +178,16 @@ class NaturalChopTreesEnv(gym.Wrapper):
         if seed is not None:
             self._rng.seed(seed)
         obs, _ = self.env.reset(seed=seed)
+        t_base = time.perf_counter()
 
         self.found = False
+        near_tries = far_tries = 0
         for attempt in range(MAX_TRIES):
             if self._anchor is not None and attempt < HOP_TRIES:
+                near_tries += 1
                 obs, self.found = self._try_spot(*self._anchor, HOP_RANGE)
             else:
+                far_tries += 1
                 obs, self.found = self._try_spot(0, 0, FAR_RANGE)
             if DEBUG:
                 f = obs["full"]
@@ -193,11 +197,14 @@ class NaturalChopTreesEnv(gym.Wrapper):
         else:
             print(f"[natural_env] no forest spot found in {MAX_TRIES} tries; playing anyway")
 
+        t_search = time.perf_counter()
         yaw = self._rng.choice(range(-180, 180, 15))
         obs, _ = self._command(f"execute as @p at @s run tp @s ~ ~ ~ {yaw} 0", ("Teleported",))
         obs, _ = self._command("clear @p", ("Removed", "No items"))
         obs, _ = self._command(f"item replace entity @p weapon.mainhand with {AXE}", ("Replaced",))
+        t_setup = time.perf_counter()
         obs = self._wait_for_render(obs)
+        t_render = time.perf_counter()
 
         full = obs["full"]
         self.spot = (full.x, full.y, full.z)
@@ -207,7 +214,18 @@ class NaturalChopTreesEnv(gym.Wrapper):
         # Minecraft stats never reset, so count logs relative to the episode start.
         self._logs_at_start = self._logs_mined_total(obs)
         self._logs_chopped = 0
-        return self._image(obs), {"logs_chopped": 0, "reset_seconds": time.perf_counter() - start}
+        # Where the reset's time went (benchmark.py logs these per reset).
+        timing = {
+            "reset_seconds": time.perf_counter() - start,
+            "base_reset_s": t_base - start,       # CraftGround's own reset
+            "search_s": t_search - t_base,        # spreadplayers + forest checks
+            "setup_s": t_setup - t_search,        # turn, clear inventory, give axe
+            "render_s": t_render - t_setup,       # waiting for terrain to draw
+            "near_tries": near_tries,
+            "far_tries": far_tries,
+            "found": self.found,
+        }
+        return self._image(obs), {"logs_chopped": 0, **timing}
 
     def step(self, action):
         obs, _, _, _, _ = self.env.step(to_craftground_action(int(action)))

@@ -42,8 +42,11 @@ from experiments import END, START, _write_report, append_row, read_rows, table
 ENVS = {"arena": tree_env, "natural": natural_env}
 BENCH_CSV = Path("results") / "benchmark.csv"
 BENCH_REPORT = Path("BENCHMARK.md")
+RESETS_CSV = Path("results") / "benchmark_resets.csv"  # one row per timed reset (where its time went)
+RESET_FIELDS = ["run", "env", "n_envs", "instance", "step", "reset_seconds", "base_reset_s", "search_s",
+                "setup_s", "render_s", "near_tries", "far_tries", "found"]
 FIELDS = ["timestamp", "env", "n_envs", "steps_per_instance", "seconds", "steps_per_s", "per_instance",
-          "resets", "avg_reset_s", "reset_share", "ram_gb_per_instance", "launch_s", "machine", "status"]
+          "resets", "avg_reset_s", "min_reset_s", "median_reset_s", "max_reset_s", "reset_share", "ram_gb_per_instance", "launch_s", "machine", "status"]
 
 STEPS = 3000              # timed steps per instance (~3 episodes, so resets are included)
 WARMUP = 200              # untimed steps per instance first
@@ -135,13 +138,20 @@ def run_setup(env_name: str, n: int, port: int, steps: int, warmup: int, machine
             env.step(random_actions())
 
         resets, reset_s, peak_used = 0, 0.0, psutil.virtual_memory().used
+        reset_times: list[float] = []
         print(f"[{env_name} x{n}] timing {steps} steps per instance...")
         t0 = time.perf_counter()
         for k in range(steps):
             _, _, dones, _ = env.step(random_actions())
             for i in np.flatnonzero(dones):
+                info = env.reset_infos[i]
                 resets += 1
-                reset_s += env.reset_infos[i].get("reset_seconds", 0.0)
+                reset_s += info.get("reset_seconds", 0.0)
+                reset_times.append(info.get("reset_seconds", 0.0))
+                append_row(RESETS_CSV, RESET_FIELDS, {
+                    "run": row["timestamp"], "env": env_name, "n_envs": n, "instance": int(i), "step": k,
+                    **{f: (f"{info[f]:.2f}" if isinstance(info.get(f), float) else info.get(f, ""))
+                       for f in RESET_FIELDS[5:]}})
             if k % 250 == 0:
                 peak_used = max(peak_used, psutil.virtual_memory().used)
         seconds = time.perf_counter() - t0
@@ -163,15 +173,25 @@ def run_setup(env_name: str, n: int, port: int, steps: int, warmup: int, machine
         "per_instance": f"{total / n:.0f}",
         "resets": resets,
         "avg_reset_s": f"{reset_s / resets:.2f}" if resets else "",
+        "min_reset_s": f"{min(reset_times):.2f}" if resets else "",
+        "median_reset_s": f"{float(np.median(reset_times)):.2f}" if resets else "",
+        "max_reset_s": f"{max(reset_times):.2f}" if resets else "",
         "reset_share": f"{reset_s / (n * seconds):.2f}",
         "ram_gb_per_instance": f"{(peak_used - used_before) / 2**30 / n:.2f}",
         "launch_s": f"{launch_s:.0f}",
         "status": "ok",
     }
     print(f"[{env_name} x{n}] {total:.0f} steps/s total, {total / n:.0f} per instance, "
-          f"{resets} resets ({result['avg_reset_s'] or '-'} s avg, {float(result['reset_share']):.0%} of time), "
+          f"{resets} resets ({result['avg_reset_s'] or '-'} s avg, {result['min_reset_s'] or '-'}/"
+          f"{result['median_reset_s'] or '-'}/{result['max_reset_s'] or '-'} s min/median/max, "
+          f"{float(result['reset_share']):.0%} of time), "
           f"~{result['ram_gb_per_instance']} GB RAM per instance")
     return result
+
+
+def spread(r: dict) -> str:
+    vals = [r.get(k) for k in ("min_reset_s", "median_reset_s", "max_reset_s")]
+    return " / ".join(vals) if all(vals) else "–"
 
 
 def build_report() -> None:
@@ -206,12 +226,12 @@ def build_report() -> None:
             speedup = f"{float(r['steps_per_s']) / base:.2f}×" if base else "–"
             claim = f"{CLAIMED_ARENA[n]}" if env_name == "arena" and n in CLAIMED_ARENA else "–"
             cells = [n, f"**{r['steps_per_s']}**", r["per_instance"], speedup, r["resets"],
-                     r["avg_reset_s"] or "–", f"{float(r['reset_share']):.0%}", r["ram_gb_per_instance"],
+                     r["avg_reset_s"] or "–", spread(r), f"{float(r['reset_share']):.0%}", r["ram_gb_per_instance"],
                      r["launch_s"], r["timestamp"][:16].replace("T", " ")]
             if env_name == "arena":
                 cells.insert(2, claim)
             out.append(cells)
-        headers = ["Instances", "Steps/s total", "Per instance", "vs 1 instance", "Resets", "Avg reset (s)",
+        headers = ["Instances", "Steps/s total", "Per instance", "vs 1 instance", "Resets", "Avg reset (s)", "Min / median / max (s)",
                    "Reset share", "RAM/instance (GB)", "Launch (s)", "Measured"]
         if env_name == "arena":
             headers.insert(2, "Claimed in train.py")
