@@ -149,7 +149,7 @@ def to_craftground_action(index: int) -> list[int]:
 class ChopTreesEnv(gym.Wrapper):
     """Gymnasium env: image in, discrete action out, +1 reward per log chopped."""
 
-    def __init__(self, port: int = 8023, verbose: bool = False):
+    def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None):
         config = InitialEnvironmentConfig(
             image_width=IMAGE_WIDTH,
             image_height=IMAGE_HEIGHT,
@@ -162,7 +162,7 @@ class ChopTreesEnv(gym.Wrapper):
             initial_extra_commands=arena_commands(),
         )
         config.set_daylight_cycle_mode(DaylightMode.ALWAYS_DAY)
-        super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose))
+        super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path))
 
         self.action_space = gym.spaces.Discrete(len(ACTION_NAMES))
         self.observation_space = gym.spaces.Box(
@@ -209,5 +209,6 @@ class ChopTreesEnv(gym.Wrapper):
         return self._image(obs), reward, terminated, truncated, info
 
 
-def make_env(port: int = 8023, verbose: bool = False) -> ChopTreesEnv:
-    return ChopTreesEnv(port=port, verbose=verbose)
+def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None) -> ChopTreesEnv:
+    """env_path: game folder to run from (instances.instance_path(i)); None = CraftGround's shared one."""
+    return ChopTreesEnv(port=port, verbose=verbose, env_path=env_path)

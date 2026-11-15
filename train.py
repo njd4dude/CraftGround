@@ -18,8 +18,15 @@ the arena's steps/s in evaluation) and needs more memory per instance, so
 --n-envs 4 is a safer start than 6 there.
 
 Training runs --n-envs Minecraft instances side by side (default 6). Each needs
-~2.2 GB of RAM and a lot of CPU. On this machine (8-core 7700X) total speed goes
-1 -> 451, 2 -> 714, 4 -> 858, 8 -> 1076 raw env steps/s, and 8 maxes out the CPU.
+~2.4 GB of RAM (~2.8 GB in the natural world) and a lot of CPU. Measured raw env
+speed on this machine (8-core 7700X, BENCHMARK.md): arena 1 -> 487, 2 -> 713,
+4 -> 977, 6 -> 1046 steps/s; natural 1 -> 38, 2 -> 101, 4 -> 165, 6 -> 263.
+
+Each instance runs from its own copy of CraftGround's game folder
+(~/craftground_instances/mc121_port<port>, see instances.py), because instances
+started together in CraftGround's one shared folder sometimes collide and one
+fails to start, which hangs the whole run. --shared-folder goes back to the
+shared folder. The first run on a new port is ~75 s slower while its copy builds.
 --n-steps is the rollout size summed over all instances, so changing --n-envs
 keeps each PPO update the same size (each instance collects n_steps / n_envs).
 
@@ -64,6 +71,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnvW
 import natural_env
 import tree_env
 from experiments import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row, update_report
+from instances import clear_stale_loom_locks, env_path_for
 
 ENVS = {"arena": tree_env, "natural": natural_env}
 
@@ -83,11 +91,13 @@ PPO_SETTINGS = dict(
 )
 
 
-def env_factory(env_name: str, port: int, monitor_file: str):
+def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker."""
     def _make():
         make_env = ENVS[env_name].make_env
-        return Monitor(make_env(port=port), filename=monitor_file, info_keywords=("logs_chopped",))
+        env_path = None if shared_folder else env_path_for(port, verbose=True)
+        return Monitor(make_env(port=port, env_path=env_path), filename=monitor_file,
+                       info_keywords=("logs_chopped",))
     return _make
 
 
@@ -226,6 +236,8 @@ def main():
     parser.add_argument("--resume", type=str, default=None, help="checkpoint .zip to continue from")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
     parser.add_argument("--n-envs", type=int, default=6, help="Minecraft instances to run in parallel")
+    parser.add_argument("--shared-folder", action="store_true",
+                        help="run all instances from CraftGround's one shared game folder (old behaviour)")
     parser.add_argument("--name", type=str, default=None,
                         help="run folder prefix (default chop_ppo, or chop_ppo_natural with --env natural)")
     parser.add_argument("--no-wandb", action="store_true", help="don't log to Weights & Biases")
@@ -291,7 +303,8 @@ def main():
     wandb.define_metric("*", step_metric="global_step")
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
 
-    factories = [env_factory(args.env, args.port + 10 * i, str(run_dir / f"monitor_{i}"))
+    clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
+    factories = [env_factory(args.env, args.port + 10 * i, str(run_dir / f"monitor_{i}"), args.shared_folder)
                  for i in range(args.n_envs)]
     step_timer = StepTimer(SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories))
     env = step_timer

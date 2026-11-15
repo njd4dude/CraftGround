@@ -87,7 +87,7 @@ def _ground_fraction(image: np.ndarray) -> float:
 class NaturalChopTreesEnv(gym.Wrapper):
     """Gymnasium env: image in, discrete action out, +1 reward per log chopped."""
 
-    def __init__(self, port: int = 8023, verbose: bool = False):
+    def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None):
         config = InitialEnvironmentConfig(
             image_width=IMAGE_WIDTH,
             image_height=IMAGE_HEIGHT,
@@ -100,7 +100,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
             mined_stat_keys=LOG_KEYS,
             initial_extra_commands=_setup_commands(),
         )
-        super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose))
+        super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path))
 
         self.action_space = gym.spaces.Discrete(len(ACTION_NAMES))
         self.observation_space = gym.spaces.Box(
@@ -223,5 +223,6 @@ class NaturalChopTreesEnv(gym.Wrapper):
         return self._image(obs), reward, terminated, truncated, info
 
 
-def make_env(port: int = 8023, verbose: bool = False) -> NaturalChopTreesEnv:
-    return NaturalChopTreesEnv(port=port, verbose=verbose)
+def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None) -> NaturalChopTreesEnv:
+    """env_path: game folder to run from (instances.instance_path(i)); None = CraftGround's shared one."""
+    return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path)

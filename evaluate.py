@@ -12,7 +12,9 @@ agent's score in EXPERIMENTS.md (EXPERIMENTS_NATURAL.md for --env natural), so t
 --episodes, e.g. --episodes 2.
 
 Episodes are spread over --n-envs Minecraft instances running side by side
-(default 6, never more than --episodes). Each instance gets a fixed share of the
+(default 6, never more than --episodes), each running from its own copy of the
+game folder (instances.py; --shared-folder for CraftGround's one shared folder,
+where instances started together sometimes collide and hang the run). Each instance gets a fixed share of the
 episodes decided up front (100 over 6 = 17,17,17,17,16,16) and only its first
 share counts, so no half-played episode is ever dropped. (Stopping at "the first
 100 to finish" would favour short episodes, and here short means good, because
@@ -59,6 +61,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 import natural_env
 import tree_env
 from experiments import EVAL_CSV, NATURAL_EVAL_CSV, append_row, normalize_agent, update_report
+from instances import clear_stale_loom_locks, env_path_for
 from tree_env import ACTION_NAMES, EPISODE_STEPS
 
 ENVS = {"arena": tree_env, "natural": natural_env}
@@ -159,6 +162,8 @@ def main():
     parser.add_argument("--episodes", type=int, default=100, help="episodes to run (default 100, for a stable mean)")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
     parser.add_argument("--n-envs", type=int, default=6, help="Minecraft instances to run in parallel")
+    parser.add_argument("--shared-folder", action="store_true",
+                        help="run all instances from CraftGround's one shared game folder (old behaviour)")
     parser.add_argument("--record", type=int, default=20, metavar="N",
                         help="save the first N episodes as MP4 videos (default 20; 0 = none)")
     parser.add_argument("--env", choices=sorted(ENVS), default="arena",
@@ -175,7 +180,11 @@ def main():
     n_envs = max(1, min(args.n_envs, args.episodes))
     shares = episode_shares(args.episodes, n_envs)
     t_launch = time.perf_counter()
-    factories = [(lambda port=args.port + 10 * i: make_env(port=port)) for i in range(n_envs)]
+    clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
+    shared = args.shared_folder
+    factories = [(lambda port=args.port + 10 * i: make_env(
+                     port=port, env_path=None if shared else env_path_for(port, verbose=True)))
+                 for i in range(n_envs)]
     env = SubprocVecEnv(factories) if n_envs > 1 else DummyVecEnv(factories)
     model = None if args.random else PPO.load(args.model, device="cpu")
     label = "random" if args.random else normalize_agent(args.model)

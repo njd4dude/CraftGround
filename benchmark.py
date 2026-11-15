@@ -35,6 +35,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
 import natural_env
 import tree_env
+from instances import clear_stale_loom_locks, env_path_for
 from launch_lock import SerialLaunch
 from experiments import END, START, _write_report, append_row, read_rows, table
 
@@ -100,7 +101,7 @@ def kill_leftovers(procs: list[psutil.Process]) -> int:
 
 
 def run_setup(env_name: str, n: int, port: int, steps: int, warmup: int, machine_name: str,
-              serial_launch: bool = False) -> dict:
+              serial_launch: bool = False, shared_folder: bool = False) -> dict:
     row = {"timestamp": datetime.now().isoformat(timespec="seconds"), "env": env_name, "n_envs": n,
            "steps_per_instance": steps, "machine": machine_name}
     free_gb = psutil.virtual_memory().available / 2**30
@@ -113,10 +114,13 @@ def run_setup(env_name: str, n: int, port: int, steps: int, warmup: int, machine
     used_before = psutil.virtual_memory().used
     print(f"[{env_name} x{n}] launching {n} Minecraft instance(s)...")
     t_launch = time.perf_counter()
-    if serial_launch:
-        factories = [(lambda p=port + 10 * i: SerialLaunch(make_env(port=p), name=str(p))) for i in range(n)]
-    else:
-        factories = [(lambda p=port + 10 * i: make_env(port=p)) for i in range(n)]
+    clear_stale_loom_locks()  # see instances.py
+
+    def build(p: int):
+        env = make_env(port=p, env_path=None if shared_folder else env_path_for(p, verbose=True))
+        return SerialLaunch(env, name=str(p)) if serial_launch else env
+
+    factories = [(lambda p=port + 10 * i: build(p)) for i in range(n)]
     env = SubprocVecEnv(factories) if n > 1 else DummyVecEnv(factories)
     procs: list[psutil.Process] = []
     try:
@@ -232,7 +236,9 @@ def main():
     parser.add_argument("--warmup", type=int, default=WARMUP)
     parser.add_argument("--port", type=int, default=8523, help="first instance's port (others go up by 10)")
     parser.add_argument("--serial-launch", action="store_true",
-                        help="start instances one at a time (avoids startup collisions, see launch_lock.py)")
+                        help="start instances one at a time (another way to avoid startup collisions, launch_lock.py)")
+    parser.add_argument("--shared-folder", action="store_true",
+                        help="run all instances from CraftGround's one shared game folder (old behaviour)")
     args = parser.parse_args()
 
     machine_name = machine()
@@ -240,7 +246,8 @@ def main():
     t_start = time.perf_counter()
     for env_name in args.envs:
         for n in sorted(args.instances):
-            row = run_setup(env_name, n, args.port, args.steps, args.warmup, machine_name, args.serial_launch)
+            row = run_setup(env_name, n, args.port, args.steps, args.warmup, machine_name, args.serial_launch,
+                            args.shared_folder)
             append_row(BENCH_CSV, FIELDS, row)
             build_report()
     print(f"\nDone in {(time.perf_counter() - t_start) / 60:.1f} min. Results in {BENCH_REPORT} and {BENCH_CSV}")
