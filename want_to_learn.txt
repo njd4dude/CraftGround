@@ -1,0 +1,8 @@
+thing I want to learn/know:
+- If we transfer our best minerl tuned model to this craftground enviornment, with(and without) finetuning at all how good will it perform? How good
+will it perform on our fabricated enviornment arena, vs realistic looking arena(with and without finetuning). 
+- IF the mineRL model performs well, are we able to achieve a better or just as good model using pure RL.(I want to see because I never really attempted long pure RL runs on
+ mineRL because simulation speed is too slow so its not feasible)
+- I also want to know evaluate the importance of exactly matching obs space, action spaces. 
+- If I were to change the action space liek from discrete to continous controls after transferring fine tuned mineRL model would it transfer well
+ a(well in this case means like it doesn't stay flat and it increases) after some fine tuning in this enviornment.
