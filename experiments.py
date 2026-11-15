@@ -21,6 +21,7 @@ EVAL_CSV = RESULTS_DIR / "eval_results.csv"
 TRAIN_CSV = RESULTS_DIR / "training_runs.csv"
 REPORT = Path("EXPERIMENTS.md")
 NATURAL_EVAL_CSV = RESULTS_DIR / "eval_results_natural.csv"
+NATURAL_TRAIN_CSV = RESULTS_DIR / "training_runs_natural.csv"
 NATURAL_REPORT = Path("EXPERIMENTS_NATURAL.md")
 
 START = "<!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->"
@@ -200,7 +201,8 @@ def agents_section(evals: list[dict], runs: list[dict]) -> str:
             env = cfg.get("env", {})
             if prev_env is not None:
                 special += [f"env {k}: {prev_env.get(k)} → **{v}** (changed since previous run)"
-                            for k, v in env.items() if prev_env.get(k) != v]
+                            # A setting older runs didn't record yet is not a change.
+                            for k, v in env.items() if k in prev_env and prev_env[k] != v]
             same = ("first recorded run, default settings (the baseline)" if prev_env is None
                     else "nothing, default settings and same environment as the previous run")
             prev_env = env
@@ -229,9 +231,9 @@ def evals_section(evals: list[dict]) -> str:
                      "Steps/s", "Per episode"], rows))
 
 
-def training_section(runs: list[dict]) -> str:
+def training_section(runs: list[dict], start_cmd: str = "run.bat train.py") -> str:
     if not runs:
-        return "## Training runs\n\n_None yet. Start one with `run.bat train.py`._"
+        return f"## Training runs\n\n_None yet. Start one with `{start_cmd}`._"
     def wandb_link(r: dict) -> str:
         url = r.get("wandb_url") or ""
         return f"[open]({url})" if url else "–"
@@ -267,9 +269,11 @@ def _episodes_by_agent(rows: list[dict]) -> dict[str, list[int]]:
     return out
 
 
-def natural_summary_section(evals: list[dict], arena_evals: list[dict]) -> str:
+def natural_summary_section(evals: list[dict], arena_evals: list[dict], runs: list[dict]) -> str:
+    """runs = training runs done in the natural world (they're listed even before evaluation)."""
     by_agent, arena = _episodes_by_agent(evals), _episodes_by_agent(arena_evals)
-    if not by_agent:
+    natural_trained = {normalize_agent(r["model"]): r for r in runs}
+    if not by_agent and not natural_trained:
         return ("## Summary\n\n_Nothing evaluated yet: `run.bat evaluate.py <model.zip> --env natural` "
                 "and `run.bat evaluate.py --random --env natural`._")
     random_eps = by_agent.get("random", [])
@@ -279,20 +283,28 @@ def natural_summary_section(evals: list[dict], arena_evals: list[dict]) -> str:
         return sum(eps) / len(eps)
 
     rows = []
-    for agent in sorted(by_agent, key=lambda a: (a != "random", a)):  # baseline first
-        eps = by_agent[agent]
+    for agent in sorted(set(by_agent) | set(natural_trained), key=lambda a: (a != "random", a)):  # baseline first
         is_random = agent == "random"
         name = "Random actions (baseline)" if is_random else f"`{Path(agent).parent.name}`"
+        trained = "–" if is_random else ("natural" if agent in natural_trained else "arena")
         arena_mean = f"{mean(arena[agent]):.2f}" if agent in arena else "–"
+        eps = by_agent.get(agent)
+        if not eps:
+            rows.append([name, trained, arena_mean,
+                         f"_not evaluated: `run.bat evaluate.py {agent} --env natural`_", "", "", "", ""])
+            continue
         vs = ("baseline" if is_random
               else f"**{mean(eps) / random_mean:.1f}×**" if random_mean else "no baseline yet")
-        rows.append([name, arena_mean, len(eps), f"**{mean(eps):.2f}**", min(eps), max(eps), vs])
+        rows.append([name, trained, arena_mean, len(eps), f"**{mean(eps):.2f}**", min(eps), max(eps), vs])
     return (
         "## Summary\n\n"
-        "One row per agent. **Mean logs** is the average over all `evaluate.py --env natural` episodes. "
-        "**Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md), to show how well "
-        "it carries over. **vs random** = how many times more logs than random actions in this world.\n\n"
-        + table(["Agent", "Arena mean", "Eval episodes", "Mean logs", "Min", "Max", "vs random"], rows)
+        "One row per agent. **Trained in** is the world it was trained in (see Agents below for "
+        "models resumed from an arena run). **Mean logs** is the average over all "
+        "`evaluate.py --env natural` episodes. **Arena mean** is the same agent's score in the walled "
+        "arena (EXPERIMENTS.md), to show how well it carries over. **vs random** = how many times more "
+        "logs than random actions in this world.\n\n"
+        + table(["Agent", "Trained in", "Arena mean", "Eval episodes", "Mean logs", "Min", "Max",
+                 "vs random"], rows)
     )
 
 
@@ -310,10 +322,12 @@ def update_report(env: str = "arena") -> None:
     """Rebuild the tables of one environment's report: "arena" or "natural"."""
     stamp = f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
     if env == "natural":
-        evals = read_rows(NATURAL_EVAL_CSV)
+        evals, runs = read_rows(NATURAL_EVAL_CSV), read_rows(NATURAL_TRAIN_CSV)
         generated = "\n\n".join([
             stamp,
-            natural_summary_section(evals, read_rows(EVAL_CSV)),
+            natural_summary_section(evals, read_rows(EVAL_CSV), runs),
+            agents_section(evals, runs),
+            training_section(runs, "run.bat train.py --env natural --n-envs 4"),
             evals_section(evals),
             natural_setup_section(),
         ])

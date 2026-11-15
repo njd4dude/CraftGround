@@ -6,6 +6,16 @@
     python train.py --no-wandb            # train without logging to Weights & Biases
     python train.py --learning-rate 1e-4 --n-epochs 8 --notes "slower lr, more epochs"
     python train.py --n-envs 4            # run 4 Minecraft instances instead of 6
+    python train.py --env natural --n-envs 4                 # train in a forest in a normal world
+    python train.py --env natural --resume runs/chop_ppo_20261113_135620/model.zip   # fine-tune an arena model there
+
+--env picks the world: arena (tree_env.py, walled superflat arena, the default)
+or natural (natural_env.py, a fresh forest spot every episode). Both have the
+same images and actions, so --resume works across them. Natural runs get their
+own folders (chop_ppo_natural_...), CSV (results/training_runs_natural.csv) and
+report (EXPERIMENTS_NATURAL.md). The natural world is slower (about a third of
+the arena's steps/s in evaluation) and needs more memory per instance, so
+--n-envs 4 is a safer start than 6 there.
 
 Training runs --n-envs Minecraft instances side by side (default 6). Each needs
 ~2.2 GB of RAM and a lot of CPU. On this machine (8-core 7700X) total speed goes
@@ -30,8 +40,8 @@ Every run gets one folder with everything in it:
         wandb/                 W&B's local copy of the run
 
 Press Ctrl+C at any time: the current model is saved before exiting.
-Each run is added to the Training runs table in EXPERIMENTS.md, with a link
-to its W&B page.
+Each run is added to the Training runs table in EXPERIMENTS.md (or
+EXPERIMENTS_NATURAL.md), with a link to its W&B page.
 """
 
 import argparse
@@ -51,9 +61,11 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.save_util import load_from_zip_file
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnvWrapper
 
+import natural_env
 import tree_env
-from experiments import TRAIN_CSV, append_row, update_report
-from tree_env import make_env
+from experiments import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row, update_report
+
+ENVS = {"arena": tree_env, "natural": natural_env}
 
 RUNS_DIR = Path("runs")
 WANDB_PROJECT = "craftground-chop-trees"
@@ -71,11 +83,39 @@ PPO_SETTINGS = dict(
 )
 
 
-def env_factory(port: int, monitor_file: str):
+def env_factory(env_name: str, port: int, monitor_file: str):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker."""
     def _make():
+        make_env = ENVS[env_name].make_env
         return Monitor(make_env(port=port), filename=monitor_file, info_keywords=("logs_chopped",))
     return _make
+
+
+def env_settings(env_name: str) -> dict:
+    """The environment's settings, saved in config.json (EXPERIMENTS.md flags changes between runs)."""
+    common = {
+        "world": env_name,
+        "episode_steps": tree_env.EPISODE_STEPS,
+        "image": f"{tree_env.IMAGE_WIDTH}x{tree_env.IMAGE_HEIGHT}",
+        "actions": tree_env.ACTION_NAMES,
+    }
+    if env_name == "natural":
+        return {
+            **common,
+            "reward": natural_env.REWARD,
+            "seed": natural_env.SEED,
+            "forest_check": natural_env.FOREST_CHECK,
+            "hop_range": natural_env.HOP_RANGE,
+            "far_range": natural_env.FAR_RANGE,
+        }
+    return {
+        **common,
+        "reward": tree_env.REWARD,
+        "trees": len(tree_env.TREE_POSITIONS),
+        "logs_per_tree": tree_env.TRUNK_HEIGHT,
+        "max_logs": tree_env.MAX_LOGS,
+        "arena_radius": tree_env.ARENA_RADIUS,
+    }
 
 
 class WandbOutputFormat(KVWriter):
@@ -180,11 +220,14 @@ class SpeedCallback(BaseCallback):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--env", choices=sorted(ENVS), default="arena",
+                        help="arena = walled superflat arena (tree_env.py); natural = forest in a normal world (natural_env.py)")
     parser.add_argument("--timesteps", type=int, default=200_000)
     parser.add_argument("--resume", type=str, default=None, help="checkpoint .zip to continue from")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
     parser.add_argument("--n-envs", type=int, default=6, help="Minecraft instances to run in parallel")
-    parser.add_argument("--name", type=str, default="chop_ppo", help="run folder prefix")
+    parser.add_argument("--name", type=str, default=None,
+                        help="run folder prefix (default chop_ppo, or chop_ppo_natural with --env natural)")
     parser.add_argument("--no-wandb", action="store_true", help="don't log to Weights & Biases")
     parser.add_argument("--notes", type=str, default="", help="what's special about this run")
     for key, default in PPO_SETTINGS.items():
@@ -205,8 +248,9 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Training on {device}")
 
+    name = args.name or ("chop_ppo" if args.env == "arena" else f"chop_ppo_{args.env}")
     started = datetime.now()
-    run_dir = RUNS_DIR / f"{args.name}_{started:%Y%m%d_%H%M%S}"
+    run_dir = RUNS_DIR / f"{name}_{started:%Y%m%d_%H%M%S}"
     run_dir.mkdir(parents=True)
     print(f"Run folder: {run_dir}")
 
@@ -221,16 +265,7 @@ def main():
         "ppo": ppo_settings,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
-        "env": {
-            "reward": tree_env.REWARD,
-            "episode_steps": tree_env.EPISODE_STEPS,
-            "image": f"{tree_env.IMAGE_WIDTH}x{tree_env.IMAGE_HEIGHT}",
-            "trees": len(tree_env.TREE_POSITIONS),
-            "logs_per_tree": tree_env.TRUNK_HEIGHT,
-            "max_logs": tree_env.MAX_LOGS,
-            "arena_radius": tree_env.ARENA_RADIUS,
-            "actions": tree_env.ACTION_NAMES,
-        },
+        "env": env_settings(args.env),
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
@@ -239,6 +274,7 @@ def main():
         name=run_dir.name,
         dir=str(run_dir),
         notes=args.notes or None,
+        tags=[args.env],
         mode="disabled" if args.no_wandb else "online",
         config={
             "algorithm": "PPO",
@@ -247,12 +283,7 @@ def main():
             "resumed_from": args.resume,
             "n_envs": args.n_envs,
             **ppo_settings,
-            "env/reward": tree_env.REWARD,
-            "env/image": f"{tree_env.IMAGE_WIDTH}x{tree_env.IMAGE_HEIGHT}",
-            "env/episode_steps": tree_env.EPISODE_STEPS,
-            "env/trees": len(tree_env.TREE_POSITIONS),
-            "env/max_logs": tree_env.MAX_LOGS,
-            "env/actions": tree_env.ACTION_NAMES,
+            **{f"env/{k}": v for k, v in env_settings(args.env).items()},
         },
     )
     # Plot everything against training steps.
@@ -260,10 +291,11 @@ def main():
     wandb.define_metric("*", step_metric="global_step")
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
 
-    factories = [env_factory(args.port + 10 * i, str(run_dir / f"monitor_{i}")) for i in range(args.n_envs)]
+    factories = [env_factory(args.env, args.port + 10 * i, str(run_dir / f"monitor_{i}"))
+                 for i in range(args.n_envs)]
     step_timer = StepTimer(SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories))
     env = step_timer
-    print(f"{args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
+    print(f"{args.env} world, {args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
           f"({steps_per_env * args.n_envs} total)")
 
     if args.resume:
@@ -311,14 +343,14 @@ def main():
             wandb.run.summary.update(summary)
             wandb.finish(exit_code=0 if status != "crashed" else 1)
 
-        append_row(TRAIN_CSV, TRAIN_FIELDS, {
+        append_row(NATURAL_TRAIN_CSV if args.env == "natural" else TRAIN_CSV, TRAIN_FIELDS, {
             "started": started.isoformat(timespec="seconds"),
             **{k: ("" if v is None else v) for k, v in summary.items()},
             "resumed_from": args.resume or "",
             "model": model_path.as_posix(),
             "wandb_url": wandb_url,
         })
-        update_report()
+        update_report(args.env)
 
 
 if __name__ == "__main__":
