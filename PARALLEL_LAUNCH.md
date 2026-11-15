@@ -66,7 +66,8 @@ like a natural-world problem.
 - **Loom's messages were hidden at first.** CraftGround starts Gradle with `-w`
   (warnings only), which hides Loom's lock messages. The first launch test
   reported "no lock messages", but that proved nothing. `launch_test.py` now
-  removes `-w` and saves each instance's full Gradle output to `launch_logs/`.
+  removes `-w` and saves each instance's full Gradle output to `launch_logs/`
+  (kept out of git; the important lines are quoted below).
 - **The early failure rate was too high.** It came from about 11 rounds,
   including the two natural benchmark failures, at least one of which followed a
   killed run (see collision 3). Over 22 rounds the
@@ -77,12 +78,64 @@ like a natural-world problem.
 Each failure was a different collision, depending on which one happened to strike
 first.
 
-| # | Collision | What happens | Evidence | Fixed by |
+| # | Collision | What happens | Seen in | Fixed by |
 | --- | --- | --- | --- | --- |
-| 1 | **Same world name** | Minecraft names a new save "New World (N)" using the next free number. It checks for a free name, then creates the folder, as two separate steps. Two instances checked at the same moment and both took "New World (149)". The second could not open it (*"another process has locked a portion of the file"*) and never started. | `launch_logs/test1_plain/arena_t1_8553.log` and `arena_t1_8563.log` | Separate folders (each copy has its own `saves\`) |
-| 2 | **Same logging-settings file** | Every launch rewrites Gradle's logging config file (`generateLog4jConfig`) in the game folder. Windows locks a file while it is being written, so two builds at once means one fails: *"Failed to generate log4j config"*. | `arena_t3_8553.log` (first test), `arena_shared_t6_8543.log` (alternating test) | Separate folders |
-| 3 | **Leftover Loom lock after a killed run** | Loom writes its process ID into a lock file while it sets up. If that build is killed (Ctrl+C, out of memory, a crash, a test stopped by hand), the lock stays behind. The next launch sees a lock from a dead process, prints *"Locking process does not exist ... rebuilding loom cache"*, and rewrites Loom's cache **in Gradle's shared cache folder** while other builds are reading it: *"mappings.jar: The process cannot access the file because it is being used by another process"*. A failed build also writes "disowned" into the lock, which can set off the same thing on the next launch. | Caught in `arena_sep_t1_8523.log` right after a test was force-stopped. The 23:04 natural benchmark failure also came right after a run was killed by hand, and its cache files were rewritten during that launch. | Deleting stale locks before every launch (`clear_stale_loom_locks`) |
-| 4 | **Six first-time builds at once** | A brand-new folder copy compiles the mod's Kotlin code on its first launch. Gradle sends Kotlin compiling from every build on the machine to **one shared Kotlin compiler process**, and six at once ran it out of memory (*"OutOfMemoryError: GC overhead limit exceeded"*). 3 of 6 builds failed. | Found when testing the new setup on fresh copies | Building new copies one at a time, once (`instances.py`) |
+| 1 | **Same world name** | Minecraft names a new save "New World (N)" using the next free number. It checks for a free name, then creates the folder, as two separate steps. Two instances checked at the same moment and both took "New World (149)". The second could not open it and never started. | First launch test, arena round 1 | Separate folders (each copy has its own `saves\`) |
+| 2 | **Same logging-settings file** | Every launch rewrites Gradle's logging config file (`generateLog4jConfig`) in the game folder. Windows locks a file while it is being written, so two builds at once means one fails. | First launch test, arena round 3; alternating test, shared round 6 | Separate folders |
+| 3 | **Leftover Loom lock after a killed run** | Loom writes its process ID into a lock file while it sets up. If that build is killed (Ctrl+C, out of memory, a crash, a test stopped by hand), the lock stays behind. The next launch sees a lock from a dead process and rewrites Loom's cache **in Gradle's shared cache folder** while other builds are reading it. A failed build also writes "disowned" into the lock, which can set off the same thing on the next launch. | Alternating test, separate round 1, right after the previous test was force-stopped. The 23:04 natural benchmark failure also came right after a run was killed by hand, and its cache files were rewritten during that launch. | Deleting stale locks before every launch (`clear_stale_loom_locks`) |
+| 4 | **Six first-time builds at once** | A brand-new folder copy compiles the mod's Kotlin code on its first launch. Gradle sends Kotlin compiling from every build on the machine to **one shared Kotlin compiler process**, and six at once ran it out of memory. 3 of 6 builds failed. | First check of the final setup, on fresh copies | Building new copies one at a time, once (`instances.py`) |
+
+#### The error messages
+
+These are the lines from each failed instance's Gradle output that identify the
+collision (the full logs stayed on the test machine).
+
+**1. Same world name.** Two instances' logs both show `New World (149)`; the
+second one then fails:
+
+```
+[23:33:35] [Render thread/WARN] (Minecraft) Failed to create access for New World (149)
+java.io.IOException: The process cannot access the file because another process has locked a portion of the file
+```
+
+**2. Same logging-settings file:**
+
+```
+> Task :generateLog4jConfig FAILED
+* What went wrong:
+Execution failed for task ':generateLog4jConfig'.
+> Failed to generate log4j config
+```
+
+**3. Leftover Loom lock** (pid 35752 was the build killed when the previous test
+was stopped):
+
+```
+"Lock for cache='C:\Users\njdon\.gradle\caches\fabric-loom', project=':'" is currently held by pid '35752'.
+Locking process does not exist, assuming abrupt termination and deleting lock file.
+Found existing cache lock file (ACQUIRED_PREVIOUS_OWNER_MISSING), rebuilding loom cache. This may have been caused by a failed or canceled build.
+java.nio.file.FileSystemException: C:\Users\njdon\.gradle\caches\fabric-loom\1.21\net.fabricmc.yarn.1_21.1.21+build.9-v2\mappings.jar: The process cannot access the file because it is being used by another process
+> Failed to setup Minecraft, java.io.UncheckedIOException: Failed to setup mappings: net.fabricmc:yarn:1.21+build.9
+```
+
+The 23:04 natural benchmark failure ended with
+`> Failed to setup Minecraft, java.lang.RuntimeException: Failed to remap minecraft`;
+its Gradle output was not saved, so the lines before that are unknown.
+
+**4. Six first-time builds at once:**
+
+```
+Details: Internal error in file lowering: java.lang.OutOfMemoryError: GC overhead limit exceeded
+Execution failed for task ':compileKotlin'.
+```
+
+For comparison, this is what the **other** builds print when Loom's lock works as
+intended (one build rebuilds, the rest wait):
+
+```
+"Lock for cache='C:\Users\njdon\.gradle\caches\fabric-loom', project=':'" is currently held by pid '27476'.
+Waiting for lock to be released...
+```
 
 Collisions 1 and 2 are why separate folders were needed. Collisions 3 and 4 show
 up because of what stays shared even with separate folders: Gradle's cache and its
@@ -180,7 +233,7 @@ never share a folder.
   (`launch_lock.py`).
 - `launch_test.py` is the test used here: `--separate-folders`, `--alternate`,
   `--serial`, `--plant-disowned`. It writes `results/launch_test.csv` and saves each
-  instance's Gradle output to `launch_logs/`.
+  instance's Gradle output to `launch_logs/` (ignored by git).
 
 ### Upkeep
 

@@ -5,3 +5,4 @@ runs/
 check_frames/
 py_log.csv
 wandb/
+launch_logs/
