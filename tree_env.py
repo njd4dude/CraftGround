@@ -17,6 +17,7 @@ Arena layout (seen from above, 1 char = 1 block, P = player spawn):
 """
 
 import random
+import time
 from typing import Any, Optional
 
 import gymnasium as gym
@@ -181,6 +182,7 @@ class ChopTreesEnv(gym.Wrapper):
         return np.ascontiguousarray(obs["pov"])
 
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
+        start = time.perf_counter()
         # Face a random direction each episode so the agent can't memorise one path.
         yaw = random.choice(range(-180, 180, 15))
         obs, info = self.env.reset(
@@ -191,7 +193,7 @@ class ChopTreesEnv(gym.Wrapper):
         # Minecraft stats never reset, so count logs relative to the episode start.
         self._logs_at_start = self._logs_mined_total(obs)
         self._logs_chopped = 0
-        return self._image(obs), {"logs_chopped": 0}
+        return self._image(obs), {"logs_chopped": 0, "reset_seconds": time.perf_counter() - start}
 
     def step(self, action):
         obs, _, _, _, _ = self.env.step(to_craftground_action(int(action)))

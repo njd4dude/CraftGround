@@ -1,11 +1,11 @@
-"""Keeps EXPERIMENTS.md up to date.
+"""Keeps EXPERIMENTS.md (arena) and EXPERIMENTS_NATURAL.md (natural world) up to date.
 
 evaluate.py and train.py append rows to the CSV files in results/, then call
-update_report(), which rewrites the tables in EXPERIMENTS.md. Only the part
-between the AUTO-GENERATED markers is replaced, so notes you write anywhere
-else in the file are kept.
+update_report(env), which rewrites the tables in that environment's report.
+Only the part between the AUTO-GENERATED markers is replaced, so notes you
+write anywhere else in the file are kept.
 
-Run it by hand to rebuild the tables:  python experiments.py
+Run it by hand to rebuild both reports:  python experiments.py
 """
 
 import csv
@@ -13,12 +13,15 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+import natural_env
 import tree_env
 
 RESULTS_DIR = Path("results")
 EVAL_CSV = RESULTS_DIR / "eval_results.csv"
 TRAIN_CSV = RESULTS_DIR / "training_runs.csv"
 REPORT = Path("EXPERIMENTS.md")
+NATURAL_EVAL_CSV = RESULTS_DIR / "eval_results_natural.csv"
+NATURAL_REPORT = Path("EXPERIMENTS_NATURAL.md")
 
 START = "<!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->"
 END = "<!-- AUTO-GENERATED:END -->"
@@ -26,6 +29,19 @@ END = "<!-- AUTO-GENERATED:END -->"
 TEMPLATE = f"""# CraftGround Experiments: Chop Trees
 
 Goal: train an agent to chop as many oak logs as possible in one episode.
+
+{START}
+{END}
+
+## Notes
+
+Write your observations, ideas and next steps here. This section is never overwritten.
+"""
+
+NATURAL_TEMPLATE = f"""# CraftGround Experiments: Chop Trees in a Natural World
+
+Goal: chop as many logs as possible in one episode, starting in a real generated
+forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 {START}
 {END}
@@ -204,9 +220,13 @@ def evals_section(evals: list[dict]) -> str:
     if not evals:
         return "## Evaluation runs\n\n_None yet._"
     rows = [[r["timestamp"], f"`{r['agent']}`", r["episodes"], r["mean_logs"], r["min_logs"],
-             r["max_logs"], r["per_episode"]] for r in reversed(evals)]
-    return ("## Evaluation runs\n\nOne row per `evaluate.py` run, newest first.\n\n"
-            + table(["When", "Agent", "Episodes", "Mean logs", "Min", "Max", "Per episode"], rows))
+             r["max_logs"], r.get("n_envs") or "–", r.get("minutes") or "–", r.get("steps_per_s") or "–",
+             r["per_episode"]] for r in reversed(evals)]
+    return ("## Evaluation runs\n\nOne row per `evaluate.py` run, newest first. **Minutes** includes "
+            "launching Minecraft; **Steps/s** is env steps per second over all instances while playing "
+            "(runs from before timing was added show –).\n\n"
+            + table(["When", "Agent", "Episodes", "Mean logs", "Min", "Max", "Instances", "Minutes",
+                     "Steps/s", "Per episode"], rows))
 
 
 def training_section(runs: list[dict]) -> str:
@@ -223,24 +243,94 @@ def training_section(runs: list[dict]) -> str:
                      "Status", "Saved model", "W&B"], rows))
 
 
-def update_report() -> None:
+def natural_setup_section() -> str:
+    ne = natural_env
+    rows = [
+        ["World", f"Normal generated world, fixed seed {ne.SEED}"],
+        ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
+                  f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}"],
+        ["Rebuilt each episode", "no: chopped trees stay chopped, so every episode moves to fresh forest"],
+        ["Boundaries", "none; terrain loads as the agent walks"],
+        ["Tool", "Unbreakable diamond axe, Efficiency X (1 hit per log)"],
+        ["Observation", f"RGB image {tree_env.IMAGE_WIDTH}×{tree_env.IMAGE_HEIGHT} (same as the arena)"],
+        ["Actions", f"{len(tree_env.ACTION_NAMES)} discrete (same as the arena)"],
+        ["Reward", ne.REWARD],
+        ["Episode length", f"{tree_env.EPISODE_STEPS} steps (no log cap)"],
+    ]
+    return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
+
+
+def _episodes_by_agent(rows: list[dict]) -> dict[str, list[int]]:
+    out: dict[str, list[int]] = {}
+    for r in rows:
+        out.setdefault(normalize_agent(r["agent"]), []).extend(int(x) for x in r["per_episode"].split())
+    return out
+
+
+def natural_summary_section(evals: list[dict], arena_evals: list[dict]) -> str:
+    by_agent, arena = _episodes_by_agent(evals), _episodes_by_agent(arena_evals)
+    if not by_agent:
+        return ("## Summary\n\n_Nothing evaluated yet: `run.bat evaluate.py <model.zip> --env natural` "
+                "and `run.bat evaluate.py --random --env natural`._")
+    random_eps = by_agent.get("random", [])
+    random_mean = sum(random_eps) / len(random_eps) if random_eps else None
+
+    def mean(eps: list[int]) -> float:
+        return sum(eps) / len(eps)
+
+    rows = []
+    for agent in sorted(by_agent, key=lambda a: (a != "random", a)):  # baseline first
+        eps = by_agent[agent]
+        is_random = agent == "random"
+        name = "Random actions (baseline)" if is_random else f"`{Path(agent).parent.name}`"
+        arena_mean = f"{mean(arena[agent]):.2f}" if agent in arena else "–"
+        vs = ("baseline" if is_random
+              else f"**{mean(eps) / random_mean:.1f}×**" if random_mean else "no baseline yet")
+        rows.append([name, arena_mean, len(eps), f"**{mean(eps):.2f}**", min(eps), max(eps), vs])
+    return (
+        "## Summary\n\n"
+        "One row per agent. **Mean logs** is the average over all `evaluate.py --env natural` episodes. "
+        "**Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md), to show how well "
+        "it carries over. **vs random** = how many times more logs than random actions in this world.\n\n"
+        + table(["Agent", "Arena mean", "Eval episodes", "Mean logs", "Min", "Max", "vs random"], rows)
+    )
+
+
+def _write_report(path: Path, template: str, generated: str) -> None:
+    text = path.read_text(encoding="utf-8") if path.exists() else template
+    if START not in text or END not in text:
+        text = template + "\n" + text  # markers removed by hand: put a fresh block on top
+    before, rest = text.split(START, 1)
+    _, after = rest.split(END, 1)
+    path.write_text(f"{before}{START}\n{generated}\n{END}{after}", encoding="utf-8")
+    print(f"Updated {path}")
+
+
+def update_report(env: str = "arena") -> None:
+    """Rebuild the tables of one environment's report: "arena" or "natural"."""
+    stamp = f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
+    if env == "natural":
+        evals = read_rows(NATURAL_EVAL_CSV)
+        generated = "\n\n".join([
+            stamp,
+            natural_summary_section(evals, read_rows(EVAL_CSV)),
+            evals_section(evals),
+            natural_setup_section(),
+        ])
+        _write_report(NATURAL_REPORT, NATURAL_TEMPLATE, generated)
+        return
     evals, runs = read_rows(EVAL_CSV), read_rows(TRAIN_CSV)
     generated = "\n\n".join([
-        f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._",
+        stamp,
         summary_section(evals, runs),
         agents_section(evals, runs),
         training_section(runs),
         evals_section(evals),
         setup_section(),
     ])
-    text = REPORT.read_text(encoding="utf-8") if REPORT.exists() else TEMPLATE
-    if START not in text or END not in text:
-        text = TEMPLATE + "\n" + text  # markers removed by hand: put a fresh block on top
-    before, rest = text.split(START, 1)
-    _, after = rest.split(END, 1)
-    REPORT.write_text(f"{before}{START}\n{generated}\n{END}{after}", encoding="utf-8")
-    print(f"Updated {REPORT}")
+    _write_report(REPORT, TEMPLATE, generated)
 
 
 if __name__ == "__main__":
-    update_report()
+    update_report("arena")
+    update_report("natural")
