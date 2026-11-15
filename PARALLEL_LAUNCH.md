@@ -141,6 +141,38 @@ Collisions 1 and 2 are why separate folders were needed. Collisions 3 and 4 show
 up because of what stays shared even with separate folders: Gradle's cache and its
 Kotlin compiler.
 
+### Why it only happens at startup, and why two different fixes work
+
+All four collisions happen while instances are **starting**, never mid-run. The
+difference is what an instance does with the shared folder in each phase:
+
+| Phase | What an instance does in the folder | Can two instances clash? |
+| --- | --- | --- |
+| **Startup** (first 1 to 2 min) | **Writes** the logging-settings file, **picks a name and creates** its world save, and Loom may **write** its lock and cache | **Yes**, if two do it in the same split second |
+| **Running** (hours) | **Reads** the game code, and **writes only into its own world folder** (one instance's "New World (149)", another's "New World (150)") | **No** |
+
+Reading is not the problem: any number of programs can read the same file at
+once. Clashes come from two programs **writing** the same file, or **claiming**
+the same name, at the same moment. And that only happens during startup.
+
+That is why both fixes work:
+
+- **One at a time** keeps the shared folder, but makes sure the startup steps
+  never overlap. Instance 1 writes the settings file, takes "New World (149)" and
+  finishes starting before instance 2 begins; instance 2 then sees 149 is taken and
+  picks 150. After startup they only read shared files and write their own worlds,
+  so running side by side is fine.
+- **Separate folders** let the startup steps overlap, because each instance writes
+  its **own** settings file and creates worlds in its **own** saves folder. There is
+  nothing shared to clash over (apart from Gradle's cache, which collisions 3 and 4
+  cover).
+
+An analogy: six people must each sign in on a sheet and then take a desk. The
+problem is all six grabbing the one sheet at once, so two write on the same line.
+"One at a time" has them sign in one after another; once seated, they work at their
+own desks without bothering each other. "Separate folders" gives each person their
+own sign-in sheet, so all six can sign in at once.
+
 ## Solutions we considered
 
 | Option | How it works | Status |
