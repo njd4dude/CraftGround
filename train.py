@@ -6,7 +6,7 @@
     python train.py --no-wandb            # train without logging to Weights & Biases
     python train.py --learning-rate 1e-4 --n-epochs 8 --notes "slower lr, more epochs"
     python train.py --n-envs 4            # run 4 Minecraft instances instead of 6
-    python train.py --env natural --n-envs 4                 # train in a forest in a normal world
+    python train.py --env natural                            # train in a forest in a normal world (3 instances)
     python train.py --env natural --resume runs/chop_ppo_20261113_135620/model.zip   # fine-tune an arena model there
     python train.py --env natural --no-jump                  # natural world with the arena's 11 actions (no jump)
 
@@ -18,11 +18,13 @@ there (jump is turned off automatically to match); --no-jump forces the 11 actio
 Without jump the two worlds share the same actions, so --resume works across them. Natural runs get their
 own folders (chop_ppo_natural_...), CSV (results/training_runs_natural.csv) and
 report (EXPERIMENTS_NATURAL.md). The natural world is slower (about a third of
-the arena's steps/s in evaluation) and needs more memory per instance, so
---n-envs 4 is a safer start than 6 there.
+the arena's steps/s in evaluation) and needs more memory per instance, so it
+defaults to 3 instances (see N_ENVS_NATURAL).
 
-Training runs --n-envs Minecraft instances side by side (default 6). Each needs
-~2.4 GB of RAM (~2.8 GB in the natural world) and a lot of CPU. Measured raw env
+Training runs --n-envs Minecraft instances side by side (default 6, natural 3). Each
+needs ~2.4 GB of RAM in the arena and a lot of CPU. In the natural world each grows to
+~4.2 GB (memprobe.py: Java fills its 2G heap cap, native memory levels off after ~10
+minutes, plus ~0.5 GB of Gradle launcher processes), so 4 would leave almost no RAM free. Measured raw env
 speed on this machine (8-core 7700X, BENCHMARK.md): arena 1 -> 487, 2 -> 713,
 4 -> 977, 6 -> 1046 steps/s; natural 4 -> 235 steps/s with the current 0.75 s
 forest-check timeout (1 -> 48, 2 -> 120, 6 -> 263 were measured with the old 3 s
@@ -239,6 +241,12 @@ class SpeedCallback(BaseCallback):
         return True
 
 
+# Natural-world instances grow to ~4.2 GB each (2G heap + ~1 GB native + Gradle launchers,
+# measured with memprobe.py). 4 of them plus training leave ~0.3 GB of this 32 GB machine free;
+# 3 leave ~5 GB.
+N_ENVS_NATURAL = 3
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", choices=sorted(ENVS), default="arena",
@@ -246,7 +254,8 @@ def main():
     parser.add_argument("--timesteps", type=int, default=200_000)
     parser.add_argument("--resume", type=str, default=None, help="checkpoint .zip to continue from")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
-    parser.add_argument("--n-envs", type=int, default=6, help="Minecraft instances to run in parallel")
+    parser.add_argument("--n-envs", type=int, default=None,
+                        help="Minecraft instances to run in parallel (default: 6 in the arena, 3 in the natural world)")
     parser.add_argument("--shared-folder", action="store_true",
                         help="run all instances from CraftGround's one shared game folder (old behaviour)")
     parser.add_argument("--name", type=str, default=None,
@@ -260,6 +269,8 @@ def main():
         parser.add_argument("--" + key.replace("_", "-"), type=type(default), default=None,
                             help=f"PPO {key} (default {default})")
     args = parser.parse_args()
+    if args.n_envs is None:
+        args.n_envs = N_ENVS_NATURAL if args.env == "natural" else 6
     # Only the flags given on the command line, so a resumed model keeps its own saved settings.
     overrides = {k: getattr(args, k) for k in PPO_SETTINGS if getattr(args, k) is not None}
     ppo_settings = {**PPO_SETTINGS, **overrides}

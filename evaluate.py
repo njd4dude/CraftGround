@@ -12,7 +12,7 @@ agent's score in EXPERIMENTS.md (EXPERIMENTS_NATURAL.md for --env natural), so t
 --episodes, e.g. --episodes 2.
 
 Episodes are spread over --n-envs Minecraft instances running side by side
-(default 6, never more than --episodes), each running from its own copy of the
+(default 6, natural world 3, never more than --episodes), each running from its own copy of the
 game folder (instances.py; --shared-folder for CraftGround's one shared folder,
 where instances started together sometimes collide and hang the run). Each instance gets a fixed share of the
 episodes decided up front (100 over 6 = 17,17,17,17,16,16) and only its first
@@ -158,13 +158,20 @@ def episode_shares(episodes: int, n_envs: int) -> list[int]:
     return [episodes // n_envs + (i < episodes % n_envs) for i in range(n_envs)]
 
 
+# Natural-world instances grow to ~4.2 GB each (2G heap + ~1 GB native + Gradle launchers,
+# measured with memprobe.py). 4 of them plus training leave ~0.3 GB of this 32 GB machine free;
+# 3 leave ~5 GB.
+N_ENVS_NATURAL = 3
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("model", nargs="?", help="path to a saved model .zip")
     parser.add_argument("--random", action="store_true", help="use random actions instead of a model")
     parser.add_argument("--episodes", type=int, default=100, help="episodes to run (default 100, for a stable mean)")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
-    parser.add_argument("--n-envs", type=int, default=6, help="Minecraft instances to run in parallel")
+    parser.add_argument("--n-envs", type=int, default=None,
+                        help="Minecraft instances to run in parallel (default: 6 in the arena, 3 in the natural world)")
     parser.add_argument("--shared-folder", action="store_true",
                         help="run all instances from CraftGround's one shared game folder (old behaviour)")
     parser.add_argument("--record", type=int, default=20, metavar="N",
@@ -174,6 +181,8 @@ def main():
     parser.add_argument("--video-fps", type=int, nargs="+", default=[VIDEO_FPS, 5],
                         help=f"one video per playback rate given; {VIDEO_FPS} = real speed, 5 = quarter speed")
     args = parser.parse_args()
+    if args.n_envs is None:
+        args.n_envs = N_ENVS_NATURAL if args.env == "natural" else 6
     if not args.random and not args.model:
         parser.error("give a model path, or --random for the baseline")
 
