@@ -260,6 +260,10 @@ def natural_setup_section() -> str:
     rows = [
         ["World", f"Normal generated world, fixed seed {ne.SEED} (held-out evaluation world: "
                   f"seed {ne.HELD_OUT_SEED}, never trained in)"],
+        ["Evaluation", "100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); "
+                       "`evaluate.py --random-spots` for random spawns. Held-out world: "
+                       "`make_eval_spots.py --held-out` once, then `evaluate.py <model> --env natural "
+                       "--held-out` (its table appears once there are results)"],
         ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
                   f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}"],
         ["Rebuilt each episode", "no: chopped trees stay chopped, so every episode moves to fresh forest"],
@@ -309,44 +313,89 @@ def _trained_in(agent: str) -> str:
         return "natural" if "_natural_" in _run_dir(agent).name else "arena"
 
 
-def natural_summary_section(evals: list[dict], arena_evals: list[dict], runs: list[dict]) -> str:
-    """runs = training runs done in the natural world (they're listed even before evaluation)."""
+def _steps_of(agent: str, runs: list[dict]) -> int | None:
+    """Training steps behind a model: from a checkpoint's name, else the training CSV."""
+    path = Path(agent)
+    if path.parent.name == "checkpoints":
+        steps = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
+    else:
+        steps = next((r["timesteps_done"] for r in runs if normalize_agent(r["model"]) == agent), "")
+    return int(steps) if str(steps).isdigit() else None
+
+
+def _short_steps(n: int) -> str:
+    return f"{n / 1e6:.1f}M" if n >= 995_000 else f"{round(n / 1000)}k"
+
+
+def _describe(agent: str, runs: list[dict]) -> str:
+    """What an agent is, from the config.json of its run and the runs it was resumed from, e.g.
+    "jump · constant LR to 601k, then linear LR · 1.0M steps". Runs resumed after a crash
+    count as one history, so only changes of learning-rate schedule show up as stages."""
+    if agent == "random":
+        return "random actions"
+    stages: list[tuple[str, int | None]] = []  # (LR schedule, steps at the end of that piece), newest first
+    cfg0, cur = None, agent
+    for _ in range(20):  # follow resumed_from back to the first run
+        try:
+            cfg = json.loads((_run_dir(cur) / "config.json").read_text(encoding="utf-8"))
+        except Exception:
+            break
+        if cfg.get("env", {}).get("world") != "natural":
+            stages.append(("arena", None))
+            break
+        cfg0 = cfg0 or cfg
+        stages.append((f"{cfg.get('lr_schedule', 'constant')} LR", _steps_of(cur, runs)))
+        cur = normalize_agent(cfg.get("resumed_from") or "")
+        if not cur:
+            break
+    if cfg0 is None:
+        return "trained in the arena" if stages else ""
+    env = cfg0.get("env", {})
+    stages.reverse()  # oldest first
+    merged: list[list] = []
+    for schedule, end in stages:
+        if merged and merged[-1][0] == schedule:
+            merged[-1][1] = end  # same schedule continued after a resume
+        else:
+            merged.append([schedule, end])
+    history = ", then ".join(
+        s if k == len(merged) - 1 or e is None else f"{s} to {_short_steps(e)}" for k, (s, e) in enumerate(merged))
+    if merged and merged[0][0] == "arena":
+        history = history.replace("arena, then ", "arena model, then ", 1)
+    parts = ["jump" if len(env.get("actions", [])) == len(tree_env.ACTION_NAMES_JUMP) else "no jump", history]
+    total = _steps_of(agent, runs)
+    if total:
+        parts.append(f"{_short_steps(total)} steps")
+    rd = env.get("render_distance", 6)  # runs before render_distance was recorded used 6
+    if rd != natural_env.RENDER_DISTANCE:
+        parts.append(f"render distance {rd}")
+    return " · ".join(parts)
+
+
+def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], runs: list[dict]) -> str:
+    """Random-spawn evaluations: all natural-world evaluations before fixed spots (2026-11-16)."""
     by_agent, arena = _episodes_by_agent(evals), _episodes_by_agent(arena_evals)
-    natural_trained = {normalize_agent(r["model"]): r for r in runs}
-    if not by_agent and not natural_trained:
-        return ("## Summary\n\n_Nothing evaluated yet: `run.bat evaluate.py <model.zip> --env natural` "
-                "and `run.bat evaluate.py --random --env natural`._")
+    if not by_agent:
+        return ""
     random_eps = by_agent.get("random", [])
     random_mean = sum(random_eps) / len(random_eps) if random_eps else None
-
-    def mean(eps: list[int]) -> float:
-        return sum(eps) / len(eps)
-
     rows = []
-    for agent in sorted(set(by_agent) | set(natural_trained), key=lambda a: (a != "random", a)):  # baseline first
+    for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", kv[0])):  # baseline first
         is_random = agent == "random"
         name = "Random actions (baseline)" if is_random else _agent_label(agent)
-        trained = "–" if is_random else ("natural" if agent in natural_trained else _trained_in(agent))
-        arena_mean = f"{mean(arena[agent]):.2f}" if agent in arena else "–"
-        eps = by_agent.get(agent)
-        if not eps:
-            rows.append([name, trained, arena_mean,
-                         f"_not evaluated: `run.bat evaluate.py {agent} --env natural`_", "", "", "", ""])
-            continue
+        arena_mean = f"{sum(arena[agent]) / len(arena[agent]):.2f}" if agent in arena else "–"
+        mean = sum(eps) / len(eps)
         vs = ("baseline" if is_random
-              else f"**{mean(eps) / random_mean:.1f}×**" if random_mean else "no baseline yet")
-        rows.append([name, trained, arena_mean, len(eps), f"**{mean(eps):.2f}**", min(eps), max(eps), vs])
+              else f"{mean / random_mean:.1f}×" if random_mean else "no baseline yet")
+        rows.append([name, _describe(agent, runs), arena_mean, len(eps), f"{mean:.2f}", min(eps), max(eps), vs])
     return (
-        "## Summary\n\n"
-        "One row per agent, from **random-spawn** evaluations (each run lands in different forests, so "
-        "means move by ±3-4 logs from spawn luck alone; see Fixed-spot evaluation above for fair "
-        "comparisons). **Trained in** is the world it was trained in (see Agents below for "
-        "models resumed from an arena run). **Mean logs** is the average over all random-spawn "
-        "`evaluate.py --env natural` episodes. **Arena mean** is the same agent's score in the walled "
-        "arena (EXPERIMENTS.md), to show how well it carries over. **vs random** = how many times more "
-        "logs than random actions in this world.\n\n"
-        + table(["Agent", "Trained in", "Arena mean", "Eval episodes", "Mean logs", "Min", "Max",
-                 "vs random"], rows)
+        "## Earlier random-spawn evaluations\n\n"
+        "Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random "
+        "forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an "
+        "older setup (render distance 6, no damage). Use the Results table above to compare agents. "
+        "**Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md).\n\n"
+        + table(["Agent", "Description", "Arena mean", "Episodes", "Mean logs", "Min", "Max", "vs random"],
+                rows)
     )
 
 
@@ -367,12 +416,13 @@ def _mean_ci(eps: list[int]) -> tuple[float, float]:
     return mean, 1.96 * sd / n ** 0.5
 
 
-def fixed_spots_section(evals: list[dict]) -> str:
+def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> str:
     """One row per agent from fixed-spot evaluations (evaluate.py's default in the natural world
     since 2026-11-16): every agent played the same forests, so these means compare fairly."""
+    runs = runs or []
     by_agent = _episodes_by_agent(evals)
     if not by_agent:
-        return ("## Fixed-spot evaluation\n\n_None yet: `run.bat evaluate.py <model.zip> --env natural` "
+        return ("## Results\n\n_None yet: `run.bat evaluate.py <model.zip> --env natural` "
                 "plays the 100 fixed spots in `results/eval_spots_natural.json`._")
     random_eps = by_agent.get("random")
     random_mean = sum(random_eps) / len(random_eps) if random_eps else None
@@ -384,14 +434,16 @@ def fixed_spots_section(evals: list[dict]) -> str:
         vs = ("baseline" if agent == "random"
               else f"**{mean / random_mean:.1f}×**" if random_mean else "no baseline yet")
         name = "Random actions (baseline)" if agent == "random" else _agent_label(agent)
-        rows.append([name, n, f"**{mean:.2f}** ± {ci:.2f}", median, sum(x == 0 for x in eps), max(eps), vs])
+        rows.append([name, _describe(agent, runs), n, f"**{mean:.2f}** ± {ci:.2f}", median,
+                     sum(x == 0 for x in eps), max(eps), vs])
     return (
-        "## Fixed-spot evaluation\n\n"
-        "Every agent here played the same forest spots (`results/eval_spots_natural.json`, one episode "
-        "each, same starting direction), so differences come from the agents, not from where they "
-        "spawned. **± is the 95% range** of the mean from the episodes' spread: two agents whose ranges "
-        "overlap a lot may not really differ. Random-spawn results are in the Summary below.\n\n"
-        + table(["Agent", "Episodes", "Mean logs", "Median", "0-log episodes", "Max", "vs random"], rows)
+        "## Results\n\n"
+        "Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one "
+        "episode each, same starting direction, current setup), so differences come from the agents, "
+        "not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose "
+        "ranges overlap a lot may not really differ. Older random-spawn scores are near the bottom.\n\n"
+        + table(["Agent", "Description", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
+                 "vs random"], rows)
     )
 
 
@@ -400,9 +452,7 @@ def held_out_section(held_out: list[dict], training_fixed: list[dict]) -> str:
     training world: the gap is how much of the score depends on having trained in that world."""
     by_agent = _episodes_by_agent([r for r in held_out if _is_fixed(r)])
     if not by_agent:
-        return ("## Held-out world\n\n_None yet: `run.bat make_eval_spots.py --held-out` once, then "
-                "`run.bat evaluate.py <model.zip> --env natural --held-out` (and `--random` for the "
-                f"baseline). World seed {natural_env.HELD_OUT_SEED}, never used for training._")
+        return ""  # shown once there are results; how to get some is in Environment setup
     train = _episodes_by_agent(training_fixed)
     random_eps = by_agent.get("random")
     random_mean = sum(random_eps) / len(random_eps) if random_eps else None
@@ -449,16 +499,17 @@ def update_report(env: str = "arena") -> None:
         training_world = [r for r in evals if not _is_held_out(r)]
         fixed = [r for r in training_world if _is_fixed(r)]
         random_spawns = [r for r in training_world if not _is_fixed(r)]
-        generated = "\n\n".join([
+        sections = [
             stamp,
-            fixed_spots_section(fixed),
+            fixed_spots_section(fixed, runs),
             held_out_section(held_out, fixed),
-            natural_summary_section(random_spawns, read_rows(EVAL_CSV), runs),
             agents_section(training_world, runs),
             training_section(runs, "run.bat train.py --env natural"),
             evals_section(evals),
+            natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),
             natural_setup_section(),
-        ])
+        ]
+        generated = "\n\n".join(s for s in sections if s)  # empty sections (no data yet) are left out
         _write_report(NATURAL_REPORT, NATURAL_TEMPLATE, generated)
         return
     evals, runs = read_rows(EVAL_CSV), read_rows(TRAIN_CSV)

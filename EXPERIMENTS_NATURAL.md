@@ -4,41 +4,19 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-16 13:51._
+_Tables last updated 2026-11-16 14:11._
 
-## Fixed-spot evaluation
+## Results
 
-Every agent here played the same forest spots (`results/eval_spots_natural.json`, one episode each, same starting direction), so differences come from the agents, not from where they spawned. **± is the 95% range** of the mean from the episodes' spread: two agents whose ranges overlap a lot may not really differ. Random-spawn results are in the Summary below.
+Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one episode each, same starting direction, current setup), so differences come from the agents, not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose ranges overlap a lot may not really differ. Older random-spawn scores are near the bottom.
 
-| Agent | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
-| --- | --- | --- | --- | --- | --- | --- |
-| Random actions (baseline) | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
-| `chop_ppo_natural_20261115_231007` | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
-| `chop_ppo_natural_20261116_123155` | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
-| `chop_ppo_natural_20261115_185527` @ 601,536 steps | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
-| `chop_ppo_natural_20261115_235545` | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
-
-## Held-out world
-
-_None yet: `run.bat make_eval_spots.py --held-out` once, then `run.bat evaluate.py <model.zip> --env natural --held-out` (and `--random` for the baseline). World seed 20261117, never used for training._
-
-## Summary
-
-One row per agent, from **random-spawn** evaluations (each run lands in different forests, so means move by ±3-4 logs from spawn luck alone; see Fixed-spot evaluation above for fair comparisons). **Trained in** is the world it was trained in (see Agents below for models resumed from an arena run). **Mean logs** is the average over all random-spawn `evaluate.py --env natural` episodes. **Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md), to show how well it carries over. **vs random** = how many times more logs than random actions in this world.
-
-| Agent | Trained in | Arena mean | Eval episodes | Mean logs | Min | Max | vs random |
+| Agent | Description | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Random actions (baseline) | – | 3.00 | 100 | **1.81** | 0 | 24 | baseline |
-| `chop_ppo_20261113_131702` | arena | 31.67 | 100 | **5.01** | 0 | 30 | **2.8×** |
-| `chop_ppo_20261113_135620` | arena | 26.20 | 100 | **5.10** | 0 | 18 | **2.8×** |
-| `chop_ppo_natural_20261115_155106` | natural | – | _not evaluated: `run.bat evaluate.py runs/chop_ppo_natural_20261115_155106/model.zip --env natural`_ |  |  |  |  |
-| `chop_ppo_natural_20261115_161832` | natural | – | 100 | **9.68** | 0 | 43 | **5.3×** |
-| `chop_ppo_natural_20261115_173930` | natural | – | 100 | **17.96** | 0 | 63 | **9.9×** |
-| `chop_ppo_natural_20261115_185527` @ 601,536 steps | natural | – | 100 | **21.67** | 0 | 66 | **12.0×** |
-| `chop_ppo_natural_20261115_192015` | natural | – | 100 | **14.99** | 0 | 41 | **8.3×** |
-| `chop_ppo_natural_20261115_231007` | natural | – | 100 | **25.44** | 0 | 66 | **14.1×** |
-| `chop_ppo_natural_20261115_235545` | natural | – | _not evaluated: `run.bat evaluate.py runs/chop_ppo_natural_20261115_235545/model.zip --env natural`_ |  |  |  |  |
-| `chop_ppo_natural_20261116_123155` | natural | – | _not evaluated: `run.bat evaluate.py runs/chop_ppo_natural_20261116_123155/model.zip --env natural`_ |  |  |  |  |
+| Random actions (baseline) | random actions | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
+| `chop_ppo_natural_20261115_231007` | jump · constant LR to 602k, then linear LR · 1.0M steps | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
+| `chop_ppo_natural_20261116_123155` | jump · linear LR · 1.0M steps | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
+| `chop_ppo_natural_20261115_185527` @ 601,536 steps | jump · constant LR · 602k steps · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
+| `chop_ppo_natural_20261115_235545` | jump · linear LR · 257k steps | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
 
 ## Agents
 
@@ -139,11 +117,27 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 | 2026-11-14T17:26:55 | `random` | random | 100 | 1.81 | 0 | 24 | – | – | – | 0 0 2 2 0 1 0 2 7 0 2 3 0 1 0 3 0 3 1 2 1 0 0 0 0 1 2 1 0 5 0 2 2 4 1 0 5 8 1 0 2 0 0 3 4 1 2 0 0 6 0 0 0 0 5 0 3 0 7 0 1 4 0 1 3 2 0 2 0 0 0 3 0 24 0 2 2 0 2 8 1 3 1 0 1 0 0 1 3 2 0 5 3 2 7 0 0 0 0 3 |
 | 2026-11-14T17:12:38 | `runs/chop_ppo_20261113_135620/model.zip` | random | 100 | 5.10 | 0 | 18 | – | – | – | 10 0 4 4 6 8 15 7 3 2 5 7 0 8 4 2 12 2 3 0 9 5 4 7 13 3 9 4 9 4 13 0 5 6 6 6 2 0 5 2 3 7 1 1 7 3 2 0 3 4 0 4 12 2 7 9 4 0 2 7 8 14 11 0 3 12 1 6 12 7 11 15 8 3 1 6 3 6 0 0 0 0 6 18 3 0 0 5 2 2 4 11 9 4 10 6 4 3 2 2 |
 
+## Earlier random-spawn evaluations
+
+Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an older setup (render distance 6, no damage). Use the Results table above to compare agents. **Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md).
+
+| Agent | Description | Arena mean | Episodes | Mean logs | Min | Max | vs random |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Random actions (baseline) | random actions | 3.00 | 100 | 1.81 | 0 | 24 | baseline |
+| `chop_ppo_20261113_131702` | trained in the arena | 31.67 | 100 | 5.01 | 0 | 30 | 2.8× |
+| `chop_ppo_20261113_135620` | trained in the arena | 26.20 | 100 | 5.10 | 0 | 18 | 2.8× |
+| `chop_ppo_natural_20261115_161832` | no jump · constant LR · 503k steps · render distance 6 | – | 100 | 9.68 | 0 | 43 | 5.3× |
+| `chop_ppo_natural_20261115_173930` | jump · constant LR · 502k steps · render distance 6 | – | 100 | 17.96 | 0 | 63 | 9.9× |
+| `chop_ppo_natural_20261115_185527` @ 601,536 steps | jump · constant LR · 602k steps · render distance 6 | – | 100 | 21.67 | 0 | 66 | 12.0× |
+| `chop_ppo_natural_20261115_192015` | jump · constant LR · 1.0M steps · render distance 6 | – | 100 | 14.99 | 0 | 41 | 8.3× |
+| `chop_ppo_natural_20261115_231007` | jump · constant LR to 602k, then linear LR · 1.0M steps | – | 100 | 25.44 | 0 | 66 | 14.1× |
+
 ## Environment setup
 
 | Setting | Value |
 | --- | --- |
 | World | Normal generated world, fixed seed 20261114 (held-out evaluation world: seed 20261117, never trained in) |
+| Evaluation | 100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); `evaluate.py --random-spots` for random spawns. Held-out world: `make_eval_spots.py --held-out` once, then `evaluate.py <model> --env natural --held-out` (its table appears once there are results) |
 | Spawn | A new spot every episode, on the ground in an oak/birch forest: first within 150 blocks of the last spot, else anywhere within ±25,000 |
 | Rebuilt each episode | no: chopped trees stay chopped, so every episode moves to fresh forest |
 | Boundaries | none; terrain loads as the agent walks |
