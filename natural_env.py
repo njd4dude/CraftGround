@@ -25,6 +25,7 @@ Run check_natural.py to see it working (frames go to check_frames/).
 """
 
 import json
+import math
 import os
 import random
 import time
@@ -105,6 +106,14 @@ def _setup_commands() -> list[str]:
         "kill @e[type=item]",
         "effect give @p minecraft:resistance infinite 255 true",  # landing / falling never hurts
     ]
+
+
+def ground_y(y: float) -> int:
+    """The ground surface a recorded height belongs to. Right after a landing the client lets the
+    player sink a little (y=63.85 on ground at 64), so most saved spots are a fraction of a block
+    low; teleporting there puts the feet inside the top block, the player drops through it and
+    suffocates. Forest spots stand on dirt/grass (full blocks), so the surface is y rounded up."""
+    return math.ceil(y - 1e-3)
 
 
 def _ground_fraction(image: np.ndarray) -> float:
@@ -198,7 +207,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         if not ok:
             return None
         f = obs["full"]
-        return {"x": round(f.x, 2), "y": round(f.y, 2), "z": round(f.z, 2)}
+        return {"x": round(f.x, 2), "y": ground_y(f.y), "z": round(f.z, 2)}
 
     def _wait_for_render(self, obs):
         """Idle until the new terrain has finished drawing (see RENDER_STABLE_S)."""
@@ -244,7 +253,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         if fixed is not None:
             # A fixed evaluation spot: teleport there (same seed, so same terrain) and skip the search.
             self.spot_index = fixed.get("index")
-            obs, reply = self._command(f"tp @p {fixed['x']} {fixed['y']} {fixed['z']} {fixed['yaw']} 0",
+            obs, reply = self._command(f"tp @p {fixed['x']} {ground_y(fixed['y'])} {fixed['z']} {fixed['yaw']} 0",
                                        ("Teleported",))
             self.found = reply is not None
         for attempt in range(0 if fixed is not None else MAX_TRIES):
