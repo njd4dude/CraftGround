@@ -1,29 +1,33 @@
 {
- "about": "Training lines for EXPERIMENTS_NATURAL.md (experiments.py). Each line is one training history and has its own folder, runs/natural/<folder>/, with one subfolder per piece (train.py --resume adds pieces; --line <folder> starts a new line). This file gives each line folder a display id, name and purpose, and notes on pieces (keyed by the piece folder name). Edit freely, then run experiments.py.",
+ "about": "Training lines for EXPERIMENTS_NATURAL.md (experiments.py). Each line is one training history and has its own folder, runs/natural/<folder>/, with one subfolder per piece (train.py --resume adds pieces; --line <folder> starts a new line). This file gives each line folder a display id, name, purpose ('tested') and result ('found'), and notes on pieces (keyed by the piece folder name). Edit freely, then run experiments.py.",
  "lines": [
   {
    "folder": "line1_no-jump",
    "id": "1",
    "name": "no jump, constant LR",
-   "tested": "Can PPO learn to chop trees in a generated world at all? First natural-world run, the arena's 11 actions."
+   "tested": "Can PPO learn to chop trees in a generated world at all? First natural-world run, the arena's 11 actions.",
+   "found": "Yes, but modestly: 9.7 logs per episode at 503k (random spawns), 5.3x random actions."
   },
   {
    "folder": "line2_jump-constant-lr",
    "id": "2",
    "name": "jump, constant LR",
-   "tested": "Does adding jump and forward_jump help on hilly terrain? Compare with Line 1."
+   "tested": "Does adding jump and forward_jump help on hilly terrain? Compare with Line 1.",
+   "found": "Yes: jump nearly doubled the score at ~500k (18.0 vs Line 1's 9.7, random spawns). With a constant LR it peaked near 600k (18.1 on fixed spots) and slid to 15.0 by 1M."
   },
   {
    "folder": "line2b_linear-lr-from-601k",
    "id": "2b",
    "name": "linear LR from Line 2's 601k checkpoint",
-   "tested": "Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?"
+   "tested": "Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?",
+   "found": "Yes: from the same 601k model it rose to 24.7 on fixed spots, +6.7 +/- 3.1 logs over the split point, spot by spot. Best model so far."
   },
   {
    "folder": "line3_jump-linear-lr-scratch",
    "id": "3",
    "name": "jump, linear LR, from scratch",
-   "tested": "Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?"
+   "tested": "Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?",
+   "found": "No: 22.4 on fixed spots at 1M, tied with Line 2b (-2.3 +/- 3.0 spot by spot), with fewer 0-log episodes (6 vs 13). So 2b's result doesn't depend on its patchwork history."
   }
  ],
  "piece_notes": {

@@ -4,7 +4,7 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-16 14:27._
+_Tables last updated 2026-11-16 14:35._
 
 ## Results
 
@@ -24,7 +24,11 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 ### Line 1 · no jump, constant LR
 
-`runs/natural/line1_no-jump/`: Can PPO learn to chop trees in a generated world at all? First natural-world run, the arena's 11 actions.
+`runs/natural/line1_no-jump/`
+
+**Question:** Can PPO learn to chop trees in a generated world at all? First natural-world run, the arena's 11 actions.
+
+**Found:** Yes, but modestly: 9.7 logs per episode at 503k (random spawns), 5.3x random actions.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -34,7 +38,11 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 ### Line 2 · jump, constant LR
 
-`runs/natural/line2_jump-constant-lr/`: Does adding jump and forward_jump help on hilly terrain? Compare with Line 1.
+`runs/natural/line2_jump-constant-lr/`
+
+**Question:** Does adding jump and forward_jump help on hilly terrain? Compare with Line 1.
+
+**Found:** Yes: jump nearly doubled the score at ~500k (18.0 vs Line 1's 9.7, random spawns). With a constant LR it peaked near 600k (18.1 on fixed spots) and slid to 15.0 by 1M.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -45,7 +53,11 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 ### Line 2b · linear LR from Line 2's 601k checkpoint
 
-`runs/natural/line2b_linear-lr-from-601k/`: Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?
+`runs/natural/line2b_linear-lr-from-601k/`
+
+**Question:** Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?
+
+**Found:** Yes: from the same 601k model it rose to 24.7 on fixed spots, +6.7 +/- 3.1 logs over the split point, spot by spot. Best model so far.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -53,7 +65,11 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 ### Line 3 · jump, linear LR, from scratch
 
-`runs/natural/line3_jump-linear-lr-scratch/`: Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?
+`runs/natural/line3_jump-linear-lr-scratch/`
+
+**Question:** Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?
+
+**Found:** No: 22.4 on fixed spots at 1M, tied with Line 2b (-2.3 +/- 3.0 spot by spot), with fewer 0-log episodes (6 vs 13). So 2b's result doesn't depend on its patchwork history.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

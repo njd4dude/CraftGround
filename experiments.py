@@ -512,8 +512,10 @@ def lines_section(fixed: list[dict], random_spawns: list[dict], runs: list[dict]
                          row["status"] if row else "no record (killed or hung)", ", ".join(scores) or "–",
                          notes.get(run_dir.name, ""),
                          f"[open]({row['wandb_url']})" if row and row.get("wandb_url") else "–"])
-        blocks.append(f"### Line {meta['id']} · {meta['name']}\n\n`{line_dir.as_posix()}/`"
-                      + (f": {meta['tested']}" if meta.get("tested") else "") + "\n\n"
+        blocks.append(f"### Line {meta['id']} · {meta['name']}\n\n`{line_dir.as_posix()}/`\n\n"
+                      + (f"**Question:** {meta['tested']}\n\n" if meta.get("tested") else "")
+                      + (f"**Found:** {meta['found']}\n\n" if meta.get("found") else
+                         "**Found:** _not yet (add `found` in `results/lines_natural.json`)_\n\n")
                       + table(["Run", "Start", "Steps", "Instances", "LR", "Minutes", "Status", "Eval (logs)",
                                "Notes", "W&B"], rows))
     return ("## Training lines\n\n"
