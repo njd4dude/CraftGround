@@ -4,7 +4,7 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-16 14:35._
+_Tables last updated 2026-11-16 14:46._
 
 ## Results
 
@@ -16,6 +16,7 @@ Every agent here played the same 100 forest spots (`results/eval_spots_natural.j
 | Line 2b @ 1.0M | linear LR from Line 2's 601k checkpoint | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
 | Line 3 @ 1.0M | jump, linear LR, from scratch | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
 | Line 2 @ 602k | jump, constant LR · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
+| Line 2 @ 1.0M | jump, constant LR · render distance 6 | 100 | **14.98** ± 2.09 | 14 | 11 | 43 | **13.1×** |
 | Line 3 @ 257k | jump, linear LR, from scratch | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
 
 ## Training lines
@@ -42,14 +43,14 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 **Question:** Does adding jump and forward_jump help on hilly terrain? Compare with Line 1.
 
-**Found:** Yes: jump nearly doubled the score at ~500k (18.0 vs Line 1's 9.7, random spawns). With a constant LR it peaked near 600k (18.1 on fixed spots) and slid to 15.0 by 1M.
+**Found:** Yes: jump nearly doubled the score at ~500k (18.0 vs Line 1's 9.7, random spawns). With a constant LR it peaked near 600k (18.1 on fixed spots) and then got worse: 15.0 at 1M, -3.1 +/- 2.6 logs vs its 601k checkpoint spot by spot.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261115_172419` | from an arena model | 0 → ~180k | 4 | constant | – | no record (killed or hung) | – | killed for low memory at ~188k; resumed from the 180k checkpoint | – |
 | `20261115_173930` | continued | 180k → 502k | 4 | constant | 21.6 | completed | 18.0* @ 502k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wbto0vn4) |
 | `20261115_185527` | continued | 502k → ~682k | 4 | constant | – | no record (killed or hung) | **18.1** @ 602k | killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b | – |
-| `20261115_192015` | continued | 682k → 1.0M | 4 | constant | 21.8 | completed | 15.0* @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
+| `20261115_192015` | continued | 682k → 1.0M | 4 | constant | 21.8 | completed | **15.0** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
 
 ### Line 2b · linear LR from Line 2's 601k checkpoint
 
@@ -57,7 +58,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 **Question:** Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?
 
-**Found:** Yes: from the same 601k model it rose to 24.7 on fixed spots, +6.7 +/- 3.1 logs over the split point, spot by spot. Best model so far.
+**Found:** Yes: from the same 601k model it rose to 24.7 on fixed spots, while Line 2 fell to 15.0. Spot by spot: +6.7 +/- 3.1 logs over the split point and +9.8 +/- 3.5 over Line 2 @ 1M. Best model so far.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -82,6 +83,7 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Spots | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s | Per episode |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-16T14:46:08 | `runs/natural/line2_jump-constant-lr/20261115_192015/model.zip` | fixed | 100 | 14.98 | 0 | 43 | 3 | 9.5 | 224 | 5 15 26 6 24 24 7 30 5 5 18 0 12 25 14 16 17 3 16 3 6 29 38 20 21 25 27 43 8 14 11 10 33 15 0 2 13 18 12 13 15 19 0 19 0 1 0 11 12 32 19 12 20 8 13 2 4 0 0 11 22 8 5 9 11 6 0 26 37 29 16 14 10 13 9 1 20 14 21 25 26 32 20 7 7 25 0 15 11 38 14 20 32 20 0 16 38 26 0 28 |
 | 2026-11-16T13:51:42 | `runs/natural/line3_jump-linear-lr-scratch/20261116_123155/model.zip` | fixed | 100 | 22.39 | 0 | 53 | 3 | 11.3 | 181 | 19 35 33 12 13 9 25 23 29 5 12 0 40 51 53 30 25 13 41 17 31 49 46 33 31 46 10 48 23 23 32 3 3 2 26 43 44 20 43 42 4 37 0 0 10 11 3 11 31 17 43 11 19 28 19 51 31 3 18 0 12 28 28 0 17 40 35 3 28 43 5 30 2 27 11 5 23 33 25 39 32 25 37 17 14 18 7 51 6 7 22 17 45 25 28 0 6 6 8 4 |
 | 2026-11-16T11:57:57 | `runs/natural/line3_jump-linear-lr-scratch/20261115_235545/model.zip` | fixed | 100 | 12.35 | 0 | 37 | 3 | 10.2 | 210 | 0 35 30 3 15 17 12 26 5 12 8 0 9 21 22 14 7 0 1 13 1 31 16 0 15 37 22 20 14 9 11 14 0 4 2 2 5 22 7 5 2 8 5 16 0 9 0 8 7 30 35 12 19 5 26 14 15 6 0 8 3 11 15 32 11 1 0 0 24 17 13 9 13 15 2 15 3 22 5 17 2 14 16 28 13 5 3 7 8 34 30 12 29 7 4 25 22 3 5 28 |
 | 2026-11-16T11:47:39 | `runs/natural/line2b_linear-lr-from-601k/20261115_231007/model.zip` | fixed | 100 | 24.74 | 0 | 69 | 3 | 12.5 | 162 | 6 58 42 13 17 0 6 40 22 4 30 0 36 68 36 19 18 0 39 49 49 24 61 49 27 30 69 40 50 13 19 28 1 18 47 39 0 19 34 39 0 36 0 0 36 2 3 4 42 9 31 49 4 63 25 40 36 8 20 0 13 7 10 0 10 46 38 35 0 23 38 24 35 19 6 48 9 10 25 25 53 10 10 21 16 40 8 6 55 34 23 5 49 23 60 0 0 0 23 50 |

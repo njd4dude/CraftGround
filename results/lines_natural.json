@@ -13,14 +13,14 @@
    "id": "2",
    "name": "jump, constant LR",
    "tested": "Does adding jump and forward_jump help on hilly terrain? Compare with Line 1.",
-   "found": "Yes: jump nearly doubled the score at ~500k (18.0 vs Line 1's 9.7, random spawns). With a constant LR it peaked near 600k (18.1 on fixed spots) and slid to 15.0 by 1M."
+   "found": "Yes: jump nearly doubled the score at ~500k (18.0 vs Line 1's 9.7, random spawns). With a constant LR it peaked near 600k (18.1 on fixed spots) and then got worse: 15.0 at 1M, -3.1 +/- 2.6 logs vs its 601k checkpoint spot by spot."
   },
   {
    "folder": "line2b_linear-lr-from-601k",
    "id": "2b",
    "name": "linear LR from Line 2's 601k checkpoint",
    "tested": "Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?",
-   "found": "Yes: from the same 601k model it rose to 24.7 on fixed spots, +6.7 +/- 3.1 logs over the split point, spot by spot. Best model so far."
+   "found": "Yes: from the same 601k model it rose to 24.7 on fixed spots, while Line 2 fell to 15.0. Spot by spot: +6.7 +/- 3.1 logs over the split point and +9.8 +/- 3.5 over Line 2 @ 1M. Best model so far."
   },
   {
    "folder": "line3_jump-linear-lr-scratch",
