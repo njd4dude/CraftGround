@@ -28,6 +28,13 @@
    "name": "jump, linear LR, from scratch",
    "tested": "Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?",
    "found": "No: 22.4 on fixed spots at 1M, tied with Line 2b (-2.3 +/- 3.0 spot by spot), with fewer 0-log episodes (6 vs 13). So 2b's result doesn't depend on its patchwork history."
+  },
+  {
+   "folder": "line3b_finetune-500k",
+   "id": "3b",
+   "name": "fine-tune Line 3 @ 1.0M for 500k more at a small LR",
+   "tested": "Line 3 ended with its learning rate at 0. Does 500k more steps at a small rate (5e-5 -> 0) still improve it, or is it at its limit with this setup?",
+   "found": "No: 21.9 on fixed spots at 1.5M, -0.5 +/- 3.1 logs vs Line 3 @ 1.0M spot by spot (better at 41 spots, worse at 51). The extra 500k steps changed nothing measurable; with this setup the model looks to be at its limit."
   }
  ],
  "piece_notes": {
