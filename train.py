@@ -249,6 +249,8 @@ class SpeedCallback(BaseCallback):
     time/rollout_fps_per_env  rollout_fps / n_envs (one instance's effective speed)
     time/iter_fps             env steps/s over rollout + PPO update (real training throughput);
                               measured start-to-start, so it describes the previous iteration
+    time/update_seconds       seconds from rollout end to the next rollout start: the PPO update
+                              (backprop over all epochs/minibatches); also describes the previous iteration
     """
 
     def __init__(self, n_envs: int, step_timer: StepTimer):
@@ -256,6 +258,7 @@ class SpeedCallback(BaseCallback):
         self.n_envs = n_envs
         self.step_timer = step_timer
         self.rollout_start = None
+        self.rollout_end = None
         self.rollout_start_steps = 0
 
     def _on_rollout_start(self) -> None:
@@ -263,6 +266,8 @@ class SpeedCallback(BaseCallback):
         if self.rollout_start is not None:
             steps = self.num_timesteps - self.rollout_start_steps
             self.logger.record("time/iter_fps", steps / (now - self.rollout_start))
+        if self.rollout_end is not None:
+            self.logger.record("time/update_seconds", now - self.rollout_end)
         self.rollout_start = now
         self.rollout_start_steps = self.num_timesteps
         self.step_timer.seconds = 0.0
@@ -271,7 +276,8 @@ class SpeedCallback(BaseCallback):
         steps = self.num_timesteps - self.rollout_start_steps
         if self.step_timer.seconds > 0:
             self.logger.record("time/env_fps", steps / self.step_timer.seconds)
-        fps = steps / (time.perf_counter() - self.rollout_start)
+        self.rollout_end = time.perf_counter()
+        fps = steps / (self.rollout_end - self.rollout_start)
         self.logger.record("time/rollout_fps", fps)
         self.logger.record("time/rollout_fps_per_env", fps / self.n_envs)
 
