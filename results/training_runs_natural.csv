@@ -1,0 +1,5 @@
+started,timesteps_done,episodes,minutes,last20_avg_logs,best_episode_logs,status,resumed_from,model,wandb_url
+2026-11-15T15:51:06,100352,100,9.8,4.05,30,completed,,runs/chop_ppo_natural_20261115_155106/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/jnm6lysy
+2026-11-15T16:18:32,502814,300,19.0,9.15,44,completed,runs/chop_ppo_natural_20261115_160512/model.zip,runs/chop_ppo_natural_20261115_161832/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/6hob06tk
+2026-11-15T17:39:30,501536,320,21.6,22.4,53,completed,runs/chop_ppo_natural_20261115_172419/checkpoints/ppo_chop_180000_steps.zip,runs/chop_ppo_natural_20261115_173930/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wbto0vn4
+2026-11-15T19:20:15,1003072,320,21.8,14.15,57,completed,runs/chop_ppo_natural_20261115_185527/checkpoints/ppo_chop_681536_steps.zip,runs/chop_ppo_natural_20261115_192015/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp
