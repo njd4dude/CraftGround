@@ -4,7 +4,7 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-16 11:57._
+_Tables last updated 2026-11-16 13:51._
 
 ## Fixed-spot evaluation
 
@@ -14,6 +14,7 @@ Every agent here played the same forest spots (`results/eval_spots_natural.json`
 | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
 | `chop_ppo_natural_20261115_231007` | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
+| `chop_ppo_natural_20261116_123155` | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
 | `chop_ppo_natural_20261115_185527` @ 601,536 steps | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
 | `chop_ppo_natural_20261115_235545` | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
 
@@ -37,10 +38,20 @@ One row per agent, from **random-spawn** evaluations (each run lands in differen
 | `chop_ppo_natural_20261115_192015` | natural | – | 100 | **14.99** | 0 | 41 | **8.3×** |
 | `chop_ppo_natural_20261115_231007` | natural | – | 100 | **25.44** | 0 | 66 | **14.1×** |
 | `chop_ppo_natural_20261115_235545` | natural | – | _not evaluated: `run.bat evaluate.py runs/chop_ppo_natural_20261115_235545/model.zip --env natural`_ |  |  |  |  |
+| `chop_ppo_natural_20261116_123155` | natural | – | _not evaluated: `run.bat evaluate.py runs/chop_ppo_natural_20261116_123155/model.zip --env natural`_ |  |  |  |  |
 
 ## Agents
 
 One section per trained agent, newest first. Hyperparameters changed from the defaults in `train.py` are in bold. Environment changes (reward, episode length, trees...) are flagged on the first run that used them. Add notes with `train.py --notes "..."`, or edit `notes` in the run's `config.json` and rerun `python experiments.py`.
+
+### `chop_ppo_natural_20261116_123155`
+
+- **Trained:** 1,001,676 steps of 743,068 planned, 747 episodes, 67.5 min, 3 parallel envs (completed)
+- **Resumed from:** `runs/chop_ppo_natural_20261115_235545/model.zip`
+- **Result:** 22.39 logs/episode over 100 eval episodes (training last-20 avg 29.9)
+- **PPO settings:** n_steps=2046, batch_size=256, n_epochs=4, **learning_rate=0.000185767**, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** learning_rate: 0.00025 → **0.000185767**
+- **Notes:** continue the from-scratch run (stopped at 256,932) to 1M; LR 1.858e-4 -> 0 so the schedule matches one uninterrupted 1M run; hazards now hurt (it trained immune until 257k)
 
 ### `chop_ppo_natural_20261115_235545`
 
@@ -100,6 +111,7 @@ One row per `train.py` run, newest first.
 
 | Started | Steps | Episodes | Minutes | Last-20 avg logs | Best episode | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-16T12:31:55 | 1001676 | 747 | 67.5 | 29.9 | 79 | completed | `runs/chop_ppo_natural_20261116_123155/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2x96rt9o) |
 | 2026-11-15T23:55:45 | 256932 | 255 | 20.5 | 11.15 | 52 | interrupted | `runs/chop_ppo_natural_20261115_235545/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
 | 2026-11-15T23:10:07 | 1002552 | 399 | 29.7 | 28.9 | 73 | completed | `runs/chop_ppo_natural_20261115_231007/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/f61norjd) |
 | 2026-11-15T19:20:15 | 1003072 | 320 | 21.8 | 14.15 | 57 | completed | `runs/chop_ppo_natural_20261115_192015/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
@@ -113,6 +125,7 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Spots | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s | Per episode |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-16T13:51:42 | `runs/chop_ppo_natural_20261116_123155/model.zip` | fixed | 100 | 22.39 | 0 | 53 | 3 | 11.3 | 181 | 19 35 33 12 13 9 25 23 29 5 12 0 40 51 53 30 25 13 41 17 31 49 46 33 31 46 10 48 23 23 32 3 3 2 26 43 44 20 43 42 4 37 0 0 10 11 3 11 31 17 43 11 19 28 19 51 31 3 18 0 12 28 28 0 17 40 35 3 28 43 5 30 2 27 11 5 23 33 25 39 32 25 37 17 14 18 7 51 6 7 22 17 45 25 28 0 6 6 8 4 |
 | 2026-11-16T11:57:57 | `runs/chop_ppo_natural_20261115_235545/model.zip` | fixed | 100 | 12.35 | 0 | 37 | 3 | 10.2 | 210 | 0 35 30 3 15 17 12 26 5 12 8 0 9 21 22 14 7 0 1 13 1 31 16 0 15 37 22 20 14 9 11 14 0 4 2 2 5 22 7 5 2 8 5 16 0 9 0 8 7 30 35 12 19 5 26 14 15 6 0 8 3 11 15 32 11 1 0 0 24 17 13 9 13 15 2 15 3 22 5 17 2 14 16 28 13 5 3 7 8 34 30 12 29 7 4 25 22 3 5 28 |
 | 2026-11-16T11:47:39 | `runs/chop_ppo_natural_20261115_231007/model.zip` | fixed | 100 | 24.74 | 0 | 69 | 3 | 12.5 | 162 | 6 58 42 13 17 0 6 40 22 4 30 0 36 68 36 19 18 0 39 49 49 24 61 49 27 30 69 40 50 13 19 28 1 18 47 39 0 19 34 39 0 36 0 0 36 2 3 4 42 9 31 49 4 63 25 40 36 8 20 0 13 7 10 0 10 46 38 35 0 23 38 24 35 19 6 48 9 10 25 25 53 10 10 21 16 40 8 6 55 34 23 5 49 23 60 0 0 0 23 50 |
 | 2026-11-16T11:35:02 | `runs/chop_ppo_natural_20261115_185527/checkpoints/ppo_chop_601536_steps.zip` | fixed | 100 | 18.07 | 0 | 59 | 3 | 10.6 | 202 | 6 46 45 6 25 8 26 30 12 16 18 0 15 31 53 45 16 0 13 30 0 42 22 22 32 48 8 42 12 28 15 8 3 20 34 0 13 20 0 0 6 23 0 41 0 0 0 17 0 25 23 19 22 7 33 31 14 0 0 8 13 11 5 16 7 0 0 10 59 5 4 22 12 11 6 18 6 11 23 51 21 21 22 34 14 33 15 7 2 51 9 26 34 25 0 53 32 19 0 20 |
