@@ -4,98 +4,61 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-16 14:11._
+_Tables last updated 2026-11-16 14:18._
 
 ## Results
 
 Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one episode each, same starting direction, current setup), so differences come from the agents, not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose ranges overlap a lot may not really differ. Older random-spawn scores are near the bottom.
 
-| Agent | Description | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
+| Model | Line | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | random actions | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
-| `chop_ppo_natural_20261115_231007` | jump · constant LR to 602k, then linear LR · 1.0M steps | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
-| `chop_ppo_natural_20261116_123155` | jump · linear LR · 1.0M steps | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
-| `chop_ppo_natural_20261115_185527` @ 601,536 steps | jump · constant LR · 602k steps · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
-| `chop_ppo_natural_20261115_235545` | jump · linear LR · 257k steps | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
+| Line 2b @ 1.0M | linear LR from Line 2's 601k checkpoint | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
+| Line 3 @ 1.0M | jump, linear LR, from scratch | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
+| Line 2 @ 602k | jump, constant LR · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
+| Line 3 @ 257k | jump, linear LR, from scratch | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
 
-## Agents
+## Training lines
 
-One section per trained agent, newest first. Hyperparameters changed from the defaults in `train.py` are in bold. Environment changes (reward, episode length, trees...) are flagged on the first run that used them. Add notes with `train.py --notes "..."`, or edit `notes` in the run's `config.json` and rerun `python experiments.py`.
+Each line is one training history; its pieces are the run folders (`runs/chop_ppo_natural_…`) it was split into by crashes, memory kills or deliberate stops, in order. **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`. Start a new line with `run.bat train.py --env natural`.
 
-### `chop_ppo_natural_20261116_123155`
+### Line 1 · no jump, constant LR
 
-- **Trained:** 1,001,676 steps of 743,068 planned, 747 episodes, 67.5 min, 3 parallel envs (completed)
-- **Resumed from:** `runs/chop_ppo_natural_20261115_235545/model.zip`
-- **Result:** 22.39 logs/episode over 100 eval episodes (training last-20 avg 29.9)
-- **PPO settings:** n_steps=2046, batch_size=256, n_epochs=4, **learning_rate=0.000185767**, gamma=0.99, ent_coef=0.01, clip_range=0.2
-- **What's special:** learning_rate: 0.00025 → **0.000185767**
-- **Notes:** continue the from-scratch run (stopped at 256,932) to 1M; LR 1.858e-4 -> 0 so the schedule matches one uninterrupted 1M run; hazards now hurt (it trained immune until 257k)
+Can PPO learn to chop trees in a generated world at all? First natural-world run, the arena's 11 actions.
 
-### `chop_ppo_natural_20261115_235545`
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261115_155106` | from scratch | 0 → 100k | 4 | constant | 9.8 | completed | – |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/jnm6lysy) |
+| `20261115_160512` | continued | 100k → ~200k | 6 | constant | – | no record (killed or hung) | – | 6 instances; hung while closing them (stopped from W&B), so no CSV row | – |
+| `20261115_161832` | continued | 200k → 503k | 4 | constant | 19.0 | completed | 9.7* @ 503k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/6hob06tk) |
 
-- **Trained:** 256,932 steps of 1,000,000 planned, 255 episodes, 20.5 min, 3 parallel envs (interrupted)
-- **Result:** 12.35 logs/episode over 100 eval episodes (training last-20 avg 11.15)
-- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
-- **What's special:** nothing, default settings and same environment as the previous run
-- **Notes:** from scratch to 1M with jump, linear LR decay, 3 instances, render distance 4, 2G heap
+### Line 2 · jump, constant LR
 
-### `chop_ppo_natural_20261115_231007`
+Does adding jump and forward_jump help on hilly terrain? Compare with Line 1.
 
-- **Trained:** 1,002,552 steps of 400,000 planned, 399 episodes, 29.7 min, 3 parallel envs (completed)
-- **Resumed from:** `runs/chop_ppo_natural_20261115_185527/checkpoints/ppo_chop_601536_steps.zip`
-- **Result:** 25.09 logs/episode over 200 eval episodes (training last-20 avg 28.9)
-- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
-- **What's special:** nothing, default settings and same environment as the previous run
-- **Notes:** 600k -> 1M with linear LR decay (2.5e-4 -> 0), 3 instances, render distance 4, 2G heap; compare with the constant-LR 1M model (15.0)
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261115_172419` | from scratch | 0 → ~180k | 4 | constant | – | no record (killed or hung) | – | killed for low memory at ~188k; resumed from the 180k checkpoint | – |
+| `20261115_173930` | continued | 180k → 502k | 4 | constant | 21.6 | completed | 18.0* @ 502k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wbto0vn4) |
+| `20261115_185527` | continued | 502k → ~682k | 4 | constant | – | no record (killed or hung) | **18.1** @ 602k | killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b | – |
+| `20261115_192015` | continued | 682k → 1.0M | 4 | constant | 21.8 | completed | 15.0* @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
 
-### `chop_ppo_natural_20261115_192015`
+### Line 2b · linear LR from Line 2's 601k checkpoint
 
-- **Trained:** 1,003,072 steps of 320,000 planned, 320 episodes, 21.8 min, 4 parallel envs (completed)
-- **Resumed from:** `runs/chop_ppo_natural_20261115_185527/checkpoints/ppo_chop_681536_steps.zip`
-- **Result:** 14.99 logs/episode over 100 eval episodes (training last-20 avg 14.15)
-- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
-- **What's special:** nothing, default settings and same environment as the previous run
-- **Notes:** resume jump model from 681k checkpoint (killed for low memory) to 1M, with memory logging
+Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?
 
-### `chop_ppo_natural_20261115_173930`
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261115_231007` | branch from Line 2 | 602k → 1.0M | 3 | linear | 29.7 | completed | **24.7** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/f61norjd) |
 
-- **Trained:** 501,536 steps of 320,000 planned, 320 episodes, 21.6 min, 4 parallel envs (completed)
-- **Resumed from:** `runs/chop_ppo_natural_20261115_172419/checkpoints/ppo_chop_180000_steps.zip`
-- **Result:** 17.96 logs/episode over 100 eval episodes (training last-20 avg 22.4)
-- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
-- **What's special:** env actions: ['noop', 'forward', 'back', 'strafe_left', 'strafe_right', 'turn_left', 'turn_right', 'look_up', 'look_down', 'attack', 'forward_attack'] → **['noop', 'forward', 'back', 'strafe_left', 'strafe_right', 'turn_left', 'turn_right', 'look_up', 'look_down', 'attack', 'forward_attack', 'jump', 'forward_jump']** (changed since previous run)
-- **Notes:** resume jump run chop_ppo_natural_20261115_172419 from 180k checkpoint (killed for low memory) to 500k
+### Line 3 · jump, linear LR, from scratch
 
-### `chop_ppo_natural_20261115_161832`
+Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?
 
-- **Trained:** 502,814 steps of 300,000 planned, 300 episodes, 19.0 min, 4 parallel envs (completed)
-- **Resumed from:** `runs/chop_ppo_natural_20261115_160512/model.zip`
-- **Result:** 9.68 logs/episode over 100 eval episodes (training last-20 avg 9.15)
-- **PPO settings:** n_steps=2046, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
-- **What's special:** nothing, default settings and same environment as the previous run
-- **Notes:** continue chop_ppo_natural_20261115_160512 (stopped at ~200k, 6 instances) to 500k on 4 instances
-
-### `chop_ppo_natural_20261115_155106`
-
-- **Trained:** 100,352 steps of 100,000 planned, 100 episodes, 9.8 min, 4 parallel envs (completed)
-- **Result:** not evaluated yet (training last-20 avg 4.05)
-- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
-- **What's special:** first recorded run, default settings (the baseline)
-- **Notes:** first natural-world run from scratch, 100k steps
-
-## Training runs
-
-One row per `train.py` run, newest first.
-
-| Started | Steps | Episodes | Minutes | Last-20 avg logs | Best episode | Status | Saved model | W&B |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-16T12:31:55 | 1001676 | 747 | 67.5 | 29.9 | 79 | completed | `runs/chop_ppo_natural_20261116_123155/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2x96rt9o) |
-| 2026-11-15T23:55:45 | 256932 | 255 | 20.5 | 11.15 | 52 | interrupted | `runs/chop_ppo_natural_20261115_235545/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
-| 2026-11-15T23:10:07 | 1002552 | 399 | 29.7 | 28.9 | 73 | completed | `runs/chop_ppo_natural_20261115_231007/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/f61norjd) |
-| 2026-11-15T19:20:15 | 1003072 | 320 | 21.8 | 14.15 | 57 | completed | `runs/chop_ppo_natural_20261115_192015/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
-| 2026-11-15T17:39:30 | 501536 | 320 | 21.6 | 22.4 | 53 | completed | `runs/chop_ppo_natural_20261115_173930/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wbto0vn4) |
-| 2026-11-15T16:18:32 | 502814 | 300 | 19.0 | 9.15 | 44 | completed | `runs/chop_ppo_natural_20261115_161832/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/6hob06tk) |
-| 2026-11-15T15:51:06 | 100352 | 100 | 9.8 | 4.05 | 30 | completed | `runs/chop_ppo_natural_20261115_155106/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/jnm6lysy) |
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261115_235545` | from scratch | 0 → 257k | 3 | linear | 20.5 | interrupted | **12.3** @ 257k | stopped on purpose (Ctrl+C) to free the machine for fixed spots | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
+| `20261116_123155` | continued | 257k → 1.0M | 3 | linear | 67.5 | completed | **22.4** @ 1.0M | resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2x96rt9o) |
 
 ## Evaluation runs
 
@@ -121,16 +84,16 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an older setup (render distance 6, no damage). Use the Results table above to compare agents. **Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md).
 
-| Agent | Description | Arena mean | Episodes | Mean logs | Min | Max | vs random |
+| Model | Line | Arena mean | Episodes | Mean logs | Min | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | random actions | 3.00 | 100 | 1.81 | 0 | 24 | baseline |
 | `chop_ppo_20261113_131702` | trained in the arena | 31.67 | 100 | 5.01 | 0 | 30 | 2.8× |
 | `chop_ppo_20261113_135620` | trained in the arena | 26.20 | 100 | 5.10 | 0 | 18 | 2.8× |
-| `chop_ppo_natural_20261115_161832` | no jump · constant LR · 503k steps · render distance 6 | – | 100 | 9.68 | 0 | 43 | 5.3× |
-| `chop_ppo_natural_20261115_173930` | jump · constant LR · 502k steps · render distance 6 | – | 100 | 17.96 | 0 | 63 | 9.9× |
-| `chop_ppo_natural_20261115_185527` @ 601,536 steps | jump · constant LR · 602k steps · render distance 6 | – | 100 | 21.67 | 0 | 66 | 12.0× |
-| `chop_ppo_natural_20261115_192015` | jump · constant LR · 1.0M steps · render distance 6 | – | 100 | 14.99 | 0 | 41 | 8.3× |
-| `chop_ppo_natural_20261115_231007` | jump · constant LR to 602k, then linear LR · 1.0M steps | – | 100 | 25.44 | 0 | 66 | 14.1× |
+| Line 1 @ 503k | no jump, constant LR · render distance 6 | – | 100 | 9.68 | 0 | 43 | 5.3× |
+| Line 2 @ 502k | jump, constant LR · render distance 6 | – | 100 | 17.96 | 0 | 63 | 9.9× |
+| Line 2 @ 602k | jump, constant LR · render distance 6 | – | 100 | 21.67 | 0 | 66 | 12.0× |
+| Line 2 @ 1.0M | jump, constant LR · render distance 6 | – | 100 | 14.99 | 0 | 41 | 8.3× |
+| Line 2b @ 1.0M | linear LR from Line 2's 601k checkpoint | – | 100 | 25.44 | 0 | 66 | 14.1× |
 
 ## Environment setup
 

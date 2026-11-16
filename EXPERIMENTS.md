@@ -3,7 +3,7 @@
 Goal: train an agent to chop as many oak logs as possible in one episode.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-16 14:11._
+_Tables last updated 2026-11-16 14:18._
 
 ## Summary
 

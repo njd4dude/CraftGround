@@ -1,0 +1,36 @@
+{
+ "about": "Training lines for EXPERIMENTS_NATURAL.md (experiments.py). A line is one training history: its first run plus every run resumed from it. A run listed here as a root starts its own line (a branch) even though it was resumed from another run. Runs not covered get an automatic line. Edit names, purposes and piece notes freely, then run experiments.py.",
+ "lines": [
+  {
+   "id": "1",
+   "root": "chop_ppo_natural_20261115_155106",
+   "name": "no jump, constant LR",
+   "tested": "Can PPO learn to chop trees in a generated world at all? First natural-world run, the arena's 11 actions."
+  },
+  {
+   "id": "2",
+   "root": "chop_ppo_natural_20261115_172419",
+   "name": "jump, constant LR",
+   "tested": "Does adding jump and forward_jump help on hilly terrain? Compare with Line 1."
+  },
+  {
+   "id": "2b",
+   "root": "chop_ppo_natural_20261115_231007",
+   "name": "linear LR from Line 2's 601k checkpoint",
+   "tested": "Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?"
+  },
+  {
+   "id": "3",
+   "root": "chop_ppo_natural_20261115_235545",
+   "name": "jump, linear LR, from scratch",
+   "tested": "Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?"
+  }
+ ],
+ "piece_notes": {
+  "chop_ppo_natural_20261115_160512": "6 instances; hung while closing them (stopped from W&B), so no CSV row",
+  "chop_ppo_natural_20261115_172419": "killed for low memory at ~188k; resumed from the 180k checkpoint",
+  "chop_ppo_natural_20261115_185527": "killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b",
+  "chop_ppo_natural_20261115_235545": "stopped on purpose (Ctrl+C) to free the machine for fixed spots",
+  "chop_ppo_natural_20261116_123155": "resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on"
+ }
+}

@@ -372,6 +372,172 @@ def _describe(agent: str, runs: list[dict]) -> str:
     return " · ".join(parts)
 
 
+# --- Training lines (natural world) -----------------------------------------------
+# A line is one training history: a first run plus every run resumed from it (crashes, memory
+# kills and deliberate stops split one history into several run folders). Names, purposes and
+# branches come from results/lines_natural.json; runs it doesn't cover get an automatic line.
+
+LINES_FILE = RESULTS_DIR / "lines_natural.json"
+RUNS_DIR = Path("runs")
+
+
+def _load_lines() -> dict:
+    try:
+        return json.loads(LINES_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"lines": [], "piece_notes": {}}
+
+
+def _run_config(run: str) -> dict | None:
+    try:
+        return json.loads((RUNS_DIR / run / "config.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _parent(run: str) -> tuple[str | None, int | None]:
+    """The run this one was resumed from, and the checkpoint step if it resumed from a checkpoint."""
+    cfg = _run_config(run) or {}
+    src = normalize_agent(cfg.get("resumed_from") or "")
+    if not src:
+        return None, None
+    path = Path(src)
+    steps = None
+    if path.parent.name == "checkpoints":
+        s = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
+        steps = int(s) if s.isdigit() else None
+    parent = _run_dir(src).name
+    if (_run_config(parent) or {}).get("env", {}).get("world") != "natural":
+        return None, None  # resumed from an arena model: a natural-world line starts here
+    return parent, steps
+
+
+def _run_end(run: str, runs: list[dict]) -> tuple[int | None, bool]:
+    """Steps at the end of a run: from the training CSV (exact), else its last checkpoint (approximate)."""
+    row = next((r for r in runs if normalize_agent(r["model"]) == f"runs/{run}/model.zip"), None)
+    if row and str(row["timesteps_done"]).isdigit():
+        return int(row["timesteps_done"]), True
+    ckpts = [int(p.stem.removeprefix("ppo_chop_").removesuffix("_steps"))
+             for p in (RUNS_DIR / run / "checkpoints").glob("ppo_chop_*_steps.zip")
+             if p.stem.removeprefix("ppo_chop_").removesuffix("_steps").isdigit()]
+    return (max(ckpts), False) if ckpts else (None, False)
+
+
+def _natural_runs() -> list[str]:
+    return sorted(p.name for p in RUNS_DIR.glob("chop_ppo_natural_*") if (p / "config.json").exists()
+                  and (_run_config(p.name) or {}).get("env", {}).get("world") == "natural")
+
+
+def _line_index() -> tuple[list[dict], dict[str, dict]]:
+    """All lines (file order, then automatic ones) and the line of every natural-world run."""
+    data = _load_lines()
+    lines = [dict(l) for l in data.get("lines", [])]
+    by_root = {l["root"]: l for l in lines}
+    of: dict[str, dict] = {}
+
+    def line_for(run: str) -> dict:
+        if run in of:
+            return of[run]
+        if run in by_root:
+            line = by_root[run]
+        else:
+            parent, _ = _parent(run)
+            if parent:
+                line = line_for(parent)
+            else:  # an unlisted first run: automatic line
+                line = {"id": f"auto-{run.removeprefix('chop_ppo_natural_')}", "root": run,
+                        "name": "unnamed line (add it to results/lines_natural.json)", "tested": ""}
+                lines.append(line)
+                by_root[run] = line
+        of[run] = line
+        return line
+
+    for run in _natural_runs():
+        line_for(run)
+    return lines, of
+
+
+def _model_label(agent: str, runs: list[dict]) -> str:
+    """"Line 2b @ 1.0M" for a natural-world model, else the folder label."""
+    if agent == "random":
+        return "Random actions (baseline)"
+    run = _run_dir(agent).name
+    _, of = _line_index()
+    if run not in of:
+        return _agent_label(agent)
+    steps = _steps_of(agent, runs)
+    return f"Line {of[run]['id']} @ {_short_steps(steps)}" if steps else f"Line {of[run]['id']}"
+
+
+def _line_note(agent: str) -> str:
+    """The line's name, plus the render distance when it isn't today's."""
+    if agent == "random":
+        return "random actions"
+    run = _run_dir(agent).name
+    _, of = _line_index()
+    if run not in of:
+        return _describe(agent, [])
+    note = of[run]["name"]
+    rd = ((_run_config(run) or {}).get("env", {})).get("render_distance", 6)
+    return note + (f" · render distance {rd}" if rd != natural_env.RENDER_DISTANCE else "")
+
+
+def lines_section(fixed: list[dict], random_spawns: list[dict], runs: list[dict]) -> str:
+    """One block per training line: what it tested, then its pieces in order."""
+    lines, of = _line_index()
+    if not of:
+        return ""
+    notes = _load_lines().get("piece_notes", {})
+    fixed_by, random_by = _episodes_by_agent(fixed), _episodes_by_agent(random_spawns)
+    evaluated = sorted(set(fixed_by) | set(random_by))
+    blocks = []
+    for line in lines:
+        pieces = [r for r in _natural_runs() if of.get(r) is line]
+        if not pieces:
+            continue
+        rows = []
+        for run in pieces:
+            cfg = _run_config(run) or {}
+            parent, ckpt = _parent(run)
+            if run == line["root"] and parent:
+                start = ckpt if ckpt is not None else _run_end(parent, runs)[0]
+                origin = f"branch from {_model_label(f'runs/{parent}/model.zip', runs).split(' @')[0]}"
+            elif parent:
+                start, origin = (ckpt if ckpt is not None else _run_end(parent, runs)[0]), "continued"
+            else:
+                start, origin = 0, "from scratch"
+            end, exact = _run_end(run, runs)
+            span = (f"{_short_steps(start) if start else '0'} → "
+                    f"{'~' if not exact else ''}{_short_steps(end) if end else '?'}")
+            row = next((r for r in runs if normalize_agent(r["model"]) == f"runs/{run}/model.zip"), None)
+            status = row["status"] if row else "no record (killed or hung)"
+            scores = []
+            for agent in evaluated:
+                if _run_dir(agent).name != run:
+                    continue
+                label = _model_label(agent, runs).split(" @ ")[-1]
+                if agent in fixed_by:
+                    scores.append(f"**{sum(fixed_by[agent]) / len(fixed_by[agent]):.1f}** @ {label}")
+                elif agent in random_by:
+                    scores.append(f"{sum(random_by[agent]) / len(random_by[agent]):.1f}* @ {label}")
+            minutes = row["minutes"] if row and row.get("minutes") else "–"
+            wandb = f"[open]({row['wandb_url']})" if row and row.get("wandb_url") else "–"
+            rows.append([f"`{run.removeprefix('chop_ppo_natural_')}`", origin, span,
+                         cfg.get("n_envs", "–"), cfg.get("lr_schedule", "constant"), minutes,
+                         status, ", ".join(scores) or "–", notes.get(run, ""), wandb])
+        blocks.append(f"### Line {line['id']} · {line['name']}\n\n"
+                      + (f"{line['tested']}\n\n" if line.get("tested") else "")
+                      + table(["Run", "Start", "Steps", "Instances", "LR", "Minutes", "Status", "Eval (logs)",
+                               "Notes", "W&B"], rows))
+    return ("## Training lines\n\n"
+            "Each line is one training history; its pieces are the run folders (`runs/chop_ppo_natural_…`) "
+            "it was split into by crashes, memory kills or deliberate stops, in order. **Steps** with ~ come "
+            "from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per "
+            "episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: "
+            "`results/lines_natural.json`. Start a new line with `run.bat train.py --env natural`.\n\n"
+            + "\n\n".join(blocks))
+
+
 def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], runs: list[dict]) -> str:
     """Random-spawn evaluations: all natural-world evaluations before fixed spots (2026-11-16)."""
     by_agent, arena = _episodes_by_agent(evals), _episodes_by_agent(arena_evals)
@@ -382,19 +548,19 @@ def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], run
     rows = []
     for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", kv[0])):  # baseline first
         is_random = agent == "random"
-        name = "Random actions (baseline)" if is_random else _agent_label(agent)
+        name = _model_label(agent, runs)
         arena_mean = f"{sum(arena[agent]) / len(arena[agent]):.2f}" if agent in arena else "–"
         mean = sum(eps) / len(eps)
         vs = ("baseline" if is_random
               else f"{mean / random_mean:.1f}×" if random_mean else "no baseline yet")
-        rows.append([name, _describe(agent, runs), arena_mean, len(eps), f"{mean:.2f}", min(eps), max(eps), vs])
+        rows.append([name, _line_note(agent), arena_mean, len(eps), f"{mean:.2f}", min(eps), max(eps), vs])
     return (
         "## Earlier random-spawn evaluations\n\n"
         "Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random "
         "forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an "
         "older setup (render distance 6, no damage). Use the Results table above to compare agents. "
         "**Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md).\n\n"
-        + table(["Agent", "Description", "Arena mean", "Episodes", "Mean logs", "Min", "Max", "vs random"],
+        + table(["Model", "Line", "Arena mean", "Episodes", "Mean logs", "Min", "Max", "vs random"],
                 rows)
     )
 
@@ -433,8 +599,7 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         median = sorted(eps)[n // 2]
         vs = ("baseline" if agent == "random"
               else f"**{mean / random_mean:.1f}×**" if random_mean else "no baseline yet")
-        name = "Random actions (baseline)" if agent == "random" else _agent_label(agent)
-        rows.append([name, _describe(agent, runs), n, f"**{mean:.2f}** ± {ci:.2f}", median,
+        rows.append([_model_label(agent, runs), _line_note(agent), n, f"**{mean:.2f}** ± {ci:.2f}", median,
                      sum(x == 0 for x in eps), max(eps), vs])
     return (
         "## Results\n\n"
@@ -442,7 +607,7 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         "episode each, same starting direction, current setup), so differences come from the agents, "
         "not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose "
         "ranges overlap a lot may not really differ. Older random-spawn scores are near the bottom.\n\n"
-        + table(["Agent", "Description", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
+        + table(["Model", "Line", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
                  "vs random"], rows)
     )
 
@@ -503,8 +668,7 @@ def update_report(env: str = "arena") -> None:
             stamp,
             fixed_spots_section(fixed, runs),
             held_out_section(held_out, fixed),
-            agents_section(training_world, runs),
-            training_section(runs, "run.bat train.py --env natural"),
+            lines_section(fixed, random_spawns, runs),  # replaces the per-run Agents and Training runs tables
             evals_section(evals),
             natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),
             natural_setup_section(),
