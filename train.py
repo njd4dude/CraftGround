@@ -8,10 +8,14 @@
     python train.py --n-envs 4            # run 4 Minecraft instances instead of 6
     python train.py --env natural --n-envs 4                 # train in a forest in a normal world
     python train.py --env natural --resume runs/chop_ppo_20261113_135620/model.zip   # fine-tune an arena model there
+    python train.py --env natural --no-jump                  # natural world with the arena's 11 actions (no jump)
 
 --env picks the world: arena (tree_env.py, walled superflat arena, the default)
 or natural (natural_env.py, a fresh forest spot every episode). Both have the
-same images and actions, so --resume works across them. Natural runs get their
+same images, but the natural world adds jump and forward_jump (13 actions, see
+tree_env.JUMP_ACTIONS) because of its hills and ledges. 11-action models still --resume
+there (jump is turned off automatically to match); --no-jump forces the 11 actions.
+Without jump the two worlds share the same actions, so --resume works across them. Natural runs get their
 own folders (chop_ppo_natural_...), CSV (results/training_runs_natural.csv) and
 report (EXPERIMENTS_NATURAL.md). The natural world is slower (about a third of
 the arena's steps/s in evaluation) and needs more memory per instance, so
@@ -20,7 +24,10 @@ the arena's steps/s in evaluation) and needs more memory per instance, so
 Training runs --n-envs Minecraft instances side by side (default 6). Each needs
 ~2.4 GB of RAM (~2.8 GB in the natural world) and a lot of CPU. Measured raw env
 speed on this machine (8-core 7700X, BENCHMARK.md): arena 1 -> 487, 2 -> 713,
-4 -> 977, 6 -> 1046 steps/s; natural 1 -> 38, 2 -> 101, 4 -> 165, 6 -> 263.
+4 -> 977, 6 -> 1046 steps/s; natural 4 -> 235 steps/s with the current 0.75 s
+forest-check timeout (1 -> 48, 2 -> 120, 6 -> 263 were measured with the old 3 s
+timeout, so they understate it). Training runs ~20% below these raw speeds
+(model inference each step, PPO updates): 4 natural instances trained at ~173.
 
 Each instance runs from its own copy of CraftGround's game folder
 (~/craftground_instances/mc121_port<port>, see instances.py), because instances
@@ -91,23 +98,25 @@ PPO_SETTINGS = dict(
 )
 
 
-def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False):
-    """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker."""
+def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False, jump: bool = False):
+    """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker.
+    jump: natural world only, use the 13 actions with jump instead of the arena's 11."""
     def _make():
         make_env = ENVS[env_name].make_env
         env_path = None if shared_folder else env_path_for(port, verbose=True)
-        return Monitor(make_env(port=port, env_path=env_path), filename=monitor_file,
+        kwargs = {"jump": jump} if env_name == "natural" else {}
+        return Monitor(make_env(port=port, env_path=env_path, **kwargs), filename=monitor_file,
                        info_keywords=("logs_chopped",))
     return _make
 
 
-def env_settings(env_name: str) -> dict:
+def env_settings(env_name: str, jump: bool = False) -> dict:
     """The environment's settings, saved in config.json (EXPERIMENTS.md flags changes between runs)."""
     common = {
         "world": env_name,
         "episode_steps": tree_env.EPISODE_STEPS,
         "image": f"{tree_env.IMAGE_WIDTH}x{tree_env.IMAGE_HEIGHT}",
-        "actions": tree_env.ACTION_NAMES,
+        "actions": tree_env.ACTION_NAMES_JUMP if jump else tree_env.ACTION_NAMES,
     }
     if env_name == "natural":
         return {
@@ -242,6 +251,9 @@ def main():
                         help="run folder prefix (default chop_ppo, or chop_ppo_natural with --env natural)")
     parser.add_argument("--no-wandb", action="store_true", help="don't log to Weights & Biases")
     parser.add_argument("--notes", type=str, default="", help="what's special about this run")
+    parser.add_argument("--no-jump", action="store_true",
+                        help="natural world: use the arena's 11 actions instead of 13 with jump "
+                             "(automatic when --resume is an 11-action model)")
     for key, default in PPO_SETTINGS.items():
         parser.add_argument("--" + key.replace("_", "-"), type=type(default), default=None,
                             help=f"PPO {key} (default {default})")
@@ -249,10 +261,19 @@ def main():
     # Only the flags given on the command line, so a resumed model keeps its own saved settings.
     overrides = {k: getattr(args, k) for k in PPO_SETTINGS if getattr(args, k) is not None}
     ppo_settings = {**PPO_SETTINGS, **overrides}
-    if args.resume and "n_steps" not in overrides:
+    saved = load_from_zip_file(args.resume, load_data=True, device="cpu")[0] if args.resume else None
+    if saved and "n_steps" not in overrides:
         # Keep the resumed model's own rollout size (stored per env, so multiply back up).
-        saved, _, _ = load_from_zip_file(args.resume, load_data=True, device="cpu")
         ppo_settings["n_steps"] = saved["n_steps"] * saved.get("n_envs", 1)
+    # Natural world: 13 actions with jump unless --no-jump; a resumed model keeps the set it was trained with.
+    jump = args.env == "natural" and not args.no_jump
+    if saved and args.env == "natural":
+        jump = saved["action_space"].n == len(tree_env.ACTION_NAMES_JUMP)
+        if args.no_jump and jump:
+            parser.error("--no-jump: the --resume model was trained with jump (13 actions)")
+    elif saved and saved["action_space"].n != len(tree_env.ACTION_NAMES):
+        parser.error(f"--resume model has {saved['action_space'].n} actions; the {args.env} world has "
+                     f"{len(tree_env.ACTION_NAMES)} (jump models only run in the natural world)")
     # SB3's n_steps is per env; ours is the total, so split it across the instances.
     steps_per_env = max(ppo_settings["n_steps"] // args.n_envs, 1)
     sb3_settings = {**ppo_settings, "n_steps": steps_per_env}
@@ -277,7 +298,7 @@ def main():
         "ppo": ppo_settings,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
-        "env": env_settings(args.env),
+        "env": env_settings(args.env, jump),
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
@@ -295,7 +316,7 @@ def main():
             "resumed_from": args.resume,
             "n_envs": args.n_envs,
             **ppo_settings,
-            **{f"env/{k}": v for k, v in env_settings(args.env).items()},
+            **{f"env/{k}": v for k, v in env_settings(args.env, jump).items()},
         },
     )
     # Plot everything against training steps.
@@ -304,12 +325,12 @@ def main():
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
 
     clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
-    factories = [env_factory(args.env, args.port + 10 * i, str(run_dir / f"monitor_{i}"), args.shared_folder)
+    factories = [env_factory(args.env, args.port + 10 * i, str(run_dir / f"monitor_{i}"), args.shared_folder, jump)
                  for i in range(args.n_envs)]
     step_timer = StepTimer(SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories))
     env = step_timer
     print(f"{args.env} world, {args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
-          f"({steps_per_env * args.n_envs} total)")
+          f"({steps_per_env * args.n_envs} total), {env.action_space.n} actions{' (with jump)' if jump else ''}")
 
     if args.resume:
         model = PPO.load(args.resume, env=env, device=device, **{**overrides, "n_steps": steps_per_env})

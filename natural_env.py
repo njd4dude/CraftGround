@@ -1,6 +1,8 @@
 """Tree chopping in a natural Minecraft world.
 
-Same task as tree_env.py: same image, actions, diamond axe and +1 reward per log.
+Same task as tree_env.py: same image, diamond axe and +1 reward per log. Actions are
+the arena's 11 plus jump and forward_jump (13), since the terrain has hills and ledges;
+make_env(jump=False) gives the arena's 11 for models trained before jump was added.
 The difference is the world. Instead of a walled superflat arena with 8 placed
 oaks, the agent plays in a normal generated world (fixed seed) and spawns in a
 forest.
@@ -33,7 +35,8 @@ import craftground
 from craftground import InitialEnvironmentConfig
 from craftground.initial_environment_config import Difficulty, GameMode, WorldType
 
-from tree_env import ACTION_NAMES, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH, to_craftground_action
+from tree_env import (ACTION_NAMES, ACTION_NAMES_JUMP, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH,
+                      to_craftground_action)
 
 # --- Experiment settings -----------------------------------------------------
 
@@ -90,7 +93,12 @@ def _ground_fraction(image: np.ndarray) -> float:
 class NaturalChopTreesEnv(gym.Wrapper):
     """Gymnasium env: image in, discrete action out, +1 reward per log chopped."""
 
-    def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None):
+    def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
+                 jump: bool = True):
+        """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
+        Hills and 1-block ledges are common here; without jump the agent can only walk around them.
+        Use jump=False to run models trained before jump was added (2026-11-15)."""
+        self.action_names = ACTION_NAMES_JUMP if jump else ACTION_NAMES
         config = InitialEnvironmentConfig(
             image_width=IMAGE_WIDTH,
             image_height=IMAGE_HEIGHT,
@@ -105,7 +113,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         )
         super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path))
 
-        self.action_space = gym.spaces.Discrete(len(ACTION_NAMES))
+        self.action_space = gym.spaces.Discrete(len(self.action_names))
         self.observation_space = gym.spaces.Box(
             low=0, high=255, shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.uint8
         )
@@ -244,6 +252,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
         return self._image(obs), reward, terminated, truncated, info
 
 
-def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None) -> NaturalChopTreesEnv:
-    """env_path: game folder to run from (instances.env_path_for(port)); None = CraftGround's shared one."""
-    return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path)
+def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
+             jump: bool = True) -> NaturalChopTreesEnv:
+    """env_path: game folder to run from (instances.env_path_for(port)); None = CraftGround's shared one.
+    jump: 13 actions with jump (default) or the arena's 11 (for older models)."""
+    return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump)

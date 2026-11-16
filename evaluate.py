@@ -62,7 +62,7 @@ import natural_env
 import tree_env
 from experiments import EVAL_CSV, NATURAL_EVAL_CSV, append_row, normalize_agent, update_report
 from instances import clear_stale_loom_locks, env_path_for
-from tree_env import ACTION_NAMES, EPISODE_STEPS
+from tree_env import ACTION_NAMES, EPISODE_STEPS, action_names
 
 ENVS = {"arena": tree_env, "natural": natural_env}
 # Natural-world scores aren't comparable with the arena, so they get their own CSV
@@ -95,13 +95,16 @@ def save_results(agent: str, results: list[int], timestamp: str | None = None, e
     update_report(env)
 
 
+NAMES = ACTION_NAMES  # action labels for videos; main() switches to the model's action set
+
+
 def video_frame(image: np.ndarray, step: int, logs: int, action: int) -> np.ndarray:
     """Enlarge the agent's view and write step / logs / action across the top."""
     h, w = image.shape[:2]
     frame = Image.fromarray(image).resize((w * VIDEO_SCALE, h * VIDEO_SCALE), Image.NEAREST)
     draw = ImageDraw.Draw(frame)
     draw.rectangle([0, 0, frame.width, 16], fill=(0, 0, 0))
-    draw.text((4, 2), f"step {step:4d}   logs {logs:2d}{f'/{MAX_LOGS}' if MAX_LOGS else ''}   {ACTION_NAMES[action]}", fill=(255, 255, 255))
+    draw.text((4, 2), f"step {step:4d}   logs {logs:2d}{f'/{MAX_LOGS}' if MAX_LOGS else ''}   {NAMES[action]}", fill=(255, 255, 255))
     return np.asarray(frame)
 
 
@@ -174,7 +177,16 @@ def main():
     if not args.random and not args.model:
         parser.error("give a model path, or --random for the baseline")
 
-    global MAX_LOGS
+    global MAX_LOGS, NAMES
+    # Load the model first: its number of actions says which action set the env must offer
+    # (natural world: 13 with jump, or the arena's 11 for models trained before jump was added).
+    # The random baseline keeps the 11 actions so it stays comparable with earlier runs.
+    model = None if args.random else PPO.load(args.model, device="cpu")
+    n_actions = len(ACTION_NAMES) if model is None else model.action_space.n
+    NAMES = action_names(n_actions)
+    if args.env != "natural" and n_actions != len(ACTION_NAMES):
+        parser.error(f"this model has {n_actions} actions (with jump); only --env natural offers those")
+    env_kwargs = {"jump": n_actions != len(ACTION_NAMES)} if args.env == "natural" else {}
     make_env = ENVS[args.env].make_env
     MAX_LOGS = getattr(ENVS[args.env], "MAX_LOGS", None)
     n_envs = max(1, min(args.n_envs, args.episodes))
@@ -183,10 +195,9 @@ def main():
     clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
     shared = args.shared_folder
     factories = [(lambda port=args.port + 10 * i: make_env(
-                     port=port, env_path=None if shared else env_path_for(port, verbose=True)))
+                     port=port, env_path=None if shared else env_path_for(port, verbose=True), **env_kwargs))
                  for i in range(n_envs)]
     env = SubprocVecEnv(factories) if n_envs > 1 else DummyVecEnv(factories)
-    model = None if args.random else PPO.load(args.model, device="cpu")
     label = "random" if args.random else normalize_agent(args.model)
     video_dir = (Path("runs/random") if args.random else Path(args.model).parent) / "videos" / args.env
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
