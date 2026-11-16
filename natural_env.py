@@ -24,9 +24,11 @@ These setup steps are not part of the episode.
 Run check_natural.py to see it working (frames go to check_frames/).
 """
 
+import json
 import os
 import random
 import time
+from pathlib import Path
 from typing import Any, Optional
 
 import gymnasium as gym
@@ -42,6 +44,9 @@ from tree_env import (ACTION_NAMES, ACTION_NAMES_JUMP, AXE, EPISODE_STEPS, IMAGE
 # --- Experiment settings -----------------------------------------------------
 
 SEED = "20261114"  # fixed so runs are comparable; every instance builds the same world
+# A second world that training never uses (evaluate.py --held-out): the agent has never seen
+# any of its forests, so its score there shows how well the agent generalises to new terrain.
+HELD_OUT_SEED = "20261117"
 # Oak and birch forests: minecraft:is_forest minus dark forest and (snowy, spruce) grove.
 FOREST_CHECK = ("if biome ~ ~ ~ #minecraft:is_forest "
                 "unless biome ~ ~ ~ minecraft:dark_forest unless biome ~ ~ ~ minecraft:grove")
@@ -66,6 +71,16 @@ RENDER_MAX_S = 15.0
 RENDER_TOLERANCE = 0.005  # change in non-sky fraction that counts as "still drawing"
 MIN_GROUND = 0.15         # and at least this much of the view must be terrain (not just sky)
 DEBUG = False
+# Fixed evaluation spots (make_eval_spots.py): the same forest spots for every model, so
+# evaluations differ by the agent, not by which forests it happened to land in.
+EVAL_SPOTS = Path(__file__).parent / "results" / "eval_spots_natural.json"
+
+
+def eval_spots_path(seed: str = SEED) -> Path:
+    """Each world has its own spot file: EVAL_SPOTS for the training world,
+    eval_spots_natural_seed<seed>.json for any other."""
+    return EVAL_SPOTS if seed == SEED else EVAL_SPOTS.with_name(f"eval_spots_natural_seed{seed}.json")
+
 # Memory: Java grows Minecraft's heap towards its limit as episodes hop to new forests, so with
 # CraftGround's defaults (3G heap, render distance 6) 4 instances outgrew this 32 GB machine
 # about 15-20 minutes into a run, twice. Each instance uses ~1.5 GB on top of the heap (code,
@@ -105,10 +120,15 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
                  jump: bool = True, render_distance: int = RENDER_DISTANCE,
-                 jvm_max_memory: str = JVM_MAX_MEMORY):
+                 jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
+                 seed: str = SEED):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
-        Use jump=False to run models trained before jump was added (2026-11-15)."""
+        Use jump=False to run models trained before jump was added (2026-11-15).
+        spots: play these spots ({x, y, z, yaw}) in order, one per reset, instead of searching
+        (evaluate.py's fixed evaluation set); once they run out, resets search as usual.
+        seed: the world to generate. Training always uses SEED; HELD_OUT_SEED is for evaluation."""
+        self.world_seed = seed
         self.action_names = ACTION_NAMES_JUMP if jump else ACTION_NAMES
         # CraftGround's build.gradle reads this when it launches Minecraft (-Xmx).
         os.environ["CRAFTGROUND_JVM_MAX_MEMORY"] = jvm_max_memory
@@ -116,7 +136,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
             image_width=IMAGE_WIDTH,
             image_height=IMAGE_HEIGHT,
             world_type=WorldType.DEFAULT,
-            seed=SEED,
+            seed=seed,
             gamemode=GameMode.SURVIVAL,
             difficulty=Difficulty.PEACEFUL,
             generate_structures=False,
@@ -139,6 +159,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self._logs_chopped = 0
         self.spot: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.found = False  # whether the last reset found a forest spot
+        self._spots = list(spots or [])
+        self.spot_index: Optional[int] = None  # which fixed spot the current episode plays
 
     # --- running commands one at a time ---------------------------------------
 
@@ -168,6 +190,15 @@ class NaturalChopTreesEnv(gym.Wrapper):
             f"execute as @p at @s if block ~ ~-1 ~ #minecraft:dirt {FOREST_CHECK}",
             ("Test passed",), timeout=CHECK_TIMEOUT_S, quiet=True)
         return obs, reply is not None and "Test passed" in reply
+
+    def find_far_spot(self) -> Optional[dict]:
+        """One try at a forest spot anywhere in the world (the same test resets use). Returns
+        {x, y, z} where the player now stands, or None if this landing wasn't a forest."""
+        obs, ok = self._try_spot(0, 0, FAR_RANGE)
+        if not ok:
+            return None
+        f = obs["full"]
+        return {"x": round(f.x, 2), "y": round(f.y, 2), "z": round(f.z, 2)}
 
     def _wait_for_render(self, obs):
         """Idle until the new terrain has finished drawing (see RENDER_STABLE_S)."""
@@ -208,7 +239,15 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
         self.found = False
         near_tries = far_tries = 0
-        for attempt in range(MAX_TRIES):
+        self.spot_index = None
+        fixed = self._spots.pop(0) if self._spots else None
+        if fixed is not None:
+            # A fixed evaluation spot: teleport there (same seed, so same terrain) and skip the search.
+            self.spot_index = fixed.get("index")
+            obs, reply = self._command(f"tp @p {fixed['x']} {fixed['y']} {fixed['z']} {fixed['yaw']} 0",
+                                       ("Teleported",))
+            self.found = reply is not None
+        for attempt in range(0 if fixed is not None else MAX_TRIES):
             if self._anchor is not None and attempt < HOP_TRIES:
                 near_tries += 1
                 obs, self.found = self._try_spot(*self._anchor, HOP_RANGE)
@@ -221,10 +260,11 @@ class NaturalChopTreesEnv(gym.Wrapper):
             if self.found:
                 break
         else:
-            print(f"[natural_env] no forest spot found in {MAX_TRIES} tries; playing anyway")
+            if fixed is None:
+                print(f"[natural_env] no forest spot found in {MAX_TRIES} tries; playing anyway")
 
         t_search = time.perf_counter()
-        yaw = self._rng.choice(range(-180, 180, 15))
+        yaw = fixed["yaw"] if fixed is not None else self._rng.choice(range(-180, 180, 15))
         obs, _ = self._command(f"execute as @p at @s run tp @s ~ ~ ~ {yaw} 0", ("Teleported",))
         obs, _ = self._command("clear @p", ("Removed", "No items"))
         obs, _ = self._command(f"item replace entity @p weapon.mainhand with {AXE}", ("Replaced",))
@@ -234,7 +274,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
         full = obs["full"]
         self.spot = (full.x, full.y, full.z)
-        if self.found:
+        if self.found and fixed is None:
             self._anchor = (int(full.x), int(full.z))
         self._steps = 0
         # Minecraft stats never reset, so count logs relative to the episode start.
@@ -250,6 +290,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
             "near_tries": near_tries,
             "far_tries": far_tries,
             "found": self.found,
+            "spot_index": self.spot_index,
         }
         return self._image(obs), {"logs_chopped": 0, **timing}
 
@@ -269,8 +310,21 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
              jump: bool = True, render_distance: int = RENDER_DISTANCE,
-             jvm_max_memory: str = JVM_MAX_MEMORY) -> NaturalChopTreesEnv:
+             jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
+             seed: str = SEED) -> NaturalChopTreesEnv:
     """env_path: game folder to run from (instances.env_path_for(port)); None = CraftGround's shared one.
-    jump: 13 actions with jump (default) or the arena's 11 (for older models)."""
+    jump: 13 actions with jump (default) or the arena's 11 (for older models).
+    spots: fixed spots to play in order (see load_eval_spots).
+    seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation)."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
-                               render_distance=render_distance, jvm_max_memory=jvm_max_memory)
+                               render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
+                               seed=seed)
+
+
+def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:
+    """The fixed evaluation spots, each tagged with its "index" in the file. With seed, refuses a
+    file made in a different world: its coordinates would land somewhere else entirely."""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if seed is not None and str(data.get("world_seed")) != str(seed):
+        raise ValueError(f"{path} was made in world {data.get('world_seed')}, not {seed}")
+    return [{**s, "index": i} for i, s in enumerate(data["spots"])]

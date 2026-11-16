@@ -4,11 +4,19 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-15 23:50._
+_Tables last updated 2026-11-16 00:49._
+
+## Fixed-spot evaluation
+
+_None yet: `run.bat evaluate.py <model.zip> --env natural` plays the 100 fixed spots in `results/eval_spots_natural.json`._
+
+## Held-out world
+
+_None yet: `run.bat make_eval_spots.py --held-out` once, then `run.bat evaluate.py <model.zip> --env natural --held-out` (and `--random` for the baseline). World seed 20261117, never used for training._
 
 ## Summary
 
-One row per agent. **Trained in** is the world it was trained in (see Agents below for models resumed from an arena run). **Mean logs** is the average over all `evaluate.py --env natural` episodes. **Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md), to show how well it carries over. **vs random** = how many times more logs than random actions in this world.
+One row per agent, from **random-spawn** evaluations (each run lands in different forests, so means move by ±3-4 logs from spawn luck alone; see Fixed-spot evaluation above for fair comparisons). **Trained in** is the world it was trained in (see Agents below for models resumed from an arena run). **Mean logs** is the average over all random-spawn `evaluate.py --env natural` episodes. **Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md), to show how well it carries over. **vs random** = how many times more logs than random actions in this world.
 
 | Agent | Trained in | Arena mean | Eval episodes | Mean logs | Min | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -21,10 +29,19 @@ One row per agent. **Trained in** is the world it was trained in (see Agents bel
 | `chop_ppo_natural_20261115_185527` @ 601,536 steps | natural | – | 100 | **21.67** | 0 | 66 | **12.0×** |
 | `chop_ppo_natural_20261115_192015` | natural | – | 100 | **14.99** | 0 | 41 | **8.3×** |
 | `chop_ppo_natural_20261115_231007` | natural | – | 100 | **25.44** | 0 | 66 | **14.1×** |
+| `chop_ppo_natural_20261115_235545` | natural | – | _not evaluated: `run.bat evaluate.py runs/chop_ppo_natural_20261115_235545/model.zip --env natural`_ |  |  |  |  |
 
 ## Agents
 
 One section per trained agent, newest first. Hyperparameters changed from the defaults in `train.py` are in bold. Environment changes (reward, episode length, trees...) are flagged on the first run that used them. Add notes with `train.py --notes "..."`, or edit `notes` in the run's `config.json` and rerun `python experiments.py`.
+
+### `chop_ppo_natural_20261115_235545`
+
+- **Trained:** 256,932 steps of 1,000,000 planned, 255 episodes, 20.5 min, 3 parallel envs (interrupted)
+- **Result:** not evaluated yet (training last-20 avg 11.15)
+- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** nothing, default settings and same environment as the previous run
+- **Notes:** from scratch to 1M with jump, linear LR decay, 3 instances, render distance 4, 2G heap
 
 ### `chop_ppo_natural_20261115_231007`
 
@@ -76,6 +93,7 @@ One row per `train.py` run, newest first.
 
 | Started | Steps | Episodes | Minutes | Last-20 avg logs | Best episode | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-15T23:55:45 | 256932 | 255 | 20.5 | 11.15 | 52 | interrupted | `runs/chop_ppo_natural_20261115_235545/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
 | 2026-11-15T23:10:07 | 1002552 | 399 | 29.7 | 28.9 | 73 | completed | `runs/chop_ppo_natural_20261115_231007/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/f61norjd) |
 | 2026-11-15T19:20:15 | 1003072 | 320 | 21.8 | 14.15 | 57 | completed | `runs/chop_ppo_natural_20261115_192015/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
 | 2026-11-15T17:39:30 | 501536 | 320 | 21.6 | 22.4 | 53 | completed | `runs/chop_ppo_natural_20261115_173930/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wbto0vn4) |
@@ -101,7 +119,7 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | Setting | Value |
 | --- | --- |
-| World | Normal generated world, fixed seed 20261114 |
+| World | Normal generated world, fixed seed 20261114 (held-out evaluation world: seed 20261117, never trained in) |
 | Spawn | A new spot every episode, on the ground in an oak/birch forest: first within 150 blocks of the last spot, else anywhere within ±25,000 |
 | Rebuilt each episode | no: chopped trees stay chopped, so every episode moves to fresh forest |
 | Boundaries | none; terrain loads as the agent walks |

@@ -6,6 +6,7 @@
     python evaluate.py runs/chop_ppo_20261113_131800/model.zip --record 0    # no videos
     python evaluate.py runs/chop_ppo_20261113_131800/model.zip --record 100  # video of every episode
     python evaluate.py runs/chop_ppo_20261113_131800/model.zip --env natural # forest in a normal world
+    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --env natural --held-out  # a world never trained in
 
 Runs 100 episodes by default so the mean is stable. Every run counts toward the
 agent's score in EXPERIMENTS.md (EXPERIMENTS_NATURAL.md for --env natural), so to just grab a couple of videos use a small
@@ -74,14 +75,22 @@ VIDEO_FPS = 20  # one step is one game tick (1/20 s), so videos play at real Min
 MAX_PENDING_VIDEOS = 8  # episodes waiting to be encoded before playing pauses to let encoding catch up
 
 FIELDS = ["timestamp", "agent", "episodes", "episode_steps", "mean_logs", "min_logs", "max_logs", "per_episode",
-          "n_envs", "minutes", "launch_minutes", "steps_per_s", "reset_share"]
+          "n_envs", "minutes", "launch_minutes", "steps_per_s", "reset_share", "spots", "spot_per_episode",
+          "world_seed"]
 
 
 def save_results(agent: str, results: list[int], timestamp: str | None = None, env: str = "arena",
-                 timing: dict | None = None) -> None:
+                 timing: dict | None = None, spots: str = "", spot_per_episode: list | None = None,
+                 world_seed: str = "") -> None:
+    """spots: "fixed:<file>" for a fixed-spot natural evaluation, "random" for random spawns
+    (blank in rows from before fixed spots existed, which were all random).
+    world_seed: natural world only (blank in older rows, which all used natural_env.SEED)."""
     csv_path = NATURAL_EVAL_CSV if env == "natural" else EVAL_CSV
     append_row(csv_path, FIELDS, {
         **(timing or {}),
+        "spots": spots,
+        "world_seed": world_seed,
+        "spot_per_episode": " ".join(map(str, spot_per_episode)) if spot_per_episode else "",
         "timestamp": timestamp or datetime.now().isoformat(timespec="seconds"),
         "agent": agent,
         "episodes": len(results),
@@ -180,7 +189,23 @@ def main():
                         help="arena = walled superflat arena (tree_env.py); natural = forest in a normal world (natural_env.py)")
     parser.add_argument("--video-fps", type=int, nargs="+", default=[VIDEO_FPS, 5],
                         help=f"one video per playback rate given; {VIDEO_FPS} = real speed, 5 = quarter speed")
+    parser.add_argument("--random-spots", action="store_true",
+                        help="natural world: random spawns instead of the fixed evaluation spots")
+    parser.add_argument("--spots", type=Path, default=None,
+                        help="natural world: fixed spot file (default: the world's own, "
+                             "results/eval_spots_natural.json for the training world)")
+    parser.add_argument("--seed", default=natural_env.SEED,
+                        help=f"natural world: world seed (default: the training world, {natural_env.SEED})")
+    parser.add_argument("--held-out", action="store_true",
+                        help=f"natural world: play the held-out world training never sees "
+                             f"(seed {natural_env.HELD_OUT_SEED})")
     args = parser.parse_args()
+    if args.held_out:
+        args.seed = natural_env.HELD_OUT_SEED
+    if args.env != "natural" and (args.held_out or args.seed != natural_env.SEED):
+        parser.error("--seed / --held-out only apply to --env natural")
+    if args.spots is None:
+        args.spots = natural_env.eval_spots_path(args.seed)
     if args.n_envs is None:
         args.n_envs = N_ENVS_NATURAL if args.env == "natural" else 6
     if not args.random and not args.model:
@@ -195,19 +220,42 @@ def main():
     NAMES = action_names(n_actions)
     if args.env != "natural" and n_actions != len(ACTION_NAMES):
         parser.error(f"this model has {n_actions} actions (with jump); only --env natural offers those")
-    env_kwargs = {"jump": n_actions != len(ACTION_NAMES)} if args.env == "natural" else {}
+    env_kwargs = ({"jump": n_actions != len(ACTION_NAMES), "seed": args.seed}
+                  if args.env == "natural" else {})
     make_env = ENVS[args.env].make_env
     MAX_LOGS = getattr(ENVS[args.env], "MAX_LOGS", None)
     n_envs = max(1, min(args.n_envs, args.episodes))
     shares = episode_shares(args.episodes, n_envs)
+    # Natural world: every model plays the same fixed spots (make_eval_spots.py), one per episode.
+    # Instance i gets spots i, i+n, i+2n, ..., which matches its share of the episodes exactly.
+    fixed = args.env == "natural" and not args.random_spots
+    spot_label = "random" if args.env == "natural" else ""
+    per_instance_spots: list[list[dict] | None] = [None] * n_envs
+    if fixed:
+        if not args.spots.exists():
+            make = "make_eval_spots.py" + ("" if args.seed == natural_env.SEED else f" --seed {args.seed}")
+            parser.error(f"{args.spots} not found: run {make} first, or use --random-spots")
+        try:
+            all_spots = natural_env.load_eval_spots(args.spots, seed=args.seed)
+        except ValueError as e:
+            parser.error(str(e))
+        if len(all_spots) < args.episodes:
+            parser.error(f"{args.spots} has {len(all_spots)} spots, fewer than --episodes {args.episodes}")
+        per_instance_spots = [all_spots[:args.episodes][i::n_envs] for i in range(n_envs)]
+        spot_label = f"fixed:{args.spots.name}"
+        print(f"Fixed spots from {args.spots}: spots 1-{args.episodes}")
+    if args.env == "natural":
+        print(f"World seed {args.seed}" + (" (held out: never trained in)" if args.seed != natural_env.SEED
+                                          else " (the training world)"))
     t_launch = time.perf_counter()
     shared = args.shared_folder
     ports = [args.port + 10 * i for i in range(n_envs)]
     if not shared:
         kill_instance_processes(ports, verbose=True)  # leftovers of a killed run would block these ports
     clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
-    factories = [(lambda port=args.port + 10 * i: make_env(
-                     port=port, env_path=None if shared else env_path_for(port, verbose=True), **env_kwargs))
+    factories = [(lambda port=args.port + 10 * i, extra=({"spots": per_instance_spots[i]} if fixed else {}):
+                  make_env(port=port, env_path=None if shared else env_path_for(port, verbose=True),
+                           **env_kwargs, **extra))
                  for i in range(n_envs)]
     env = SubprocVecEnv(factories) if n_envs > 1 else DummyVecEnv(factories)
     label = "random" if args.random else normalize_agent(args.model)
@@ -224,6 +272,7 @@ def main():
     steps = [0] * n_envs
     raw = [[] for _ in range(n_envs)]   # small frames + labels; enlarged only when encoding
     results: dict[int, int] = {}
+    spot_of: dict[int, int | None] = {}  # episode -> fixed spot it played (from reset_infos)
     encoder = ThreadPoolExecutor(max_workers=2)
     pending = []
     env_steps = resets = 0
@@ -232,6 +281,8 @@ def main():
     try:
         obs = env.reset()
         t_play = time.perf_counter()  # every instance is up and in its first episode
+        for i in range(n_envs):
+            spot_of[episode_id[i]] = env.reset_infos[i].get("spot_index")
         while any(done < share for done, share in zip(done_count, shares)):
             if model is None:
                 actions = np.array([env.action_space.sample() for _ in range(n_envs)])
@@ -265,6 +316,7 @@ def main():
                 raw[i], steps[i] = [], 0
                 if done_count[i] < shares[i]:
                     episode_id[i], next_id = next_id, next_id + 1
+                    spot_of[episode_id[i]] = env.reset_infos[i].get("spot_index")  # this step's auto-reset
             # Don't let unencoded episodes pile up in memory.
             while sum(not f.done() for f in pending) > MAX_PENDING_VIDEOS:
                 pending[next(k for k, f in enumerate(pending) if not f.done())].result()
@@ -275,12 +327,15 @@ def main():
         encoder.shutdown()
     t_end = time.perf_counter()
 
-    results = [results[k] for k in sorted(results)]
+    episodes_done = sorted(results)
+    results = [results[k] for k in episodes_done]
     if not results or t_play is None:
         return
+    spots_played = [spot_of.get(k) for k in episodes_done] if fixed else None
     timing = timing_summary(n_envs, launch_s=t_play - t_launch, play_s=t_end - t_play,
                             total_s=t_end - t_launch, env_steps=env_steps, resets=resets, reset_s=reset_s)
-    save_results(label, results, env=args.env, timing=timing)
+    save_results(label, results, env=args.env, timing=timing, spots=spot_label, spot_per_episode=spots_played,
+                 world_seed=args.seed if args.env == "natural" else "")
     print(f"\n{label} [{args.env}]: {np.mean(results):.1f} logs per episode on average "
           f"(min {min(results)}, max {max(results)}, {len(results)} episodes)")
 
