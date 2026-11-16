@@ -61,7 +61,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 import natural_env
 import tree_env
 from experiments import EVAL_CSV, NATURAL_EVAL_CSV, append_row, normalize_agent, update_report
-from instances import clear_stale_loom_locks, env_path_for
+from instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_instance_processes
 from tree_env import ACTION_NAMES, EPISODE_STEPS, action_names
 
 ENVS = {"arena": tree_env, "natural": natural_env}
@@ -192,8 +192,11 @@ def main():
     n_envs = max(1, min(args.n_envs, args.episodes))
     shares = episode_shares(args.episodes, n_envs)
     t_launch = time.perf_counter()
-    clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
     shared = args.shared_folder
+    ports = [args.port + 10 * i for i in range(n_envs)]
+    if not shared:
+        kill_instance_processes(ports, verbose=True)  # leftovers of a killed run would block these ports
+    clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
     factories = [(lambda port=args.port + 10 * i: make_env(
                      port=port, env_path=None if shared else env_path_for(port, verbose=True), **env_kwargs))
                  for i in range(n_envs)]
@@ -257,7 +260,7 @@ def main():
             while sum(not f.done() for f in pending) > MAX_PENDING_VIDEOS:
                 pending[next(k for k, f in enumerate(pending) if not f.done())].result()
     finally:
-        env.close()
+        close_vec_env(env, ports, shared)
         for f in pending:
             f.result()  # finish writing videos (and surface any encoding error)
         encoder.shutdown()

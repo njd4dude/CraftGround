@@ -78,7 +78,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnvW
 import natural_env
 import tree_env
 from experiments import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row, update_report
-from instances import clear_stale_loom_locks, env_path_for
+from instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_instance_processes
 
 ENVS = {"arena": tree_env, "natural": natural_env}
 
@@ -324,6 +324,9 @@ def main():
     wandb.define_metric("*", step_metric="global_step")
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
 
+    ports = [args.port + 10 * i for i in range(args.n_envs)]
+    if not args.shared_folder:
+        kill_instance_processes(ports, verbose=True)  # leftovers of a killed run would block these ports
     clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
     factories = [env_factory(args.env, args.port + 10 * i, str(run_dir / f"monitor_{i}"), args.shared_folder, jump)
                  for i in range(args.n_envs)]
@@ -363,7 +366,7 @@ def main():
         model_path = run_dir / "model.zip"
         model.save(model_path)
         print(f"Model saved to {model_path}")
-        env.close()
+        close_vec_env(env, ports, args.shared_folder)
 
         summary = {
             "timesteps_done": model.num_timesteps,

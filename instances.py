@@ -27,11 +27,22 @@ instances are reading it, and fails with "Failed to remap minecraft" / "file is
 being used by another process". Deleting locks whose owner is gone prevents the
 rebuild (with no lock, Loom just uses the cache).
 
+Shutting down: CraftGround closes an instance on Windows by sending Ctrl+Break to the
+cmd.exe it started and, after 10 s, killing that cmd.exe alone. Java doesn't quit on
+Ctrl+Break, and killing a parent on Windows leaves its children running, so Minecraft
+(several processes below cmd.exe) sometimes survives: after one evaluation 3 of 4
+instances kept running and held ~8 GB and their ports. And SubprocVecEnv.close() waits
+for every worker with no time limit, so one stuck close hung a whole training run.
+close_vec_env() closes with a time limit and then kills whatever is left of each port's
+instance (kill_instance_processes); train.py and evaluate.py also clear their ports'
+leftovers before launching.
+
 After upgrading CraftGround, call refresh_instances() (or delete the folder) so
 the copies are made again from the new version.
 """
 
 import shutil
+import threading
 import time
 from pathlib import Path
 
@@ -177,6 +188,77 @@ def env_path_for(port: int, verbose: bool = False) -> str:
         print(f"[port {port}] removed {saves} old world(s)"
               + (f", stale Loom lock(s): {', '.join(locks)}" if locks else ""), flush=True)
     return str(folder)
+
+
+INSTANCE_PROCESS_NAMES = {"java.exe", "javaw.exe", "cmd.exe", "java", "javaw"}
+
+
+def instance_processes(port: int) -> list[psutil.Process]:
+    """Processes belonging to the instance on this port: java/cmd processes whose command line
+    or working folder points into its copy (mc121_port<port>). That covers cmd.exe, the Gradle
+    wrapper and Minecraft itself, and nothing from other ports or other programs."""
+    marker = f"mc121_port{port}".lower()
+    found = []
+    for proc in psutil.process_iter(["name", "cmdline"]):
+        try:
+            if (proc.info["name"] or "").lower() not in INSTANCE_PROCESS_NAMES:
+                continue
+            text = " ".join(proc.info["cmdline"] or []).lower()
+            if marker not in text:
+                try:
+                    text = proc.cwd().lower()
+                except (psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+            # Match the folder name exactly, not a longer port number that starts the same.
+            i = text.find(marker)
+            if i >= 0 and not text[i + len(marker): i + len(marker) + 1].isdigit():
+                found.append(proc)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    return found
+
+
+def kill_instance_processes(ports, verbose: bool = False) -> int:
+    """Kill whatever is still running of the instances on these ports. Returns how many
+    processes were killed. Safe to call when nothing is left (it then does nothing)."""
+    procs = [p for port in ports for p in instance_processes(port)]
+    for proc in procs:
+        try:
+            proc.kill()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    psutil.wait_procs(procs, timeout=10)
+    if verbose and procs:
+        print(f"[instances] killed {len(procs)} leftover process(es) of port(s) "
+              f"{', '.join(map(str, ports))}", flush=True)
+    return len(procs)
+
+
+def close_vec_env(env, ports, shared_folder: bool = False, timeout_s: float = 60.0) -> None:
+    """Close a VecEnv of CraftGround instances without hanging, then make sure no Minecraft
+    is left. env.close() gets timeout_s; if it hasn't returned by then, the instances are
+    killed (which usually lets stuck workers finish) and SubprocVecEnv's worker processes
+    are terminated. With shared_folder the instances can't be told apart by folder, so
+    leftovers are only reported."""
+    closer = threading.Thread(target=env.close, daemon=True)
+    closer.start()
+    closer.join(timeout_s)
+    hung = closer.is_alive()
+    if hung:
+        print(f"[instances] closing the envs took over {timeout_s:.0f} s; killing the instances", flush=True)
+    if shared_folder:
+        if hung:
+            print("[instances] --shared-folder: can't tell instances apart, check for leftover java.exe", flush=True)
+    else:
+        kill_instance_processes(ports, verbose=True)
+    if hung:
+        closer.join(10)
+        base = env
+        while hasattr(base, "venv"):  # unwrap VecEnvWrappers down to SubprocVecEnv
+            base = base.venv
+        for worker in getattr(base, "processes", []):
+            if worker.is_alive():
+                worker.terminate()
 
 
 def refresh_instances() -> None:
