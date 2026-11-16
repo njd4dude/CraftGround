@@ -39,6 +39,10 @@ shared folder. The first run on a new port is ~75 s slower while its copy builds
 --n-steps is the rollout size summed over all instances, so changing --n-envs
 keeps each PPO update the same size (each instance collects n_steps / n_envs).
 
+The learning rate falls linearly from --learning-rate to 0 over each run (--lr-schedule,
+default linear). With a constant rate the natural-world jump model peaked at ~600k steps
+(21.7 logs per episode) and slid to 15.0 by 1M. A resumed run starts the schedule over.
+
 Every PPO setting in PPO_SETTINGS has a flag (--n-steps, --batch-size, --n-epochs,
 --learning-rate, --gamma, --ent-coef, --clip-range). Use --notes to say what's
 special about a run (e.g. a reward change); it shows up in EXPERIMENTS.md.
@@ -98,6 +102,20 @@ PPO_SETTINGS = dict(
     ent_coef=0.01,       # keeps the agent exploring
     clip_range=0.2,
 )
+
+
+def linear_lr(lr0: float, start_steps: int, end_steps: int):
+    """Learning rate falling linearly from lr0 at start_steps to 0 at end_steps (this run's span).
+
+    SB3 calls it with progress_remaining = 1 - steps / end_steps, counted from step 0 even when
+    resuming, so a resumed run would otherwise start part-way down. Converting back to steps keeps
+    the full lr0 at this run's first update whatever the model's age."""
+    span = max(end_steps - start_steps, 1)
+
+    def schedule(progress_remaining: float) -> float:
+        steps = (1.0 - progress_remaining) * end_steps
+        return lr0 * min(1.0, max(0.0, 1.0 - (steps - start_steps) / span))
+    return schedule
 
 
 def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False, jump: bool = False):
@@ -265,6 +283,9 @@ def main():
     parser.add_argument("--no-jump", action="store_true",
                         help="natural world: use the arena's 11 actions instead of 13 with jump "
                              "(automatic when --resume is an 11-action model)")
+    parser.add_argument("--lr-schedule", choices=["linear", "constant"], default="linear",
+                        help="linear (default): --learning-rate falls to 0 by the end of this run; "
+                             "constant: stays fixed (all runs before 2026-11-15)")
     for key, default in PPO_SETTINGS.items():
         parser.add_argument("--" + key.replace("_", "-"), type=type(default), default=None,
                             help=f"PPO {key} (default {default})")
@@ -290,6 +311,12 @@ def main():
     # SB3's n_steps is per env; ours is the total, so split it across the instances.
     steps_per_env = max(ppo_settings["n_steps"] // args.n_envs, 1)
     sb3_settings = {**ppo_settings, "n_steps": steps_per_env}
+    start_steps = int(saved["num_timesteps"]) if saved else 0
+    if args.lr_schedule == "linear":
+        # A resumed model restarts the schedule from --learning-rate (default 2.5e-4), not from
+        # wherever its own (constant) rate was.
+        lr = linear_lr(ppo_settings["learning_rate"], start_steps, start_steps + args.timesteps)
+        sb3_settings["learning_rate"] = lr
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Training on {device}")
@@ -309,6 +336,7 @@ def main():
         "n_envs": args.n_envs,
         "rollout_steps": steps_per_env * args.n_envs,
         "ppo": ppo_settings,
+        "lr_schedule": args.lr_schedule,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
         "env": env_settings(args.env, jump),
@@ -328,6 +356,7 @@ def main():
             "timesteps": args.timesteps,
             "resumed_from": args.resume,
             "n_envs": args.n_envs,
+            "lr_schedule": args.lr_schedule,
             **ppo_settings,
             **{f"env/{k}": v for k, v in env_settings(args.env, jump).items()},
         },
@@ -349,7 +378,10 @@ def main():
           f"({steps_per_env * args.n_envs} total), {env.action_space.n} actions{' (with jump)' if jump else ''}")
 
     if args.resume:
-        model = PPO.load(args.resume, env=env, device=device, **{**overrides, "n_steps": steps_per_env})
+        load_settings = {**overrides, "n_steps": steps_per_env}
+        if args.lr_schedule == "linear":
+            load_settings["learning_rate"] = sb3_settings["learning_rate"]
+        model = PPO.load(args.resume, env=env, device=device, **load_settings)
         print(f"Resumed from {args.resume}" + (f" with {overrides}" if overrides else ""))
     else:
         model = PPO("CnnPolicy", env, device=device, verbose=1, **sb3_settings)
