@@ -255,7 +255,9 @@ def natural_setup_section() -> str:
         ["Boundaries", "none; terrain loads as the agent walks"],
         ["Tool", "Unbreakable diamond axe, Efficiency X (1 hit per log)"],
         ["Observation", f"RGB image {tree_env.IMAGE_WIDTH}×{tree_env.IMAGE_HEIGHT} (same as the arena)"],
-        ["Actions", f"{len(tree_env.ACTION_NAMES)} discrete (same as the arena)"],
+        ["Actions", f"{len(tree_env.ACTION_NAMES_JUMP)} discrete: the arena's {len(tree_env.ACTION_NAMES)} plus "
+                    + ", ".join(tree_env.JUMP_ACTIONS) + " (since 2026-11-15; earlier runs and the random "
+                    "baseline use the arena's 11)"],
         ["Reward", ne.REWARD],
         ["Episode length", f"{tree_env.EPISODE_STEPS} steps (no log cap)"],
     ]
@@ -267,6 +269,29 @@ def _episodes_by_agent(rows: list[dict]) -> dict[str, list[int]]:
     for r in rows:
         out.setdefault(normalize_agent(r["agent"]), []).extend(int(x) for x in r["per_episode"].split())
     return out
+
+
+def _run_dir(agent: str) -> Path:
+    """The run folder a model path belongs to (model.zip or checkpoints/ppo_chop_N_steps.zip)."""
+    parent = Path(agent).parent
+    return parent.parent if parent.name == "checkpoints" else parent
+
+
+def _agent_label(agent: str) -> str:
+    """Run folder name, plus the step count for a checkpoint."""
+    path = Path(agent)
+    if path.parent.name == "checkpoints":
+        steps = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
+        return f"`{_run_dir(agent).name}` @ {int(steps):,} steps" if steps.isdigit() else f"`{agent}`"
+    return f"`{path.parent.name}`"
+
+
+def _trained_in(agent: str) -> str:
+    """'natural' or 'arena', from the run's config.json (folder name as a fallback)."""
+    try:
+        return json.loads((_run_dir(agent) / "config.json").read_text(encoding="utf-8"))["env"]["world"]
+    except Exception:
+        return "natural" if "_natural_" in _run_dir(agent).name else "arena"
 
 
 def natural_summary_section(evals: list[dict], arena_evals: list[dict], runs: list[dict]) -> str:
@@ -285,8 +310,8 @@ def natural_summary_section(evals: list[dict], arena_evals: list[dict], runs: li
     rows = []
     for agent in sorted(set(by_agent) | set(natural_trained), key=lambda a: (a != "random", a)):  # baseline first
         is_random = agent == "random"
-        name = "Random actions (baseline)" if is_random else f"`{Path(agent).parent.name}`"
-        trained = "–" if is_random else ("natural" if agent in natural_trained else "arena")
+        name = "Random actions (baseline)" if is_random else _agent_label(agent)
+        trained = "–" if is_random else ("natural" if agent in natural_trained else _trained_in(agent))
         arena_mean = f"{mean(arena[agent]):.2f}" if agent in arena else "–"
         eps = by_agent.get(agent)
         if not eps:
