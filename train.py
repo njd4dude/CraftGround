@@ -126,6 +126,8 @@ def env_settings(env_name: str, jump: bool = False) -> dict:
             "forest_check": natural_env.FOREST_CHECK,
             "hop_range": natural_env.HOP_RANGE,
             "far_range": natural_env.FAR_RANGE,
+            "render_distance": natural_env.RENDER_DISTANCE,
+            "jvm_max_memory": natural_env.JVM_MAX_MEMORY,
         }
     return {
         **common,

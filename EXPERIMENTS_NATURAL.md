@@ -4,7 +4,7 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-15 20:03._
+_Tables last updated 2026-11-15 21:07._
 
 ## Summary
 
@@ -93,6 +93,7 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 | Spawn | A new spot every episode, on the ground in an oak/birch forest: first within 150 blocks of the last spot, else anywhere within ±25,000 |
 | Rebuilt each episode | no: chopped trees stay chopped, so every episode moves to fresh forest |
 | Boundaries | none; terrain loads as the agent walks |
+| Render distance | 4 chunks, Minecraft heap 2G (since 2026-11-15, to fit 4 instances in memory; earlier runs: 6 chunks, 3G) |
 | Tool | Unbreakable diamond axe, Efficiency X (1 hit per log) |
 | Observation | RGB image 114×64 (same as the arena) |
 | Actions | 13 discrete: the arena's 11 plus jump, forward_jump (since 2026-11-15; earlier runs and the random baseline use the arena's 11) |

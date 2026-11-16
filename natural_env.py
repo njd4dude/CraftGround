@@ -24,6 +24,7 @@ These setup steps are not part of the episode.
 Run check_natural.py to see it working (frames go to check_frames/).
 """
 
+import os
 import random
 import time
 from typing import Any, Optional
@@ -65,6 +66,15 @@ RENDER_MAX_S = 15.0
 RENDER_TOLERANCE = 0.005  # change in non-sky fraction that counts as "still drawing"
 MIN_GROUND = 0.15         # and at least this much of the view must be terrain (not just sky)
 DEBUG = False
+# Memory: Java grows Minecraft's heap towards its limit as episodes hop to new forests, so with
+# CraftGround's defaults (3G heap, render distance 6) 4 instances outgrew this 32 GB machine
+# about 15-20 minutes into a run, twice. Each instance uses ~1.5 GB on top of the heap (code,
+# graphics, Gradle launcher processes), so a 2G heap caps it at ~3.3-3.7 GB.
+# memtest.py, 20 min, 4 instances (results/memtest.csv): 3G -> 12.3 GB, 2G -> 12.0 GB and still
+# levelling off, no slowdown or crash. Both at render distance 4 (less terrain per spot; 2G at 6
+# is untested). Changed 2026-11-15; earlier runs used 6 / 3G (see each run's config.json).
+RENDER_DISTANCE = 4   # chunks drawn around the player (CraftGround's default: 6)
+JVM_MAX_MEMORY = "2G"  # Minecraft's Java heap limit, -Xmx (CraftGround's default: 3G)
 
 NOOP = to_craftground_action(0)
 
@@ -94,11 +104,14 @@ class NaturalChopTreesEnv(gym.Wrapper):
     """Gymnasium env: image in, discrete action out, +1 reward per log chopped."""
 
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
-                 jump: bool = True):
+                 jump: bool = True, render_distance: int = RENDER_DISTANCE,
+                 jvm_max_memory: str = JVM_MAX_MEMORY):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15)."""
         self.action_names = ACTION_NAMES_JUMP if jump else ACTION_NAMES
+        # CraftGround's build.gradle reads this when it launches Minecraft (-Xmx).
+        os.environ["CRAFTGROUND_JVM_MAX_MEMORY"] = jvm_max_memory
         config = InitialEnvironmentConfig(
             image_width=IMAGE_WIDTH,
             image_height=IMAGE_HEIGHT,
@@ -108,6 +121,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
             difficulty=Difficulty.PEACEFUL,
             generate_structures=False,
             hud_hidden=True,
+            render_distance=render_distance,
+            simulation_distance=render_distance,
             mined_stat_keys=LOG_KEYS,
             initial_extra_commands=_setup_commands(),
         )
@@ -253,7 +268,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
 
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
-             jump: bool = True) -> NaturalChopTreesEnv:
+             jump: bool = True, render_distance: int = RENDER_DISTANCE,
+             jvm_max_memory: str = JVM_MAX_MEMORY) -> NaturalChopTreesEnv:
     """env_path: game folder to run from (instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models)."""
-    return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump)
+    return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
+                               render_distance=render_distance, jvm_max_memory=jvm_max_memory)

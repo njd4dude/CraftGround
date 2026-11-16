@@ -253,6 +253,8 @@ def natural_setup_section() -> str:
                   f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}"],
         ["Rebuilt each episode", "no: chopped trees stay chopped, so every episode moves to fresh forest"],
         ["Boundaries", "none; terrain loads as the agent walks"],
+        ["Render distance", f"{ne.RENDER_DISTANCE} chunks, Minecraft heap {ne.JVM_MAX_MEMORY} "
+                            "(since 2026-11-15, to fit 4 instances in memory; earlier runs: 6 chunks, 3G)"],
         ["Tool", "Unbreakable diamond axe, Efficiency X (1 hit per log)"],
         ["Observation", f"RGB image {tree_env.IMAGE_WIDTH}×{tree_env.IMAGE_HEIGHT} (same as the arena)"],
         ["Actions", f"{len(tree_env.ACTION_NAMES_JUMP)} discrete: the arena's {len(tree_env.ACTION_NAMES)} plus "
