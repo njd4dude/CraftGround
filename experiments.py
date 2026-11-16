@@ -272,7 +272,9 @@ def natural_setup_section() -> str:
                     + ", ".join(tree_env.JUMP_ACTIONS) + " (since 2026-11-15; earlier runs and the random "
                     "baseline use the arena's 11)"],
         ["Reward", ne.REWARD],
-        ["Episode length", f"{tree_env.EPISODE_STEPS} steps (no log cap)"],
+        ["Damage", "Lava, fire, drowning etc. hurt and dying ends the episode; no fall damage "
+                   "(since 2026-11-16; earlier runs: player immune to all damage)"],
+        ["Episode length", f"{tree_env.EPISODE_STEPS} steps (no log cap), or until the agent dies"],
     ]
     return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
 

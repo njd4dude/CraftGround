@@ -128,7 +128,8 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 | Observation | RGB image 114×64 (same as the arena) |
 | Actions | 13 discrete: the arena's 11 plus jump, forward_jump (since 2026-11-15; earlier runs and the random baseline use the arena's 11) |
 | Reward | +1 per log chopped (any wood type) |
-| Episode length | 1000 steps (no log cap) |
+| Damage | Lava, fire, drowning etc. hurt and dying ends the episode; no fall damage (since 2026-11-16; earlier runs: player immune to all damage) |
+| Episode length | 1000 steps (no log cap), or until the agent dies |
 <!-- AUTO-GENERATED:END -->
 
 ## Notes

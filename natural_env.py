@@ -104,7 +104,11 @@ def _setup_commands() -> list[str]:
         "time set noon",
         "weather clear",
         "kill @e[type=item]",
-        "effect give @p minecraft:resistance infinite 255 true",  # landing / falling never hurts
+        # Falls never hurt (hills and ledges), but lava, fire and drowning do, and dying ends the
+        # episode, so the agent can learn to avoid them. Before 2026-11-16 the player had
+        # Resistance 255 instead, which blocked all damage; clear it in case a saved world kept it.
+        "gamerule fallDamage false",
+        "effect clear @p minecraft:resistance",
     ]
 
 
