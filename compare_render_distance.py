@@ -8,7 +8,7 @@ same scripted actions, so the only difference between the two videos is the rend
   1. a slow full turn: 24 turns of 15 degrees, holding each direction for HOLD steps so the
      terrain there has time to draw;
   2. a straight walk forward (WALK steps, jumping over ledges).
-Writes runs/render_distance/spot<N>_rd<a>_vs_rd<b>.mp4 (left: first distance, right: second),
+Writes runs/tools/render_distance/spot<N>_rd<a>_vs_rd<b>.mp4 (left: first distance, right: second),
 at the agent's own 114x64 view enlarged, plus one contact sheet of matching frames.
 """
 
@@ -24,7 +24,7 @@ import natural_env
 from instances import close_vec_env, env_path_for, kill_instance_processes
 from tree_env import ACTION_NAMES_JUMP
 
-OUT = Path("runs/render_distance")
+OUT = Path("runs/tools/render_distance")
 SCALE = 4
 HOLD = 10   # steps facing each direction during the turn
 WALK = 160  # steps walking forward afterwards

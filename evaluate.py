@@ -1,12 +1,12 @@
 """Measure how many logs an agent chops per episode.
 
     python evaluate.py --random                              # baseline: random actions
-    python evaluate.py runs/chop_ppo_20261113_131800/model.zip               # a trained model
-    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --episodes 10 # quick check (default 100)
-    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --record 0    # no videos
-    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --record 100  # video of every episode
-    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --env natural # forest in a normal world
-    python evaluate.py runs/chop_ppo_20261113_131800/model.zip --env natural --held-out  # a world never trained in
+    python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip               # a trained model
+    python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --episodes 10 # quick check (default 100)
+    python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --record 0    # no videos
+    python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --record 100  # video of every episode
+    python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --env natural # forest in a normal world
+    python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --env natural --held-out  # a world never trained in
 
 Runs 100 episodes by default so the mean is stable. Every run counts toward the
 agent's score in EXPERIMENTS.md (EXPERIMENTS_NATURAL.md for --env natural), so to just grab a couple of videos use a small
@@ -30,7 +30,7 @@ so the default 20 recordings take ~240 MB. The videos show what the agent sees,
 enlarged 4x, with the step, logs chopped and current action written on each frame.
 They open in any video player and go in the model's run folder under
 videos/arena/ or videos/natural/, depending on --env (random agent:
-runs/random/videos/<env>/).
+runs/baselines/random/videos/<env>/).
 
 The agent acts every tick, so real speed looks frantic. By default each
 recorded episode is saved twice from the same frames: at real speed and at
@@ -259,7 +259,7 @@ def main():
                  for i in range(n_envs)]
     env = SubprocVecEnv(factories) if n_envs > 1 else DummyVecEnv(factories)
     label = "random" if args.random else normalize_agent(args.model)
-    video_dir = (Path("runs/random") if args.random else Path(args.model).parent) / "videos" / args.env
+    video_dir = (Path("runs/baselines/random") if args.random else Path(args.model).parent) / "videos" / args.env
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     speeds = list(dict.fromkeys(args.video_fps))
     print(f"{args.episodes} episodes over {n_envs} Minecraft instance(s): {shares}")

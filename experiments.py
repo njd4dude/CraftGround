@@ -10,6 +10,7 @@ Run it by hand to rebuild both reports:  python experiments.py
 
 import csv
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -373,12 +374,14 @@ def _describe(agent: str, runs: list[dict]) -> str:
 
 
 # --- Training lines (natural world) -----------------------------------------------
-# A line is one training history: a first run plus every run resumed from it (crashes, memory
-# kills and deliberate stops split one history into several run folders). Names, purposes and
-# branches come from results/lines_natural.json; runs it doesn't cover get an automatic line.
+# A line is one training history, and has one folder: runs/natural/<line folder>/<time>/ per
+# piece (crashes, memory kills and deliberate stops split a history into several pieces; train.py
+# --resume adds the next piece to the same folder). Display ids, names, purposes and notes on
+# pieces come from results/lines_natural.json; a line folder it doesn't list still shows up.
 
 LINES_FILE = RESULTS_DIR / "lines_natural.json"
 RUNS_DIR = Path("runs")
+NATURAL_RUNS = RUNS_DIR / "natural"
 
 
 def _load_lines() -> dict:
@@ -388,153 +391,138 @@ def _load_lines() -> dict:
         return {"lines": [], "piece_notes": {}}
 
 
-def _run_config(run: str) -> dict | None:
+def _run_config(run_dir: Path) -> dict | None:
     try:
-        return json.loads((RUNS_DIR / run / "config.json").read_text(encoding="utf-8"))
+        return json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
 
 
-def _parent(run: str) -> tuple[str | None, int | None]:
-    """The run this one was resumed from, and the checkpoint step if it resumed from a checkpoint."""
-    cfg = _run_config(run) or {}
-    src = normalize_agent(cfg.get("resumed_from") or "")
-    if not src:
-        return None, None
-    path = Path(src)
-    steps = None
-    if path.parent.name == "checkpoints":
-        s = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
-        steps = int(s) if s.isdigit() else None
-    parent = _run_dir(src).name
-    if (_run_config(parent) or {}).get("env", {}).get("world") != "natural":
-        return None, None  # resumed from an arena model: a natural-world line starts here
-    return parent, steps
+def _line_meta(folder: str) -> dict:
+    """id / name / tested for a line folder, from results/lines_natural.json or the folder name."""
+    for line in _load_lines().get("lines", []):
+        if line.get("folder") == folder:
+            return line
+    m = re.match(r"line([0-9]+[a-z]*)_?(.*)", folder)
+    return {"folder": folder, "id": m.group(1) if m else folder,
+            "name": (m.group(2).replace("-", " ") if m and m.group(2) else "unnamed line")
+            + " (describe it in results/lines_natural.json)", "tested": ""}
 
 
-def _run_end(run: str, runs: list[dict]) -> tuple[int | None, bool]:
-    """Steps at the end of a run: from the training CSV (exact), else its last checkpoint (approximate)."""
-    row = next((r for r in runs if normalize_agent(r["model"]) == f"runs/{run}/model.zip"), None)
-    if row and str(row["timesteps_done"]).isdigit():
-        return int(row["timesteps_done"]), True
-    ckpts = [int(p.stem.removeprefix("ppo_chop_").removesuffix("_steps"))
-             for p in (RUNS_DIR / run / "checkpoints").glob("ppo_chop_*_steps.zip")
-             if p.stem.removeprefix("ppo_chop_").removesuffix("_steps").isdigit()]
-    return (max(ckpts), False) if ckpts else (None, False)
+def _line_dirs() -> list[Path]:
+    """Line folders, in the order results/lines_natural.json lists them, then the rest by name."""
+    dirs = [d for d in NATURAL_RUNS.glob("*") if d.is_dir()] if NATURAL_RUNS.exists() else []
+    order = [l.get("folder") for l in _load_lines().get("lines", [])]
+    return sorted(dirs, key=lambda d: (order.index(d.name) if d.name in order else len(order), d.name))
 
 
-def _natural_runs() -> list[str]:
-    return sorted(p.name for p in RUNS_DIR.glob("chop_ppo_natural_*") if (p / "config.json").exists()
-                  and (_run_config(p.name) or {}).get("env", {}).get("world") == "natural")
+def _pieces(line_dir: Path) -> list[Path]:
+    return sorted(p for p in line_dir.glob("*") if (p / "config.json").exists())
 
 
-def _line_index() -> tuple[list[dict], dict[str, dict]]:
-    """All lines (file order, then automatic ones) and the line of every natural-world run."""
-    data = _load_lines()
-    lines = [dict(l) for l in data.get("lines", [])]
-    by_root = {l["root"]: l for l in lines}
-    of: dict[str, dict] = {}
-
-    def line_for(run: str) -> dict:
-        if run in of:
-            return of[run]
-        if run in by_root:
-            line = by_root[run]
-        else:
-            parent, _ = _parent(run)
-            if parent:
-                line = line_for(parent)
-            else:  # an unlisted first run: automatic line
-                line = {"id": f"auto-{run.removeprefix('chop_ppo_natural_')}", "root": run,
-                        "name": "unnamed line (add it to results/lines_natural.json)", "tested": ""}
-                lines.append(line)
-                by_root[run] = line
-        of[run] = line
-        return line
-
-    for run in _natural_runs():
-        line_for(run)
-    return lines, of
+def _line_of_agent(agent: str) -> dict | None:
+    run = _run_dir(agent)
+    if run.parent.parent.as_posix() != NATURAL_RUNS.as_posix():
+        return None
+    return _line_meta(run.parent.name)
 
 
 def _model_label(agent: str, runs: list[dict]) -> str:
     """"Line 2b @ 1.0M" for a natural-world model, else the folder label."""
     if agent == "random":
         return "Random actions (baseline)"
-    run = _run_dir(agent).name
-    _, of = _line_index()
-    if run not in of:
+    line = _line_of_agent(agent)
+    if line is None:
         return _agent_label(agent)
     steps = _steps_of(agent, runs)
-    return f"Line {of[run]['id']} @ {_short_steps(steps)}" if steps else f"Line {of[run]['id']}"
+    return f"Line {line['id']} @ {_short_steps(steps)}" if steps else f"Line {line['id']}"
 
 
 def _line_note(agent: str) -> str:
     """The line's name, plus the render distance when it isn't today's."""
     if agent == "random":
         return "random actions"
-    run = _run_dir(agent).name
-    _, of = _line_index()
-    if run not in of:
+    line = _line_of_agent(agent)
+    if line is None:
         return _describe(agent, [])
-    note = of[run]["name"]
-    rd = ((_run_config(run) or {}).get("env", {})).get("render_distance", 6)
-    return note + (f" · render distance {rd}" if rd != natural_env.RENDER_DISTANCE else "")
+    rd = (_run_config(_run_dir(agent)) or {}).get("env", {}).get("render_distance", 6)
+    return line["name"] + (f" · render distance {rd}" if rd != natural_env.RENDER_DISTANCE else "")
+
+
+def _run_end(run_dir: Path, runs: list[dict]) -> tuple[int | None, bool]:
+    """Steps at the end of a piece: from the training CSV (exact), else its last checkpoint (approximate)."""
+    model = (run_dir / "model.zip").as_posix()
+    row = next((r for r in runs if normalize_agent(r["model"]) == model), None)
+    if row and str(row["timesteps_done"]).isdigit():
+        return int(row["timesteps_done"]), True
+    ckpts = [int(s) for p in (run_dir / "checkpoints").glob("ppo_chop_*_steps.zip")
+             if (s := p.stem.removeprefix("ppo_chop_").removesuffix("_steps")).isdigit()]
+    return (max(ckpts), False) if ckpts else (None, False)
+
+
+def _start_of(run_dir: Path, runs: list[dict]) -> tuple[int, str]:
+    """(steps at the start, where it came from) for one piece."""
+    src = normalize_agent((_run_config(run_dir) or {}).get("resumed_from") or "")
+    if not src:
+        return 0, "from scratch"
+    path = Path(src)
+    if path.parent.name == "checkpoints":
+        s = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
+        start = int(s) if s.isdigit() else 0
+    else:
+        start = _run_end(path.parent, runs)[0] or 0
+    parent_line = _line_of_agent(src)
+    if parent_line is None:
+        return start, "from an arena model"
+    if _run_dir(src).parent.name == run_dir.parent.name:
+        return start, "continued"
+    return start, f"branch from Line {parent_line['id']}"
 
 
 def lines_section(fixed: list[dict], random_spawns: list[dict], runs: list[dict]) -> str:
     """One block per training line: what it tested, then its pieces in order."""
-    lines, of = _line_index()
-    if not of:
+    line_dirs = [d for d in _line_dirs() if _pieces(d)]
+    if not line_dirs:
         return ""
     notes = _load_lines().get("piece_notes", {})
     fixed_by, random_by = _episodes_by_agent(fixed), _episodes_by_agent(random_spawns)
-    evaluated = sorted(set(fixed_by) | set(random_by))
     blocks = []
-    for line in lines:
-        pieces = [r for r in _natural_runs() if of.get(r) is line]
-        if not pieces:
-            continue
+    for line_dir in line_dirs:
+        meta = _line_meta(line_dir.name)
         rows = []
-        for run in pieces:
-            cfg = _run_config(run) or {}
-            parent, ckpt = _parent(run)
-            if run == line["root"] and parent:
-                start = ckpt if ckpt is not None else _run_end(parent, runs)[0]
-                origin = f"branch from {_model_label(f'runs/{parent}/model.zip', runs).split(' @')[0]}"
-            elif parent:
-                start, origin = (ckpt if ckpt is not None else _run_end(parent, runs)[0]), "continued"
-            else:
-                start, origin = 0, "from scratch"
-            end, exact = _run_end(run, runs)
+        for run_dir in _pieces(line_dir):
+            cfg = _run_config(run_dir) or {}
+            start, origin = _start_of(run_dir, runs)
+            end, exact = _run_end(run_dir, runs)
             span = (f"{_short_steps(start) if start else '0'} → "
-                    f"{'~' if not exact else ''}{_short_steps(end) if end else '?'}")
-            row = next((r for r in runs if normalize_agent(r["model"]) == f"runs/{run}/model.zip"), None)
-            status = row["status"] if row else "no record (killed or hung)"
+                    f"{'' if exact else '~'}{_short_steps(end) if end else '?'}")
+            row = next((r for r in runs if normalize_agent(r["model"]) == (run_dir / "model.zip").as_posix()), None)
             scores = []
-            for agent in evaluated:
-                if _run_dir(agent).name != run:
+            for agent in sorted(set(fixed_by) | set(random_by)):
+                if _run_dir(agent).as_posix() != run_dir.as_posix():
                     continue
-                label = _model_label(agent, runs).split(" @ ")[-1]
+                at = _model_label(agent, runs).split(" @ ")[-1]
                 if agent in fixed_by:
-                    scores.append(f"**{sum(fixed_by[agent]) / len(fixed_by[agent]):.1f}** @ {label}")
-                elif agent in random_by:
-                    scores.append(f"{sum(random_by[agent]) / len(random_by[agent]):.1f}* @ {label}")
-            minutes = row["minutes"] if row and row.get("minutes") else "–"
-            wandb = f"[open]({row['wandb_url']})" if row and row.get("wandb_url") else "–"
-            rows.append([f"`{run.removeprefix('chop_ppo_natural_')}`", origin, span,
-                         cfg.get("n_envs", "–"), cfg.get("lr_schedule", "constant"), minutes,
-                         status, ", ".join(scores) or "–", notes.get(run, ""), wandb])
-        blocks.append(f"### Line {line['id']} · {line['name']}\n\n"
-                      + (f"{line['tested']}\n\n" if line.get("tested") else "")
+                    scores.append(f"**{sum(fixed_by[agent]) / len(fixed_by[agent]):.1f}** @ {at}")
+                else:
+                    scores.append(f"{sum(random_by[agent]) / len(random_by[agent]):.1f}* @ {at}")
+            rows.append([f"`{run_dir.name}`", origin, span, cfg.get("n_envs", "–"),
+                         cfg.get("lr_schedule", "constant"),
+                         row["minutes"] if row and row.get("minutes") else "–",
+                         row["status"] if row else "no record (killed or hung)", ", ".join(scores) or "–",
+                         notes.get(run_dir.name, ""),
+                         f"[open]({row['wandb_url']})" if row and row.get("wandb_url") else "–"])
+        blocks.append(f"### Line {meta['id']} · {meta['name']}\n\n`{line_dir.as_posix()}/`"
+                      + (f": {meta['tested']}" if meta.get("tested") else "") + "\n\n"
                       + table(["Run", "Start", "Steps", "Instances", "LR", "Minutes", "Status", "Eval (logs)",
                                "Notes", "W&B"], rows))
     return ("## Training lines\n\n"
-            "Each line is one training history; its pieces are the run folders (`runs/chop_ppo_natural_…`) "
-            "it was split into by crashes, memory kills or deliberate stops, in order. **Steps** with ~ come "
-            "from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per "
-            "episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: "
-            "`results/lines_natural.json`. Start a new line with `run.bat train.py --env natural`.\n\n"
+            "Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are "
+            "the run folders inside, split by crashes, memory kills or deliberate stops, in order. "
+            "`train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a "
+            "branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no "
+            "record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns "
+            "only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.\n\n"
             + "\n\n".join(blocks))
 
 

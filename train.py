@@ -2,12 +2,12 @@
 
     python train.py                       # train with defaults
     python train.py --timesteps 500000    # train longer
-    python train.py --resume runs/chop_ppo_20261113_131800/checkpoints/ppo_chop_100000_steps.zip
+    python train.py --resume runs/arena/chop_ppo_20261113_131800/checkpoints/ppo_chop_100000_steps.zip
     python train.py --no-wandb            # train without logging to Weights & Biases
     python train.py --learning-rate 1e-4 --n-epochs 8 --notes "slower lr, more epochs"
     python train.py --n-envs 4            # run 4 Minecraft instances instead of 6
     python train.py --env natural                            # train in a forest in a normal world (3 instances)
-    python train.py --env natural --resume runs/chop_ppo_20261113_135620/model.zip   # fine-tune an arena model there
+    python train.py --env natural --resume runs/arena/chop_ppo_20261113_135620/model.zip   # fine-tune an arena model there
     python train.py --env natural --no-jump                  # natural world with the arena's 11 actions (no jump)
 
 --env picks the world: arena (tree_env.py, walled superflat arena, the default)
@@ -16,7 +16,8 @@ same images, but the natural world adds jump and forward_jump (13 actions, see
 tree_env.JUMP_ACTIONS) because of its hills and ledges. 11-action models still --resume
 there (jump is turned off automatically to match); --no-jump forces the 11 actions.
 Without jump the two worlds share the same actions, so --resume works across them. Natural runs get their
-own folders (chop_ppo_natural_...), CSV (results/training_runs_natural.csv) and
+own folders (runs/natural/<line>/<time>/, grouped by training line: --resume continues the
+model's line, --line names a new one), CSV (results/training_runs_natural.csv) and
 report (EXPERIMENTS_NATURAL.md). The natural world is slower (about a third of
 the arena's steps/s in evaluation) and needs more memory per instance, so it
 defaults to 3 instances (see N_ENVS_NATURAL).
@@ -52,7 +53,7 @@ project "craftground-chop-trees". Log in once first with:  wandb login
 
 Every run gets one folder with everything in it:
 
-    runs/chop_ppo_20261113_131800/
+    runs/arena/chop_ppo_20261113_131800/      (natural world: runs/natural/<line>/<time>/)
         config.json            this run's settings, changes from the defaults, notes
         model.zip              final model (saved on finish, Ctrl+C or crash)
         checkpoints/           a model every 20,000 steps
@@ -66,6 +67,7 @@ EXPERIMENTS_NATURAL.md), with a link to its W&B page.
 
 import argparse
 import json
+import re
 import sys
 import time
 from datetime import datetime
@@ -89,6 +91,24 @@ from instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_
 ENVS = {"arena": tree_env, "natural": natural_env}
 
 RUNS_DIR = Path("runs")
+# Layout: runs/arena/<name>_<time>/ and runs/natural/<line folder>/<time>/. A natural-world line
+# is one training history (see results/lines_natural.json): --resume continues the line its model
+# came from, unless --line names a different one (a branch); a fresh run starts a new line.
+NATURAL_RUNS = RUNS_DIR / "natural"
+
+
+def natural_line_dir(resume: str | None, line: str | None) -> Path:
+    """The line folder a natural-world run belongs in."""
+    if line:
+        return NATURAL_RUNS / line
+    if resume:
+        src = Path(resume)
+        run = src.parent.parent if src.parent.name == "checkpoints" else src.parent
+        if run.parent.parent.resolve() == NATURAL_RUNS.resolve():
+            return run.parent  # continue that model's line
+    taken = [int(m.group(1)) for d in NATURAL_RUNS.glob("line*")
+             if (m := re.match(r"line(\d+)", d.name))]
+    return NATURAL_RUNS / f"line{max(taken, default=0) + 1}"
 WANDB_PROJECT = "craftground-chop-trees"
 TRAIN_FIELDS = ["started", "timesteps_done", "episodes", "minutes", "last20_avg_logs",
                 "best_episode_logs", "status", "resumed_from", "model", "wandb_url"]
@@ -277,7 +297,10 @@ def main():
     parser.add_argument("--shared-folder", action="store_true",
                         help="run all instances from CraftGround's one shared game folder (old behaviour)")
     parser.add_argument("--name", type=str, default=None,
-                        help="run folder prefix (default chop_ppo, or chop_ppo_natural with --env natural)")
+                        help="arena: run folder prefix (default chop_ppo)")
+    parser.add_argument("--line", type=str, default=None,
+                        help="natural world: line folder under runs/natural/ (default: the --resume model's "
+                             "line, else a new lineN). Give a new name to branch, e.g. line4_adventure-mode")
     parser.add_argument("--no-wandb", action="store_true", help="don't log to Weights & Biases")
     parser.add_argument("--notes", type=str, default="", help="what's special about this run")
     parser.add_argument("--no-jump", action="store_true",
@@ -321,14 +344,19 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Training on {device}")
 
-    name = args.name or ("chop_ppo" if args.env == "arena" else f"chop_ppo_{args.env}")
     started = datetime.now()
-    run_dir = RUNS_DIR / f"{name}_{started:%Y%m%d_%H%M%S}"
+    if args.env == "natural":
+        line_dir = natural_line_dir(args.resume, args.line)
+        run_dir = line_dir / f"{started:%Y%m%d_%H%M%S}"
+        run_name = f"{line_dir.name}/{run_dir.name}"
+    else:
+        run_dir = RUNS_DIR / "arena" / f"{args.name or 'chop_ppo'}_{started:%Y%m%d_%H%M%S}"
+        run_name = run_dir.name
     run_dir.mkdir(parents=True)
     print(f"Run folder: {run_dir}")
 
     run_config = {
-        "run": run_dir.name,
+        "run": run_dir.relative_to(RUNS_DIR).as_posix(),
         "started": started.isoformat(timespec="seconds"),
         "timesteps_target": args.timesteps,
         "resumed_from": args.resume or "",
@@ -345,7 +373,7 @@ def main():
 
     wandb.init(
         project=WANDB_PROJECT,
-        name=run_dir.name,
+        name=run_name,
         dir=str(run_dir),
         notes=args.notes or None,
         tags=[args.env],
