@@ -53,10 +53,6 @@ Every run gets one folder with everything in it:
         monitor_0.monitor.csv  one line per training episode (one file per instance)
         wandb/                 W&B's local copy of the run
 
-In the natural world the Minecraft instances are relaunched every 150,000 steps
-(--restart-every, 0 = never): Java grows each instance's memory as episodes move to new
-forests, and longer stretches ran out of RAM. A relaunch takes ~2-3 minutes.
-
 Press Ctrl+C at any time: the current model is saved before exiting.
 Each run is added to the Training runs table in EXPERIMENTS.md (or
 EXPERIMENTS_NATURAL.md), with a link to its W&B page.
@@ -102,11 +98,6 @@ PPO_SETTINGS = dict(
 )
 
 
-# ~12 minutes of natural-world training on 4 instances: they're relaunched before Java has grown
-# them anywhere near full (two 15-20 minute stretches ran out of RAM). A relaunch takes ~2-3 min.
-RESTART_EVERY_NATURAL = 150_000
-
-
 def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False, jump: bool = False):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker.
     jump: natural world only, use the 13 actions with jump instead of the arena's 11."""
@@ -114,10 +105,7 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
         make_env = ENVS[env_name].make_env
         env_path = None if shared_folder else env_path_for(port, verbose=True)
         kwargs = {"jump": jump} if env_name == "natural" else {}
-        # After an instance restart, append to the existing file (SB3 only writes the header line
-        # when it starts a new file, so only start one when there's none yet).
-        fresh = not Path(monitor_file + ".monitor.csv").exists()
-        return Monitor(make_env(port=port, env_path=env_path, **kwargs), filename=monitor_file, override_existing=fresh,
+        return Monitor(make_env(port=port, env_path=env_path, **kwargs), filename=monitor_file,
                        info_keywords=("logs_chopped",))
     return _make
 
@@ -212,66 +200,6 @@ class StepTimer(VecEnvWrapper):
         return self.venv.reset()
 
 
-class RestartableVecEnv(VecEnvWrapper):
-    """Holds the Minecraft instances and can replace them with fresh ones (restart()).
-
-    Why: Java grows each instance's memory as episodes hop to new forests, and long natural-world
-    runs ran out of RAM (natural_env.py, JVM_MAX_MEMORY). Fresh instances start small again."""
-
-    def __init__(self, build, ports, shared_folder: bool):
-        self.build, self.ports, self.shared_folder = build, ports, shared_folder
-        super().__init__(build())
-
-    def reset(self):
-        return self.venv.reset()
-
-    def step_wait(self):
-        return self.venv.step_wait()
-
-    def restart(self):
-        """Close all instances (killing any leftovers) and launch new ones. Reset afterwards
-        through the model's env, so SB3's own wrappers (e.g. image transposing) see the frames."""
-        close_vec_env(self.venv, self.ports, self.shared_folder)
-        self.venv = self.build()
-
-    def close(self):
-        close_vec_env(self.venv, self.ports, self.shared_folder)
-
-
-class RestartCallback(BaseCallback):
-    """Every `every` steps, at the end of a rollout, relaunches all Minecraft instances.
-
-    At that point the rollout's returns are already computed (episodes cut short are bootstrapped
-    from the value estimate, like any rollout boundary), and the next rollout starts from the new
-    instances' first frames. Logs time/restart_s (launch time, ~2-3 min)."""
-
-    def __init__(self, envs: RestartableVecEnv, every: int):
-        super().__init__()
-        self.envs, self.every = envs, every
-        self.last = None
-        self.restarts = 0
-
-    def _on_training_start(self) -> None:
-        self.last = self.num_timesteps
-
-    def _on_rollout_end(self) -> None:
-        if self.num_timesteps - self.last < self.every or self.num_timesteps >= self.model._total_timesteps:
-            return  # not due yet, or training ends after this update anyway
-        print(f"[{self.num_timesteps:>8} steps] restarting the Minecraft instances to free memory...", flush=True)
-        t = time.perf_counter()
-        self.envs.restart()
-        self.model._last_obs = self.model.env.reset()  # via all wrappers, as SB3 does at the start
-        self.model._last_episode_starts = np.ones(self.envs.num_envs, dtype=bool)
-        seconds = time.perf_counter() - t
-        self.restarts += 1
-        self.last = self.num_timesteps
-        self.logger.record("time/restart_s", seconds)
-        print(f"[{self.num_timesteps:>8} steps] restart {self.restarts} done in {seconds:.0f} s", flush=True)
-
-    def _on_step(self) -> bool:
-        return True
-
-
 class SpeedCallback(BaseCallback):
     """Logs current training speed per PPO iteration (SB3's time/fps averages over the whole run).
 
@@ -325,9 +253,6 @@ def main():
                         help="run folder prefix (default chop_ppo, or chop_ppo_natural with --env natural)")
     parser.add_argument("--no-wandb", action="store_true", help="don't log to Weights & Biases")
     parser.add_argument("--notes", type=str, default="", help="what's special about this run")
-    parser.add_argument("--restart-every", type=int, default=None, metavar="STEPS",
-                        help="relaunch the Minecraft instances every STEPS steps to free memory "
-                             "(default 150000 in the natural world, 0 = never; arena: never)")
     parser.add_argument("--no-jump", action="store_true",
                         help="natural world: use the arena's 11 actions instead of 13 with jump "
                              "(automatic when --resume is an 11-action model)")
@@ -351,8 +276,6 @@ def main():
     elif saved and saved["action_space"].n != len(tree_env.ACTION_NAMES):
         parser.error(f"--resume model has {saved['action_space'].n} actions; the {args.env} world has "
                      f"{len(tree_env.ACTION_NAMES)} (jump models only run in the natural world)")
-    restart_every = args.restart_every if args.restart_every is not None else (
-        RESTART_EVERY_NATURAL if args.env == "natural" else 0)
     # SB3's n_steps is per env; ours is the total, so split it across the instances.
     steps_per_env = max(ppo_settings["n_steps"] // args.n_envs, 1)
     sb3_settings = {**ppo_settings, "n_steps": steps_per_env}
@@ -373,7 +296,6 @@ def main():
         "resumed_from": args.resume or "",
         "notes": args.notes,
         "n_envs": args.n_envs,
-        "restart_every": restart_every,
         "rollout_steps": steps_per_env * args.n_envs,
         "ppo": ppo_settings,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
@@ -395,7 +317,6 @@ def main():
             "timesteps": args.timesteps,
             "resumed_from": args.resume,
             "n_envs": args.n_envs,
-            "restart_every": restart_every,
             **ppo_settings,
             **{f"env/{k}": v for k, v in env_settings(args.env, jump).items()},
         },
@@ -411,10 +332,7 @@ def main():
     clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
     factories = [env_factory(args.env, args.port + 10 * i, str(run_dir / f"monitor_{i}"), args.shared_folder, jump)
                  for i in range(args.n_envs)]
-    instances = RestartableVecEnv(
-        lambda: SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories),
-        ports, args.shared_folder)
-    step_timer = StepTimer(instances)
+    step_timer = StepTimer(SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories))
     env = step_timer
     print(f"{args.env} world, {args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
           f"({steps_per_env * args.n_envs} total), {env.action_space.n} actions{' (with jump)' if jump else ''}")
@@ -430,7 +348,6 @@ def main():
     callbacks = [
         chop_stats,
         SpeedCallback(args.n_envs, step_timer),
-        *([RestartCallback(instances, restart_every)] if restart_every > 0 else []),
         # save_freq counts vec-env steps, each of which is n_envs env steps.
         CheckpointCallback(save_freq=max(20_000 // args.n_envs, 1), save_path=str(run_dir / "checkpoints"), name_prefix="ppo_chop"),
     ]
@@ -451,7 +368,7 @@ def main():
         model_path = run_dir / "model.zip"
         model.save(model_path)
         print(f"Model saved to {model_path}")
-        instances.close()
+        close_vec_env(env, ports, args.shared_folder)
 
         summary = {
             "timesteps_done": model.num_timesteps,
