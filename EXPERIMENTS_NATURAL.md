@@ -1,0 +1,181 @@
+# CraftGround Experiments: Chop Trees in a Natural World
+
+Goal: chop as many logs as possible in one episode, starting in a real generated
+forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS.md.
+
+<!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
+_Tables last updated 2026-11-17 13:58._
+
+## Results
+
+Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one episode each, same starting direction, current setup), so differences come from the agents, not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose ranges overlap a lot may not really differ. Older random-spawn scores are near the bottom.
+
+| Model | Line | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Random actions (baseline) | random actions | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
+| Line 2b @ 1.0M<br>`20261115_231007` | linear LR from Line 2's 601k checkpoint | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
+| Line 3c @ 3.0M<br>`20261117_114712` | 3M linear LR schedule, from Line 3 @ 257k | 100 | **23.93** ± 3.59 | 21 | 9 | 69 | **21.0×** |
+| Line 3 @ 1.0M<br>`20261116_123155` | jump, linear LR, from scratch | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
+| Line 3b @ 1.5M<br>`20261116_145213` | fine-tune Line 3 @ 1.0M for 500k more at a small LR | 100 | **21.86** ± 3.08 | 20 | 14 | 53 | **19.2×** |
+| Line 2 @ 602k<br>`20261115_185527` @ 601,536 steps | jump, constant LR · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
+| Line 3c @ 1.0M<br>`20261116_173633` @ 996,932 steps | 3M linear LR schedule, from Line 3 @ 257k | 100 | **16.15** ± 2.12 | 15 | 10 | 47 | **14.2×** |
+| Line 2 @ 1.0M<br>`20261115_192015` | jump, constant LR · render distance 6 | 100 | **14.98** ± 2.09 | 14 | 11 | 43 | **13.1×** |
+| Line 3 @ 257k<br>`20261115_235545` | jump, linear LR, from scratch | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
+
+## Held-out world
+
+Fixed spots in a world training never uses (seed 20261117, `results/eval_spots_natural_seed20261117.json`). **Training world** is the same agent's fixed-spot score in the world it trained in. A **gap** near 0 means the agent learned to chop trees in general; a clearly negative gap (larger than the ± ranges) means part of its score comes from knowing the training world. vs random uses the random baseline in this world.
+
+| Model | Line | Episodes | Held-out mean | Training world | Gap | vs random |
+| --- | --- | --- | --- | --- | --- | --- |
+| Random actions (baseline) | random actions | 100 | **1.14** ± 0.38 | 1.14 ± 0.41 | +0.00 | baseline |
+| Line 2b @ 1.0M<br>`20261115_231007` | linear LR from Line 2's 601k checkpoint | 100 | **25.42** ± 3.96 | 24.74 ± 3.73 | +0.68 | **22.3×** |
+| Line 3 @ 1.0M<br>`20261116_123155` | jump, linear LR, from scratch | 100 | **21.93** ± 3.25 | 22.39 ± 2.97 | -0.46 | **19.2×** |
+
+## Training lines
+
+Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are the run folders inside, split by crashes, memory kills or deliberate stops, in order. `train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.
+
+### Line 1 · no jump, constant LR
+
+`runs/natural/line1_no-jump/`
+
+**Question:** Can PPO learn to chop trees in a generated world at all? First natural-world run, the arena's 11 actions.
+
+**Found:** Yes, but modestly: 9.7 logs per episode at 503k (random spawns), 5.3x random actions.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261115_155106` | from an arena model | 0 → 100k | 4 | constant | 9.8 | completed | – |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/jnm6lysy) |
+| `20261115_160512` | continued | 100k → ~200k | 6 | constant | – | no record (killed or hung) | – | 6 instances; hung while closing them (stopped from W&B), so no CSV row | – |
+| `20261115_161832` | continued | 200k → 503k | 4 | constant | 19.0 | completed | 9.7* @ 503k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/6hob06tk) |
+
+### Line 2 · jump, constant LR
+
+`runs/natural/line2_jump-constant-lr/`
+
+**Question:** Does adding jump and forward_jump help on hilly terrain? Compare with Line 1.
+
+**Found:** Yes: jump nearly doubled the score at ~500k (18.0 vs Line 1's 9.7, random spawns). With a constant LR it peaked near 600k (18.1 on fixed spots) and then got worse: 15.0 at 1M, -3.1 +/- 2.6 logs vs its 601k checkpoint spot by spot.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261115_172419` | from an arena model | 0 → ~180k | 4 | constant | – | no record (killed or hung) | – | killed for low memory at ~188k; resumed from the 180k checkpoint | – |
+| `20261115_173930` | continued | 180k → 502k | 4 | constant | 21.6 | completed | 18.0* @ 502k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wbto0vn4) |
+| `20261115_185527` | continued | 502k → ~682k | 4 | constant | – | no record (killed or hung) | **18.1** @ 602k | killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b | – |
+| `20261115_192015` | continued | 682k → 1.0M | 4 | constant | 21.8 | completed | **15.0** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
+
+### Line 2b · linear LR from Line 2's 601k checkpoint
+
+`runs/natural/line2b_linear-lr-from-601k/`
+
+**Question:** Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?
+
+**Found:** Yes: from the same 601k model it rose to 24.7 on fixed spots, while Line 2 fell to 15.0. Spot by spot: +6.7 +/- 3.1 logs over the split point and +9.8 +/- 3.5 over Line 2 @ 1M. Best model so far.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261115_231007` | branch from Line 2 | 602k → 1.0M | 3 | linear | 29.7 | completed | **24.7** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/f61norjd) |
+
+### Line 3 · jump, linear LR, from scratch
+
+`runs/natural/line3_jump-linear-lr-scratch/`
+
+**Question:** Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?
+
+**Found:** No: 22.4 on fixed spots at 1M, tied with Line 2b (-2.3 +/- 3.0 spot by spot), with fewer 0-log episodes (6 vs 13). So 2b's result doesn't depend on its patchwork history.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261115_235545` | from an arena model | 0 → 257k | 3 | linear | 20.5 | interrupted | **12.3** @ 257k | stopped on purpose (Ctrl+C) to free the machine for fixed spots | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
+| `20261116_123155` | continued | 257k → 1.0M | 3 | linear | 67.5 | completed | **22.4** @ 1.0M | resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2x96rt9o) |
+
+### Line 3b · fine-tune Line 3 @ 1.0M for 500k more at a small LR
+
+`runs/natural/line3b_finetune-500k/`
+
+**Question:** Line 3 ended with its learning rate at 0. Does 500k more steps at a small rate (5e-5 -> 0) still improve it, or is it at its limit with this setup?
+
+**Found:** No: 21.9 on fixed spots at 1.5M, -0.5 +/- 3.1 logs vs Line 3 @ 1.0M spot by spot (better at 41 spots, worse at 51). The extra 500k steps changed nothing measurable; with this setup the model looks to be at its limit.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261116_145213` | branch from Line 3 | 1.0M → 1.5M | 3 | linear | 34.3 | completed | **21.9** @ 1.5M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/nsc8z41e) |
+
+### Line 3c · 3M linear LR schedule, from Line 3 @ 257k
+
+`runs/natural/line3c_linear-lr-3M/`
+
+**Question:** Line 3's 1M schedule stalled near 22 and fine-tuning (3b) didn't help. Does one longer schedule (2.29e-4 -> 0 over 257k -> 3M, as if a single 3M run) keep improving past 22? Also the first run with 4 instances (same 2048-step updates).
+
+**Found:** No: 23.9 on fixed spots at 3M, tied with Line 3 @ 1M (+1.5 +/- 3.4 spot by spot, better at 47, worse at 48) and Line 2b (-0.8 +/- 3.5). At 1M, with its rate still high, it was behind Line 3 (16.1, -6.2 +/- 3.6) and then climbed back to the same level. Every recipe so far ends at ~22-25, so the limit is the setup, not training length.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261116_165326` | branch from Line 3 | 257k → ~717k | 4 | linear | – | no record (killed or hung) | – |  | – |
+| `20261116_173633` | continued | 717k → 2.1M | 4 | linear | 103.2 | interrupted | **16.1** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/rlc5ue18) |
+| `20261117_114712` | continued | 2.1M → 3.0M | 3 | linear | 84.7 | completed | **23.9** @ 3.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/ato3q2uf) |
+
+## Evaluation runs
+
+One row per `evaluate.py` run, newest first. **Minutes** includes launching Minecraft; **Steps/s** is env steps per second over all instances while playing (runs from before timing was added show –). **Spots**: fixed = the saved evaluation spots, random = random spawns (all runs before 2026-11-16). **World**: training = the world agents train in, held-out = one they never see (`--held-out`).
+
+| When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s | Per episode |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-17T13:43:24 | `runs/natural/line3c_linear-lr-3M/20261116_173633/checkpoints/ppo_chop_996932_steps.zip` | fixed | training | 100 | 16.15 | 0 | 47 | 3 | 10.0 | 216 | 6 28 28 4 13 7 14 47 6 9 14 5 22 35 30 29 5 2 33 16 18 29 28 20 0 24 23 19 15 15 21 3 38 24 23 9 18 25 13 14 29 27 0 9 20 15 0 2 0 39 15 31 33 9 21 15 10 7 0 11 8 17 0 10 41 7 14 0 29 20 16 20 25 4 16 10 11 9 35 3 13 21 11 21 10 20 2 0 24 24 25 10 24 0 18 21 17 19 0 15 |
+| 2026-11-17T13:32:59 | `runs/natural/line3c_linear-lr-3M/20261117_114712/model.zip` | fixed | training | 100 | 23.93 | 0 | 69 | 3 | 11.5 | 188 | 6 19 34 12 4 2 16 61 15 20 32 0 25 46 38 44 54 0 4 50 31 51 12 41 37 60 7 46 21 26 30 5 0 8 23 6 29 35 14 0 36 44 8 41 4 27 3 32 9 46 43 5 54 8 42 38 20 5 0 9 18 32 21 35 32 1 16 0 69 8 60 35 18 25 4 29 19 10 12 36 14 27 3 24 13 30 0 20 12 25 64 18 12 0 20 66 23 56 0 48 |
+| 2026-11-16T16:47:06 | `random` | fixed | held-out | 100 | 1.14 | 0 | 11 | 3 | 9.7 | 213 | 0 0 2 0 0 0 3 4 1 2 0 1 0 0 2 1 0 1 1 3 1 0 0 1 0 5 6 0 0 0 0 0 5 0 3 0 5 2 0 0 0 1 0 0 0 0 0 1 0 0 0 4 0 0 0 0 8 5 0 0 3 0 0 3 0 2 2 1 0 3 0 0 5 1 0 0 0 3 1 0 0 0 1 2 0 0 11 0 2 1 1 0 0 0 0 0 3 0 1 0 |
+| 2026-11-16T16:37:23 | `runs/natural/line3_jump-linear-lr-scratch/20261116_123155/model.zip` | fixed | held-out | 100 | 21.93 | 0 | 68 | 3 | 11.8 | 169 | 16 29 36 10 8 0 35 36 10 23 5 14 47 48 46 7 10 5 33 32 34 0 0 47 33 20 68 0 2 33 19 27 20 46 52 8 13 0 51 12 16 11 50 33 32 25 8 7 0 4 47 29 8 15 10 24 40 11 11 29 7 0 45 24 0 31 8 50 13 19 19 53 0 41 19 32 0 36 26 45 9 10 32 36 18 9 4 27 14 37 44 10 0 21 4 3 36 0 34 32 |
+| 2026-11-16T16:25:32 | `runs/natural/line2b_linear-lr-from-601k/20261115_231007/model.zip` | fixed | held-out | 100 | 25.42 | 0 | 70 | 3 | 14.2 | 136 | 57 0 34 4 5 0 44 65 18 33 34 42 46 56 27 19 5 14 35 43 55 18 0 1 24 19 12 4 0 0 32 21 56 7 58 59 67 51 0 35 17 56 70 19 19 33 0 7 0 52 33 54 14 55 33 34 21 3 15 40 26 58 0 9 4 37 0 39 69 39 6 21 18 0 0 14 30 24 4 7 29 18 8 36 31 8 8 21 32 22 52 56 27 12 33 0 0 10 46 13 |
+| 2026-11-16T15:38:05 | `runs/natural/line3b_finetune-500k/20261116_145213/model.zip` | fixed | training | 100 | 21.86 | 0 | 53 | 3 | 10.8 | 188 | 5 18 42 14 22 0 16 52 15 47 30 0 16 43 48 40 32 0 39 46 19 44 20 34 37 27 24 38 2 24 3 0 0 25 7 2 12 30 53 15 12 36 0 23 0 0 4 16 10 40 31 0 43 7 18 15 29 0 0 26 24 30 0 25 52 9 31 0 50 30 17 39 31 14 10 19 6 9 7 19 22 19 17 15 42 16 34 29 16 45 25 40 28 21 0 47 39 5 7 46 |
+| 2026-11-16T14:46:08 | `runs/natural/line2_jump-constant-lr/20261115_192015/model.zip` | fixed | training | 100 | 14.98 | 0 | 43 | 3 | 9.5 | 224 | 5 15 26 6 24 24 7 30 5 5 18 0 12 25 14 16 17 3 16 3 6 29 38 20 21 25 27 43 8 14 11 10 33 15 0 2 13 18 12 13 15 19 0 19 0 1 0 11 12 32 19 12 20 8 13 2 4 0 0 11 22 8 5 9 11 6 0 26 37 29 16 14 10 13 9 1 20 14 21 25 26 32 20 7 7 25 0 15 11 38 14 20 32 20 0 16 38 26 0 28 |
+| 2026-11-16T13:51:42 | `runs/natural/line3_jump-linear-lr-scratch/20261116_123155/model.zip` | fixed | training | 100 | 22.39 | 0 | 53 | 3 | 11.3 | 181 | 19 35 33 12 13 9 25 23 29 5 12 0 40 51 53 30 25 13 41 17 31 49 46 33 31 46 10 48 23 23 32 3 3 2 26 43 44 20 43 42 4 37 0 0 10 11 3 11 31 17 43 11 19 28 19 51 31 3 18 0 12 28 28 0 17 40 35 3 28 43 5 30 2 27 11 5 23 33 25 39 32 25 37 17 14 18 7 51 6 7 22 17 45 25 28 0 6 6 8 4 |
+| 2026-11-16T11:57:57 | `runs/natural/line3_jump-linear-lr-scratch/20261115_235545/model.zip` | fixed | training | 100 | 12.35 | 0 | 37 | 3 | 10.2 | 210 | 0 35 30 3 15 17 12 26 5 12 8 0 9 21 22 14 7 0 1 13 1 31 16 0 15 37 22 20 14 9 11 14 0 4 2 2 5 22 7 5 2 8 5 16 0 9 0 8 7 30 35 12 19 5 26 14 15 6 0 8 3 11 15 32 11 1 0 0 24 17 13 9 13 15 2 15 3 22 5 17 2 14 16 28 13 5 3 7 8 34 30 12 29 7 4 25 22 3 5 28 |
+| 2026-11-16T11:47:39 | `runs/natural/line2b_linear-lr-from-601k/20261115_231007/model.zip` | fixed | training | 100 | 24.74 | 0 | 69 | 3 | 12.5 | 162 | 6 58 42 13 17 0 6 40 22 4 30 0 36 68 36 19 18 0 39 49 49 24 61 49 27 30 69 40 50 13 19 28 1 18 47 39 0 19 34 39 0 36 0 0 36 2 3 4 42 9 31 49 4 63 25 40 36 8 20 0 13 7 10 0 10 46 38 35 0 23 38 24 35 19 6 48 9 10 25 25 53 10 10 21 16 40 8 6 55 34 23 5 49 23 60 0 0 0 23 50 |
+| 2026-11-16T11:35:02 | `runs/natural/line2_jump-constant-lr/20261115_185527/checkpoints/ppo_chop_601536_steps.zip` | fixed | training | 100 | 18.07 | 0 | 59 | 3 | 10.6 | 202 | 6 46 45 6 25 8 26 30 12 16 18 0 15 31 53 45 16 0 13 30 0 42 22 22 32 48 8 42 12 28 15 8 3 20 34 0 13 20 0 0 6 23 0 41 0 0 0 17 0 25 23 19 22 7 33 31 14 0 0 8 13 11 5 16 7 0 0 10 59 5 4 22 12 11 6 18 6 11 23 51 21 21 22 34 14 33 15 7 2 51 9 26 34 25 0 53 32 19 0 20 |
+| 2026-11-16T11:24:18 | `random` | fixed | training | 100 | 1.14 | 0 | 11 | 3 | 11.1 | 190 | 0 0 2 0 3 0 0 0 1 0 0 0 0 0 0 1 0 0 4 0 0 10 4 0 2 6 0 2 0 0 0 1 0 0 0 0 0 4 0 0 0 0 0 3 0 0 0 2 0 4 0 0 5 0 0 2 1 2 0 0 0 11 0 2 0 1 0 0 3 2 4 1 4 0 0 0 0 0 0 6 0 0 0 0 0 1 0 0 3 5 4 0 1 0 0 0 2 0 0 5 |
+| 2026-11-15T23:50:28 | `runs/natural/line2b_linear-lr-from-601k/20261115_231007/model.zip` | random | training | 100 | 25.44 | 0 | 66 | 3 | 9.8 | 251 | 37 12 37 37 26 14 15 28 46 13 11 0 3 18 42 23 26 46 19 2 0 19 3 29 56 26 35 2 37 7 47 42 8 11 33 12 31 32 4 6 5 60 46 45 50 30 52 62 44 29 0 35 0 33 35 47 0 52 11 35 0 30 45 28 8 42 27 43 49 24 3 50 23 10 36 8 15 47 13 2 43 13 21 66 0 20 64 7 5 65 11 17 63 13 4 34 15 0 4 10 |
+| 2026-11-15T20:02:25 | `runs/natural/line2_jump-constant-lr/20261115_192015/model.zip` | random | training | 100 | 14.99 | 0 | 41 | 4 | 8.5 | 286 | 24 10 6 4 0 0 11 22 0 18 11 10 20 15 15 17 35 21 10 19 6 0 17 0 2 3 24 19 31 11 0 28 8 20 19 4 18 14 9 14 18 0 0 0 32 14 13 18 34 19 12 20 17 5 0 7 19 17 14 8 1 29 15 14 32 23 27 7 29 21 12 0 37 10 0 30 8 18 21 23 0 24 9 33 18 28 11 24 22 41 4 28 34 24 7 0 22 11 15 5 |
+| 2026-11-15T19:53:35 | `runs/natural/line2_jump-constant-lr/20261115_185527/checkpoints/ppo_chop_601536_steps.zip` | random | training | 100 | 21.67 | 0 | 66 | 4 | 8.7 | 268 | 51 0 6 26 52 21 16 37 4 12 51 3 27 33 33 3 37 6 28 27 40 4 19 11 38 3 34 10 13 0 66 26 50 7 24 38 19 8 21 5 65 20 14 0 50 7 56 1 33 36 23 11 19 16 30 13 29 18 17 20 33 2 22 0 26 0 5 13 27 24 36 0 38 0 18 0 28 38 54 0 10 35 28 3 16 21 62 0 10 49 41 17 32 49 10 12 8 0 13 0 |
+| 2026-11-15T18:54:25 | `runs/natural/line2_jump-constant-lr/20261115_173930/model.zip` | random | training | 100 | 17.96 | 0 | 63 | 4 | 8.2 | 298 | 0 2 1 19 32 41 33 0 25 30 15 0 4 9 26 11 43 9 14 20 19 0 23 22 25 31 28 10 23 0 0 0 0 27 16 1 5 31 27 25 20 20 11 10 14 26 16 1 13 35 8 0 38 0 0 4 13 3 52 23 5 9 24 27 25 40 31 0 0 29 0 22 26 25 17 26 10 38 11 3 0 29 10 2 12 48 26 0 11 30 30 17 36 13 63 21 17 41 52 16 |
+| 2026-11-15T16:51:49 | `runs/natural/line1_no-jump/20261115_161832/model.zip` | random | training | 100 | 9.68 | 0 | 43 | 4 | 8.1 | 300 | 4 5 0 11 0 4 13 0 2 4 3 0 10 31 0 2 10 22 5 9 9 11 4 3 11 4 10 26 7 26 12 0 15 0 27 11 2 3 18 28 6 33 10 3 6 9 9 0 0 33 1 18 5 7 12 16 12 14 7 8 3 4 0 0 0 2 0 4 16 29 8 2 34 20 3 3 0 22 3 43 2 7 15 0 6 15 42 3 2 26 6 10 2 8 8 10 21 7 5 6 |
+| 2026-11-14T17:52:51 | `runs/arena/chop_ppo_20261113_131702/model.zip` | random | training | 100 | 5.01 | 0 | 30 | – | – | – | 11 30 7 0 2 12 2 21 0 11 3 17 0 5 0 3 0 17 3 16 0 3 2 9 0 6 0 8 0 0 6 0 0 5 4 0 1 5 25 4 7 2 0 4 2 16 13 0 1 2 13 3 3 4 10 0 5 15 4 6 2 9 13 12 8 8 9 4 1 5 0 2 8 3 10 0 4 6 2 8 0 0 8 4 0 0 1 0 0 0 25 0 0 0 0 0 1 0 0 0 |
+| 2026-11-14T17:26:55 | `random` | random | training | 100 | 1.81 | 0 | 24 | – | – | – | 0 0 2 2 0 1 0 2 7 0 2 3 0 1 0 3 0 3 1 2 1 0 0 0 0 1 2 1 0 5 0 2 2 4 1 0 5 8 1 0 2 0 0 3 4 1 2 0 0 6 0 0 0 0 5 0 3 0 7 0 1 4 0 1 3 2 0 2 0 0 0 3 0 24 0 2 2 0 2 8 1 3 1 0 1 0 0 1 3 2 0 5 3 2 7 0 0 0 0 3 |
+| 2026-11-14T17:12:38 | `runs/arena/chop_ppo_20261113_135620/model.zip` | random | training | 100 | 5.10 | 0 | 18 | – | – | – | 10 0 4 4 6 8 15 7 3 2 5 7 0 8 4 2 12 2 3 0 9 5 4 7 13 3 9 4 9 4 13 0 5 6 6 6 2 0 5 2 3 7 1 1 7 3 2 0 3 4 0 4 12 2 7 9 4 0 2 7 8 14 11 0 3 12 1 6 12 7 11 15 8 3 1 6 3 6 0 0 0 0 6 18 3 0 0 5 2 2 4 11 9 4 10 6 4 3 2 2 |
+
+## Earlier random-spawn evaluations
+
+Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an older setup (render distance 6, no damage). Use the Results table above to compare agents. **Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md).
+
+| Model | Line | Arena mean | Episodes | Mean logs | Min | Max | vs random |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Random actions (baseline) | random actions | 3.00 | 100 | 1.81 | 0 | 24 | baseline |
+| `chop_ppo_20261113_131702` | trained in the arena | 31.67 | 100 | 5.01 | 0 | 30 | 2.8× |
+| `chop_ppo_20261113_135620` | trained in the arena | 26.20 | 100 | 5.10 | 0 | 18 | 2.8× |
+| Line 1 @ 503k | no jump, constant LR · render distance 6 | – | 100 | 9.68 | 0 | 43 | 5.3× |
+| Line 2 @ 502k | jump, constant LR · render distance 6 | – | 100 | 17.96 | 0 | 63 | 9.9× |
+| Line 2 @ 602k | jump, constant LR · render distance 6 | – | 100 | 21.67 | 0 | 66 | 12.0× |
+| Line 2 @ 1.0M | jump, constant LR · render distance 6 | – | 100 | 14.99 | 0 | 41 | 8.3× |
+| Line 2b @ 1.0M | linear LR from Line 2's 601k checkpoint | – | 100 | 25.44 | 0 | 66 | 14.1× |
+
+## Environment setup
+
+| Setting | Value |
+| --- | --- |
+| World | Normal generated world, fixed seed 20261114 (held-out evaluation world: seed 20261117, never trained in) |
+| Evaluation | 100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); `evaluate.py --random-spots` for random spawns. Held-out world: `make_eval_spots.py --held-out` once, then `evaluate.py <model> --env natural --held-out` (its table appears once there are results) |
+| Spawn | A new spot every episode, on the ground in an oak/birch forest: first within 150 blocks of the last spot, else anywhere within ±25,000 |
+| Rebuilt each episode | no: chopped trees stay chopped, so every episode moves to fresh forest |
+| Boundaries | none; terrain loads as the agent walks |
+| Render distance | 4 chunks, Minecraft heap 2G (since 2026-11-15, to fit 4 instances in memory; earlier runs: 6 chunks, 3G) |
+| Tool | Unbreakable diamond axe, Efficiency X (1 hit per log) |
+| Observation | RGB image 114×64 (same as the arena) |
+| Actions | 13 discrete: the arena's 11 plus jump, forward_jump (since 2026-11-15; earlier runs and the random baseline use the arena's 11) |
+| Reward | +1 per log chopped (any wood type) |
+| Damage | Lava, fire, drowning etc. hurt and dying ends the episode; no fall damage (since 2026-11-16; earlier runs: player immune to all damage) |
+| Episode length | 1000 steps (no log cap), or until the agent dies |
+<!-- AUTO-GENERATED:END -->
+
+## Notes
+
+Write your observations, ideas and next steps here. This section is never overwritten.

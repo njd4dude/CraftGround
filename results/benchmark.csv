@@ -1,0 +1,16 @@
+timestamp,env,n_envs,steps_per_instance,seconds,steps_per_s,per_instance,resets,avg_reset_s,reset_share,ram_gb_per_instance,launch_s,machine,status,min_reset_s,median_reset_s,max_reset_s
+2026-11-14T18:05:18,arena,1,3000,6.2,487,487,3,0.00,0.00,2.30,77,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,,,
+2026-11-14T18:06:49,arena,2,3000,8.4,713,357,6,0.00,0.00,2.40,93,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,,,
+2026-11-14T18:08:39,arena,4,3000,12.3,977,244,12,0.01,0.00,2.38,110,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,,,
+2026-11-14T18:10:53,arena,6,3000,17.2,1046,174,18,0.01,0.00,2.43,142,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,,,
+2026-11-14T18:27:49,natural,1,3000,78.8,38,38,3,24.42,0.93,2.93,117,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,,,
+2026-11-14T18:31:12,natural,2,3000,59.5,101,50,6,10.15,0.51,2.94,152,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,,,
+2026-11-14T18:34:51,natural,4,3000,72.7,165,41,12,8.96,0.37,2.20,140,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,,,
+2026-11-14T18:38:34,natural,6,3000,,,,,,,,,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM","failed: 1 of 6 instances did not start, then the run hung in reset (stopped by hand)",,,
+2026-11-14T23:04:00,natural,6,3000,,,,,,,,,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM","failed: 1 of 6 instances did not start (Gradle: Failed to remap minecraft), rest hung (stopped by hand)",,,
+2026-11-14T23:19:31,natural,6,3000,68.4,263,44,18,7.83,0.34,2.84,640,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,,,
+2026-11-15T14:42:05,natural,1,10000,,,,,,,,,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",failed: RuntimeError,,,
+2026-11-15T14:45:07,natural,1,10000,206.5,48,48,10,18.64,0.90,2.84,143,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,1.59,8.10,86.41
+2026-11-15T14:51:04,natural,2,10000,166.2,120,60,20,8.89,0.53,2.82,152,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,1.61,6.68,43.33
+2026-11-15T14:56:30,natural,4,10000,248.5,161,40,40,10.22,0.41,3.33,214,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,1.62,7.26,29.44
+2026-11-15T15:38:04,natural,4,10000,170.5,235,59,40,5.69,0.33,3.03,182,"AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM",ok,1.63,4.42,41.63

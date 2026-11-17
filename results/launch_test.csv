@@ -1,0 +1,51 @@
+timestamp,env,n_envs,trial,serial,started,failed,timed_out,rebuilt_cache,lock_messages,max_launch_s,error
+2026-11-14T23:31:54,arena,6,1,False,5,0,1,0,,97,
+2026-11-14T23:39:30,natural,6,1,False,6,0,0,0,,210,
+2026-11-14T23:43:27,arena,6,2,False,6,0,0,0,,109,
+2026-11-14T23:45:50,natural,6,2,False,6,0,0,0,,209,
+2026-11-14T23:49:49,arena,6,3,False,5,1,0,0,,102,RuntimeError: Minecraft process failed to start
+2026-11-14T23:52:05,natural,6,3,False,6,0,0,0,,233,
+2026-11-14T23:56:28,arena,6,4,False,6,0,0,0,,106,
+2026-11-14T23:58:48,natural,6,4,False,6,0,0,0,,268,
+2026-11-15T11:22:19,arena,6,1,False,6,0,0,0,,123,[planted disowned lock; Gradle -w so no Loom messages] cache rebuilt 11:23 by file times
+2026-11-15T11:25:37,arena,6,1,False,6,0,0,1,rebuild=1 disowned=1 waiting=5 held=5,124,[planted disowned lock] 
+2026-11-15T11:28:12,arena,6,2,False,6,0,0,1,rebuild=1 disowned=1 waiting=5 held=5,118,[planted disowned lock] 
+2026-11-15T11:30:38,arena,6,3,False,6,0,0,1,rebuild=1 disowned=1 waiting=5 held=5,120,[planted disowned lock] 
+2026-11-15T12:08:12,arena,1,1,False,1,0,0,0,,77,[separate folders] 
+2026-11-15T12:10:05,arena,6,1,True,6,0,0,0,,422,[separate folders] 
+2026-11-15T12:17:46,arena,6,1,False,6,0,0,0,,99,[separate folders] 
+2026-11-15T12:19:53,natural,6,1,False,6,0,0,0,,192,[separate folders] 
+2026-11-15T12:23:32,arena,6,2,False,6,0,0,0,,109,[separate folders] 
+2026-11-15T12:38:36,arena,6,1,False,6,0,0,0,,97,[separate folders] 
+2026-11-15T12:40:44,arena,6,2,False,6,0,0,0,,101,[separate folders] 
+2026-11-15T12:42:54,arena,6,3,False,6,0,0,0,,103,[separate folders] 
+2026-11-15T12:45:08,arena,6,4,False,6,0,0,0,,99,[separate folders] 
+2026-11-15T12:47:17,arena,6,5,False,6,0,0,0,,102,[separate folders] 
+2026-11-15T12:51:37,arena,6,1,False,6,0,0,0,,95,[separate folders] 
+2026-11-15T12:53:41,arena,6,2,False,6,0,0,0,,95,[separate folders] 
+2026-11-15T12:55:45,arena,6,3,False,6,0,0,0,,98,[separate folders] 
+2026-11-15T12:57:52,arena,6,4,False,6,0,0,0,,97,[separate folders] 
+2026-11-15T12:59:59,arena,6,5,False,6,0,0,0,,96,[separate folders] 
+2026-11-15T13:02:03,arena,6,6,False,6,0,0,0,,99,[separate folders] 
+2026-11-15T13:05:32,arena,6,1,False,6,0,0,0,waiting=5 held=5,99,[alternating] 
+2026-11-15T13:07:40,arena,6,1,False,5,1,0,1,rebuild=1 missing=1 held=1,91,[separate folders] [alternating] RuntimeError: Minecraft process failed to start
+2026-11-15T13:09:39,arena,6,2,False,6,0,0,0,,96,[separate folders] [alternating] 
+2026-11-15T13:11:46,arena,6,2,False,6,0,0,0,waiting=4 held=4,96,[alternating] 
+2026-11-15T13:13:51,arena,6,3,False,6,0,0,0,waiting=3 held=3,98,[alternating] 
+2026-11-15T13:15:58,arena,6,3,False,6,0,0,0,,93,[separate folders] [alternating] 
+2026-11-15T13:18:01,arena,6,4,False,6,0,0,0,,98,[separate folders] [alternating] 
+2026-11-15T13:20:09,arena,6,4,False,6,0,0,0,waiting=5 held=5,99,[alternating] 
+2026-11-15T13:22:18,arena,6,5,False,6,0,0,0,waiting=5 held=5,98,[alternating] 
+2026-11-15T13:24:24,arena,6,5,False,6,0,0,0,,99,[separate folders] [alternating] 
+2026-11-15T13:26:33,arena,6,6,False,6,0,0,0,,97,[separate folders] [alternating] 
+2026-11-15T13:28:40,arena,6,6,False,5,1,0,0,waiting=5 held=5,91,[alternating] RuntimeError: Minecraft process failed to start
+2026-11-15T13:30:42,arena,6,7,False,6,0,0,0,waiting=5 held=5,99,[alternating] 
+2026-11-15T13:32:52,arena,6,7,False,6,0,0,0,,96,[separate folders] [alternating] 
+2026-11-15T13:34:57,arena,6,8,False,6,0,0,0,,98,[separate folders] [alternating] 
+2026-11-15T13:37:07,arena,6,8,False,6,0,0,0,waiting=5 held=5,100,[alternating] 
+2026-11-15T13:39:18,arena,6,9,False,6,0,0,0,waiting=5 held=5,100,[alternating] 
+2026-11-15T13:41:27,arena,6,9,False,6,0,0,0,,96,[separate folders] [alternating] 
+2026-11-15T13:43:33,arena,6,10,False,6,0,0,0,,98,[separate folders] [alternating] 
+2026-11-15T13:45:44,arena,6,10,False,6,0,0,0,waiting=2 held=2,97,[alternating] 
+2026-11-15T13:47:51,arena,6,11,False,6,0,0,0,waiting=4 held=4,100,[alternating] 
+2026-11-15T13:50:00,arena,6,11,False,6,0,0,0,,99,[separate folders] [alternating] 
