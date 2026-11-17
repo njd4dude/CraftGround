@@ -4,7 +4,7 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-17 13:44._
+_Tables last updated 2026-11-17 13:58._
 
 ## Results
 
@@ -13,24 +13,24 @@ Every agent here played the same 100 forest spots (`results/eval_spots_natural.j
 | Model | Line | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | random actions | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
-| Line 2b @ 1.0M | linear LR from Line 2's 601k checkpoint | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
-| Line 3c @ 3.0M | 3M linear LR schedule, from Line 3 @ 257k | 100 | **23.93** ± 3.59 | 21 | 9 | 69 | **21.0×** |
-| Line 3 @ 1.0M | jump, linear LR, from scratch | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
-| Line 3b @ 1.5M | fine-tune Line 3 @ 1.0M for 500k more at a small LR | 100 | **21.86** ± 3.08 | 20 | 14 | 53 | **19.2×** |
-| Line 2 @ 602k | jump, constant LR · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
-| Line 3c @ 1.0M | 3M linear LR schedule, from Line 3 @ 257k | 100 | **16.15** ± 2.12 | 15 | 10 | 47 | **14.2×** |
-| Line 2 @ 1.0M | jump, constant LR · render distance 6 | 100 | **14.98** ± 2.09 | 14 | 11 | 43 | **13.1×** |
-| Line 3 @ 257k | jump, linear LR, from scratch | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
+| Line 2b @ 1.0M<br>`20261115_231007` | linear LR from Line 2's 601k checkpoint | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
+| Line 3c @ 3.0M<br>`20261117_114712` | 3M linear LR schedule, from Line 3 @ 257k | 100 | **23.93** ± 3.59 | 21 | 9 | 69 | **21.0×** |
+| Line 3 @ 1.0M<br>`20261116_123155` | jump, linear LR, from scratch | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
+| Line 3b @ 1.5M<br>`20261116_145213` | fine-tune Line 3 @ 1.0M for 500k more at a small LR | 100 | **21.86** ± 3.08 | 20 | 14 | 53 | **19.2×** |
+| Line 2 @ 602k<br>`20261115_185527` @ 601,536 steps | jump, constant LR · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | **15.9×** |
+| Line 3c @ 1.0M<br>`20261116_173633` @ 996,932 steps | 3M linear LR schedule, from Line 3 @ 257k | 100 | **16.15** ± 2.12 | 15 | 10 | 47 | **14.2×** |
+| Line 2 @ 1.0M<br>`20261115_192015` | jump, constant LR · render distance 6 | 100 | **14.98** ± 2.09 | 14 | 11 | 43 | **13.1×** |
+| Line 3 @ 257k<br>`20261115_235545` | jump, linear LR, from scratch | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
 
 ## Held-out world
 
 Fixed spots in a world training never uses (seed 20261117, `results/eval_spots_natural_seed20261117.json`). **Training world** is the same agent's fixed-spot score in the world it trained in. A **gap** near 0 means the agent learned to chop trees in general; a clearly negative gap (larger than the ± ranges) means part of its score comes from knowing the training world. vs random uses the random baseline in this world.
 
-| Agent | Episodes | Held-out mean | Training world | Gap | vs random |
-| --- | --- | --- | --- | --- | --- |
-| Random actions (baseline) | 100 | **1.14** ± 0.38 | 1.14 ± 0.41 | +0.00 | baseline |
-| `20261115_231007` | 100 | **25.42** ± 3.96 | 24.74 ± 3.73 | +0.68 | **22.3×** |
-| `20261116_123155` | 100 | **21.93** ± 3.25 | 22.39 ± 2.97 | -0.46 | **19.2×** |
+| Model | Line | Episodes | Held-out mean | Training world | Gap | vs random |
+| --- | --- | --- | --- | --- | --- | --- |
+| Random actions (baseline) | random actions | 100 | **1.14** ± 0.38 | 1.14 ± 0.41 | +0.00 | baseline |
+| Line 2b @ 1.0M<br>`20261115_231007` | linear LR from Line 2's 601k checkpoint | 100 | **25.42** ± 3.96 | 24.74 ± 3.73 | +0.68 | **22.3×** |
+| Line 3 @ 1.0M<br>`20261116_123155` | jump, linear LR, from scratch | 100 | **21.93** ± 3.25 | 22.39 ± 2.97 | -0.46 | **19.2×** |
 
 ## Training lines
 

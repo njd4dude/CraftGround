@@ -572,6 +572,11 @@ def _mean_ci(eps: list[int]) -> tuple[float, float]:
     return mean, 1.96 * sd / n ** 0.5
 
 
+def _label_with_folder(agent: str, runs: list[dict]) -> str:
+    """The model's label and, underneath, its run folder (+ steps for a checkpoint), so it's easy to find."""
+    return _model_label(agent, runs) + ("" if agent == "random" else f"<br>{_agent_label(agent)}")
+
+
 def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> str:
     """One row per agent from fixed-spot evaluations (evaluate.py's default in the natural world
     since 2026-11-16): every agent played the same forests, so these means compare fairly."""
@@ -589,7 +594,7 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         median = sorted(eps)[n // 2]
         vs = ("baseline" if agent == "random"
               else f"**{mean / random_mean:.1f}×**" if random_mean else "no baseline yet")
-        rows.append([_model_label(agent, runs), _line_note(agent), n, f"**{mean:.2f}** ± {ci:.2f}", median,
+        rows.append([_label_with_folder(agent, runs), _line_note(agent), n, f"**{mean:.2f}** ± {ci:.2f}", median,
                      sum(x == 0 for x in eps), max(eps), vs])
     return (
         "## Results\n\n"
@@ -602,9 +607,10 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
     )
 
 
-def held_out_section(held_out: list[dict], training_fixed: list[dict]) -> str:
+def held_out_section(held_out: list[dict], training_fixed: list[dict], runs: list[dict] | None = None) -> str:
     """Fixed-spot scores in the held-out world next to the same agent's fixed-spot score in the
     training world: the gap is how much of the score depends on having trained in that world."""
+    runs = runs or []
     by_agent = _episodes_by_agent([r for r in held_out if _is_fixed(r)])
     if not by_agent:
         return ""  # shown once there are results; how to get some is in Environment setup
@@ -614,7 +620,6 @@ def held_out_section(held_out: list[dict], training_fixed: list[dict]) -> str:
     rows = []
     for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", -sum(kv[1]) / len(kv[1]))):
         mean, ci = _mean_ci(eps)
-        name = "Random actions (baseline)" if agent == "random" else _agent_label(agent)
         if agent in train:
             t_mean, t_ci = _mean_ci(train[agent])
             t_cell, gap = f"{t_mean:.2f} ± {t_ci:.2f}", f"{mean - t_mean:+.2f}"
@@ -622,7 +627,8 @@ def held_out_section(held_out: list[dict], training_fixed: list[dict]) -> str:
             t_cell, gap = "–", "–"
         vs = ("baseline" if agent == "random"
               else f"**{mean / random_mean:.1f}×**" if random_mean else "no baseline yet")
-        rows.append([name, len(eps), f"**{mean:.2f}** ± {ci:.2f}", t_cell, gap, vs])
+        rows.append([_label_with_folder(agent, runs), _line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
+                     t_cell, gap, vs])
     return (
         "## Held-out world\n\n"
         f"Fixed spots in a world training never uses (seed {natural_env.HELD_OUT_SEED}, "
@@ -631,7 +637,7 @@ def held_out_section(held_out: list[dict], training_fixed: list[dict]) -> str:
         "learned to chop trees in general; a clearly negative gap (larger than the ± ranges) means part "
         "of its score comes from knowing the training world. vs random uses the random baseline in this "
         "world.\n\n"
-        + table(["Agent", "Episodes", "Held-out mean", "Training world", "Gap", "vs random"], rows)
+        + table(["Model", "Line", "Episodes", "Held-out mean", "Training world", "Gap", "vs random"], rows)
     )
 
 
@@ -657,7 +663,7 @@ def update_report(env: str = "arena") -> None:
         sections = [
             stamp,
             fixed_spots_section(fixed, runs),
-            held_out_section(held_out, fixed),
+            held_out_section(held_out, fixed, runs),
             lines_section(fixed, random_spawns, runs),  # replaces the per-run Agents and Training runs tables
             evals_section(evals),
             natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),
