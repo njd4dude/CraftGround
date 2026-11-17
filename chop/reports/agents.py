@@ -18,11 +18,11 @@ from chop.reports.csvio import normalize_agent
 LINES_FILE = RESULTS_DIR / "lines_natural.json"
 
 
-
 def run_dir_of(agent: str) -> Path:
     """The run folder a model path belongs to (model.zip or checkpoints/ppo_chop_N_steps.zip)."""
     parent = Path(agent).parent
     return parent.parent if parent.name == "checkpoints" else parent
+
 
 def agent_label(agent: str) -> str:
     """Run folder name, plus the step count for a checkpoint."""
@@ -31,6 +31,7 @@ def agent_label(agent: str) -> str:
         steps = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
         return f"`{run_dir_of(agent).name}` @ {int(steps):,} steps" if steps.isdigit() else f"`{agent}`"
     return f"`{path.parent.name}`"
+
 
 def steps_of(agent: str, runs: list[dict]) -> int | None:
     """Training steps behind a model: from a checkpoint's name, else the training CSV."""
@@ -41,8 +42,10 @@ def steps_of(agent: str, runs: list[dict]) -> int | None:
         steps = next((r["timesteps_done"] for r in runs if normalize_agent(r["model"]) == agent), "")
     return int(steps) if str(steps).isdigit() else None
 
+
 def short_steps(n: int) -> str:
     return f"{n / 1e6:.1f}M" if n >= 995_000 else f"{round(n / 1000)}k"
+
 
 def describe(agent: str, runs: list[dict]) -> str:
     """What an agent is, from the config.json of its run and the runs it was resumed from, e.g.
@@ -88,17 +91,20 @@ def describe(agent: str, runs: list[dict]) -> str:
         parts.append(f"render distance {rd}")
     return " · ".join(parts)
 
+
 def load_lines() -> dict:
     try:
         return json.loads(LINES_FILE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {"lines": [], "piece_notes": {}}
 
+
 def run_config(run_dir: Path) -> dict | None:
     try:
         return json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
+
 
 def line_meta(folder: str) -> dict:
     """id / name / tested for a line folder, from results/lines_natural.json or the folder name."""
@@ -110,20 +116,24 @@ def line_meta(folder: str) -> dict:
             "name": (m.group(2).replace("-", " ") if m and m.group(2) else "unnamed line")
             + " (describe it in results/lines_natural.json)", "tested": ""}
 
+
 def line_folders() -> list[Path]:
     """Line folders, in the order results/lines_natural.json lists them, then the rest by name."""
     dirs = [d for d in NATURAL_RUNS.glob("*") if d.is_dir()] if NATURAL_RUNS.exists() else []
     order = [l.get("folder") for l in load_lines().get("lines", [])]
     return sorted(dirs, key=lambda d: (order.index(d.name) if d.name in order else len(order), d.name))
 
+
 def pieces(line_dir: Path) -> list[Path]:
     return sorted(p for p in line_dir.glob("*") if (p / "config.json").exists())
+
 
 def line_of_agent(agent: str) -> dict | None:
     run = run_dir_of(agent)
     if run.parent.parent.as_posix() != NATURAL_RUNS.as_posix():
         return None
     return line_meta(run.parent.name)
+
 
 def model_label(agent: str, runs: list[dict]) -> str:
     """"Line 2b @ 1.0M" for a natural-world model, else the folder label."""
@@ -135,6 +145,7 @@ def model_label(agent: str, runs: list[dict]) -> str:
     steps = steps_of(agent, runs)
     return f"Line {line['id']} @ {short_steps(steps)}" if steps else f"Line {line['id']}"
 
+
 def line_note(agent: str) -> str:
     """The line's name, plus the render distance when it isn't today's."""
     if agent == "random":
@@ -145,9 +156,11 @@ def line_note(agent: str) -> str:
     rd = (run_config(run_dir_of(agent)) or {}).get("env", {}).get("render_distance", 6)
     return line["name"] + (f" · render distance {rd}" if rd != natural_env.RENDER_DISTANCE else "")
 
+
 def label_with_folder(agent: str, runs: list[dict]) -> str:
     """The model's label and, underneath, its run folder (+ steps for a checkpoint), so it's easy to find."""
     return model_label(agent, runs) + ("" if agent == "random" else f"<br>{agent_label(agent)}")
+
 
 def run_end(run_dir: Path, runs: list[dict]) -> tuple[int | None, bool]:
     """Steps at the end of a piece: from the training CSV (exact), else its last checkpoint (approximate)."""
@@ -158,6 +171,7 @@ def run_end(run_dir: Path, runs: list[dict]) -> tuple[int | None, bool]:
     ckpts = [int(s) for p in (run_dir / "checkpoints").glob("ppo_chop_*_steps.zip")
              if (s := p.stem.removeprefix("ppo_chop_").removesuffix("_steps")).isdigit()]
     return (max(ckpts), False) if ckpts else (None, False)
+
 
 def start_of(run_dir: Path, runs: list[dict]) -> tuple[int, str]:
     """(steps at the start, where it came from) for one piece."""

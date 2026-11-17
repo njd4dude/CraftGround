@@ -28,10 +28,8 @@ import random
 import time
 from datetime import datetime
 
-from stable_baselines3.common.vec_env import SubprocVecEnv
-
 from chop.envs import natural as natural_env
-from chop.infra.instances import close_vec_env, env_path_for, kill_instance_processes
+from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, game_folder, instance_ports, launch_vec_env
 
 MIN_SPACING = 300  # blocks between any two spots
 YAW_SEED = 20261116
@@ -40,7 +38,7 @@ YAW_SEED = 20261116
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--count", type=int, default=100)
-    parser.add_argument("--n-envs", type=int, default=natural_env_default_n_envs())
+    parser.add_argument("--n-envs", type=int, default=DEFAULT_N_ENVS["natural"])
     parser.add_argument("--port", type=int, default=8023)
     parser.add_argument("--force", action="store_true", help="replace an existing spot file")
     parser.add_argument("--seed", default=natural_env.SEED,
@@ -55,11 +53,9 @@ def main() -> None:
     if out.exists() and not args.force:
         parser.error(f"{out} exists; scores on a new set aren't comparable with the old one (use --force)")
 
-    ports = [args.port + 10 * i for i in range(args.n_envs)]
-    kill_instance_processes(ports, verbose=True)
-    env = SubprocVecEnv([lambda p=p: natural_env.make_env(port=p, env_path=env_path_for(p, verbose=True),
-                                                              seed=args.seed)
-                         for p in ports])
+    ports = instance_ports(args.port, args.n_envs)
+    env = launch_vec_env([lambda p=p: natural_env.make_env(port=p, env_path=game_folder(p), seed=args.seed)
+                          for p in ports], ports)
     rng = random.Random(YAW_SEED)
     spots: list[dict] = []
     tries = rejected_close = 0
@@ -90,11 +86,6 @@ def main() -> None:
         "spots": spots,
     }, indent=1), encoding="utf-8")
     print(f"{len(spots)} spots from {tries} tries ({rejected_close} too close to another) -> {out}")
-
-
-def natural_env_default_n_envs() -> int:
-    from evaluate import N_ENVS_NATURAL
-    return N_ENVS_NATURAL
 
 
 if __name__ == "__main__":

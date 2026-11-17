@@ -30,7 +30,6 @@ Write your observations, ideas and next steps here. This section is never overwr
 """
 
 
-
 def natural_setup_section() -> str:
     ne = natural_env
     rows = [
@@ -57,6 +56,7 @@ def natural_setup_section() -> str:
         ["Episode length", f"{common.EPISODE_STEPS} steps (no log cap), or until the agent dies"],
     ]
     return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
+
 
 def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> str:
     """One row per agent from fixed-spot evaluations (evaluate.py's default in the natural world
@@ -86,6 +86,7 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         + table(["Model", "Line", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
                  "vs random"], rows)
     )
+
 
 def held_out_section(held_out: list[dict], training_fixed: list[dict], runs: list[dict] | None = None) -> str:
     """Fixed-spot scores in the held-out world next to the same agent's fixed-spot score in the
@@ -119,6 +120,7 @@ def held_out_section(held_out: list[dict], training_fixed: list[dict], runs: lis
         "world.\n\n"
         + table(["Model", "Line", "Episodes", "Held-out mean", "Training world", "Gap", "vs random"], rows)
     )
+
 
 def lines_section(fixed: list[dict], random_spawns: list[dict], runs: list[dict]) -> str:
     """One block per training line: what it tested, then its pieces in order."""
@@ -167,6 +169,7 @@ def lines_section(fixed: list[dict], random_spawns: list[dict], runs: list[dict]
             "record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns "
             "only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.\n\n"
             + "\n\n".join(blocks))
+
 
 def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], runs: list[dict]) -> str:
     """Random-spawn evaluations: all natural-world evaluations before fixed spots (2026-11-16)."""

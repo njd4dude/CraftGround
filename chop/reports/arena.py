@@ -26,7 +26,6 @@ Write your observations, ideas and next steps here. This section is never overwr
 """
 
 
-
 def setup_section() -> str:
     rows = [
         ["World", "Superflat arena, stone-brick walls at ±%d blocks" % arena_env.ARENA_RADIUS],
@@ -40,6 +39,7 @@ def setup_section() -> str:
         ["Episode length", f"{common.EPISODE_STEPS} steps (or all logs chopped)"],
     ]
     return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
+
 
 def summary_section(evals: list[dict], runs: list[dict]) -> str:
     by_agent: dict[str, list[int]] = {}
@@ -87,6 +87,7 @@ def summary_section(evals: list[dict], runs: list[dict]) -> str:
         + table(["Agent", "Training avg", "Eval episodes", "Mean logs", "Min", "Max", "vs random"], rows)
     )
 
+
 def load_config(model: str) -> dict | None:
     """The config.json train.py saves next to each run's model.zip."""
     path = Path(model).parent / "config.json"
@@ -94,6 +95,7 @@ def load_config(model: str) -> dict | None:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
+
 
 def agents_section(evals: list[dict], runs: list[dict]) -> str:
     """One subsection per trained agent: how long it trained, its settings, and what was

@@ -25,6 +25,11 @@ __all__ = ["instance_ports", "game_folder", "launch_vec_env", "close_vec_env"]
 
 PORT_STEP = 10  # instance i listens on first_port + 10 * i
 
+# Instances to run side by side when a script isn't told (--n-envs). Natural-world instances grow
+# to ~4.2 GB each (2G heap + ~1 GB native + Gradle launchers, measured with tools/memprobe.py):
+# 4 of them plus training leave ~0.3 GB of this 32 GB machine free; 3 leave ~5 GB.
+DEFAULT_N_ENVS = {"arena": 6, "natural": 3}
+
 
 def instance_ports(first_port: int, n: int) -> list[int]:
     return [first_port + PORT_STEP * i for i in range(n)]

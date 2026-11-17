@@ -26,6 +26,7 @@ def evals_section(evals: list[dict]) -> str:
                      "Episodes", "Mean logs", "Min", "Max",
                      "Instances", "Minutes", "Steps/s", "Per episode"], rows))
 
+
 def training_section(runs: list[dict], start_cmd: str = "run.bat train.py") -> str:
     if not runs:
         return f"## Training runs\n\n_None yet. Start one with `{start_cmd}`._"

@@ -19,7 +19,6 @@ NATURAL_EVAL_CSV = RESULTS_DIR / "eval_results_natural.csv"
 NATURAL_TRAIN_CSV = RESULTS_DIR / "training_runs_natural.csv"
 
 
-
 def append_row(path: Path, fields: list[str], row: dict) -> None:
     """Append a row. If `fields` has columns the file doesn't, the file is rewritten
     with the extra columns (left blank for older rows) so nothing gets misaligned."""
@@ -40,15 +39,18 @@ def append_row(path: Path, fields: list[str], row: dict) -> None:
             writer.writeheader()
         writer.writerow(row)
 
+
 def read_rows(path: Path) -> list[dict]:
     if not path.exists():
         return []
     with path.open(newline="") as f:
         return list(csv.DictReader(f))
 
+
 def normalize_agent(agent: str) -> str:
     """'runs\\x\\model.zip', './runs/x/model.zip' and 'runs/x/model.zip' are the same agent."""
     return agent if agent == "random" else Path(agent).as_posix().removeprefix("./")
+
 
 def episodes_by_agent(rows: list[dict]) -> dict[str, list[int]]:
     out: dict[str, list[int]] = {}
@@ -56,8 +58,10 @@ def episodes_by_agent(rows: list[dict]) -> dict[str, list[int]]:
         out.setdefault(normalize_agent(r["agent"]), []).extend(int(x) for x in r["per_episode"].split())
     return out
 
+
 def is_fixed(row: dict) -> bool:
     return (row.get("spots") or "").startswith("fixed")
+
 
 def is_held_out(row: dict) -> bool:
     """Played in a world other than the training one (blank = older rows, all in the training world)."""

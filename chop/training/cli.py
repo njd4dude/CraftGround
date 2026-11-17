@@ -1,0 +1,200 @@
+"""train.py's command line (see train.py for usage)."""
+
+import argparse
+import json
+import sys
+import time
+from datetime import datetime
+
+import numpy as np
+import torch
+import wandb
+from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.logger import HumanOutputFormat, Logger
+from stable_baselines3.common.save_util import load_from_zip_file
+
+from chop.envs import ENVS, common
+from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, instance_ports, launch_vec_env
+from chop.paths import RUNS_DIR
+from chop.reports import update_report
+from chop.reports.csvio import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row
+from chop.training.callbacks import LogsChoppedCallback, SpeedCallback, StepTimer, WandbOutputFormat
+from chop.training.lines import natural_line_dir
+from chop.training.schedule import linear_lr
+from chop.training.settings import PPO_SETTINGS, TRAIN_FIELDS, WANDB_PROJECT, env_factory, env_settings
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env", choices=sorted(ENVS), default="arena",
+                        help="arena = walled superflat arena (chop/envs/arena.py); natural = forest in a normal world (chop/envs/natural.py)")
+    parser.add_argument("--timesteps", type=int, default=200_000)
+    parser.add_argument("--resume", type=str, default=None, help="checkpoint .zip to continue from")
+    parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
+    parser.add_argument("--n-envs", type=int, default=None,
+                        help="Minecraft instances to run in parallel (default: 6 in the arena, 3 in the natural world)")
+    parser.add_argument("--shared-folder", action="store_true",
+                        help="run all instances from CraftGround's one shared game folder (old behaviour)")
+    parser.add_argument("--name", type=str, default=None,
+                        help="arena: run folder prefix (default chop_ppo)")
+    parser.add_argument("--line", type=str, default=None,
+                        help="natural world: line folder under runs/natural/ (default: the --resume model's "
+                             "line, else a new lineN). Give a new name to branch, e.g. line4_adventure-mode")
+    parser.add_argument("--no-wandb", action="store_true", help="don't log to Weights & Biases")
+    parser.add_argument("--notes", type=str, default="", help="what's special about this run")
+    parser.add_argument("--no-jump", action="store_true",
+                        help="natural world: use the arena's 11 actions instead of 13 with jump "
+                             "(automatic when --resume is an 11-action model)")
+    parser.add_argument("--lr-schedule", choices=["linear", "constant"], default="linear",
+                        help="linear (default): --learning-rate falls to 0 by the end of this run; "
+                             "constant: stays fixed (all runs before 2026-11-15)")
+    for key, default in PPO_SETTINGS.items():
+        parser.add_argument("--" + key.replace("_", "-"), type=type(default), default=None,
+                            help=f"PPO {key} (default {default})")
+    args = parser.parse_args()
+    if args.n_envs is None:
+        args.n_envs = DEFAULT_N_ENVS[args.env]
+    # Only the flags given on the command line, so a resumed model keeps its own saved settings.
+    overrides = {k: getattr(args, k) for k in PPO_SETTINGS if getattr(args, k) is not None}
+    ppo_settings = {**PPO_SETTINGS, **overrides}
+    saved = load_from_zip_file(args.resume, load_data=True, device="cpu")[0] if args.resume else None
+    if saved and "n_steps" not in overrides:
+        # Keep the resumed model's own rollout size (stored per env, so multiply back up).
+        ppo_settings["n_steps"] = saved["n_steps"] * saved.get("n_envs", 1)
+    # Natural world: 13 actions with jump unless --no-jump; a resumed model keeps the set it was trained with.
+    jump = args.env == "natural" and not args.no_jump
+    if saved and args.env == "natural":
+        jump = saved["action_space"].n == len(common.ACTION_NAMES_JUMP)
+        if args.no_jump and jump:
+            parser.error("--no-jump: the --resume model was trained with jump (13 actions)")
+    elif saved and saved["action_space"].n != len(common.ACTION_NAMES):
+        parser.error(f"--resume model has {saved['action_space'].n} actions; the {args.env} world has "
+                     f"{len(common.ACTION_NAMES)} (jump models only run in the natural world)")
+    # SB3's n_steps is per env; ours is the total, so split it across the instances.
+    steps_per_env = max(ppo_settings["n_steps"] // args.n_envs, 1)
+    sb3_settings = {**ppo_settings, "n_steps": steps_per_env}
+    start_steps = int(saved["num_timesteps"]) if saved else 0
+    if args.lr_schedule == "linear":
+        # A resumed model restarts the schedule from --learning-rate (default 2.5e-4), not from
+        # wherever its own (constant) rate was.
+        lr = linear_lr(ppo_settings["learning_rate"], start_steps, start_steps + args.timesteps)
+        sb3_settings["learning_rate"] = lr
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Training on {device}")
+
+    started = datetime.now()
+    if args.env == "natural":
+        line_dir = natural_line_dir(args.resume, args.line)
+        run_dir = line_dir / f"{started:%Y%m%d_%H%M%S}"
+        run_name = f"{line_dir.name}/{run_dir.name}"
+    else:
+        run_dir = RUNS_DIR / "arena" / f"{args.name or 'chop_ppo'}_{started:%Y%m%d_%H%M%S}"
+        run_name = run_dir.name
+    run_dir.mkdir(parents=True)
+    print(f"Run folder: {run_dir}")
+
+    run_config = {
+        "run": run_dir.relative_to(RUNS_DIR).as_posix(),
+        "started": started.isoformat(timespec="seconds"),
+        "timesteps_target": args.timesteps,
+        "resumed_from": args.resume or "",
+        "notes": args.notes,
+        "n_envs": args.n_envs,
+        "rollout_steps": steps_per_env * args.n_envs,
+        "ppo": ppo_settings,
+        "lr_schedule": args.lr_schedule,
+        "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
+                                  for k, v in overrides.items() if v != PPO_SETTINGS[k]},
+        "env": env_settings(args.env, jump),
+    }
+    (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
+
+    wandb.init(
+        project=WANDB_PROJECT,
+        name=run_name,
+        dir=str(run_dir),
+        notes=args.notes or None,
+        tags=[args.env],
+        mode="disabled" if args.no_wandb else "online",
+        config={
+            "algorithm": "PPO",
+            "policy": "CnnPolicy",
+            "timesteps": args.timesteps,
+            "resumed_from": args.resume,
+            "n_envs": args.n_envs,
+            "lr_schedule": args.lr_schedule,
+            **ppo_settings,
+            **{f"env/{k}": v for k, v in env_settings(args.env, jump).items()},
+        },
+    )
+    # Plot everything against training steps.
+    wandb.define_metric("global_step")
+    wandb.define_metric("*", step_metric="global_step")
+    wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
+
+    ports = instance_ports(args.port, args.n_envs)
+    factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump)
+                 for i, port in enumerate(ports)]
+    step_timer = StepTimer(launch_vec_env(factories, ports, args.shared_folder))
+    env = step_timer
+    print(f"{args.env} world, {args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
+          f"({steps_per_env * args.n_envs} total), {env.action_space.n} actions{' (with jump)' if jump else ''}")
+
+    if args.resume:
+        load_settings = {**overrides, "n_steps": steps_per_env}
+        if args.lr_schedule == "linear":
+            load_settings["learning_rate"] = sb3_settings["learning_rate"]
+        model = PPO.load(args.resume, env=env, device=device, **load_settings)
+        print(f"Resumed from {args.resume}" + (f" with {overrides}" if overrides else ""))
+    else:
+        model = PPO("CnnPolicy", env, device=device, verbose=1, **sb3_settings)
+    model.set_logger(Logger(folder=str(run_dir), output_formats=[HumanOutputFormat(sys.stdout), WandbOutputFormat()]))
+
+    chop_stats = LogsChoppedCallback()
+    callbacks = [
+        chop_stats,
+        SpeedCallback(args.n_envs, step_timer),
+        # save_freq counts vec-env steps, each of which is n_envs env steps.
+        CheckpointCallback(save_freq=max(20_000 // args.n_envs, 1), save_path=str(run_dir / "checkpoints"), name_prefix="ppo_chop"),
+    ]
+
+    t0 = time.time()
+    status = "crashed"
+    try:
+        model.learn(
+            total_timesteps=args.timesteps,
+            callback=callbacks,
+            reset_num_timesteps=args.resume is None,
+        )
+        status = "completed"
+    except KeyboardInterrupt:
+        status = "interrupted"
+        print("\nInterrupted, saving model...")
+    finally:
+        model_path = run_dir / "model.zip"
+        model.save(model_path)
+        print(f"Model saved to {model_path}")
+        close_vec_env(env, ports, args.shared_folder)
+
+        summary = {
+            "timesteps_done": model.num_timesteps,
+            "episodes": chop_stats.episodes,
+            "minutes": round((time.time() - t0) / 60, 1),
+            "last20_avg_logs": round(float(np.mean(chop_stats.recent)), 2) if chop_stats.recent else None,
+            "best_episode_logs": chop_stats.best,
+            "status": status,
+        }
+        if wandb.run is not None:
+            wandb.run.summary.update(summary)
+            wandb.finish(exit_code=0 if status != "crashed" else 1)
+
+        append_row(NATURAL_TRAIN_CSV if args.env == "natural" else TRAIN_CSV, TRAIN_FIELDS, {
+            "started": started.isoformat(timespec="seconds"),
+            **{k: ("" if v is None else v) for k, v in summary.items()},
+            "resumed_from": args.resume or "",
+            "model": model_path.as_posix(),
+            "wandb_url": wandb_url,
+        })
+        update_report(args.env)
