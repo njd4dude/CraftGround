@@ -1,7 +1,7 @@
 """Side-by-side videos of the same spots at two render distances.
 
-    python compare_render_distance.py                     # render distance 4 vs 6, spots 0 5 10 15
-    python compare_render_distance.py --distances 4 8 --spots 3 7
+    python tools/compare_render_distance.py                     # render distance 4 vs 6, spots 0 5 10 15
+    python tools/compare_render_distance.py --distances 4 8 --spots 3 7
 
 Two instances play the same fixed evaluation spots (results/eval_spots_natural.json) with the
 same scripted actions, so the only difference between the two videos is the render distance:
@@ -18,10 +18,10 @@ from pathlib import Path
 import imageio.v2 as imageio
 import numpy as np
 from PIL import Image, ImageDraw
-from stable_baselines3.common.vec_env import SubprocVecEnv
 
+import _bootstrap  # noqa: F401  (makes the chop package importable from tools/)
 from chop.envs import natural as natural_env
-from chop.infra.instances import close_vec_env, env_path_for, kill_instance_processes
+from chop.infra.vec import close_vec_env, game_folder, instance_ports, launch_vec_env
 from chop.envs.common import ACTION_NAMES_JUMP
 
 OUT = Path("runs/tools/render_distance")
@@ -55,11 +55,10 @@ def main() -> None:
 
     all_spots = natural_env.load_eval_spots()
     spots = [all_spots[i] for i in args.spots]
-    ports = [args.port, args.port + 10]
-    kill_instance_processes(ports, verbose=True)
-    env = SubprocVecEnv([lambda p=p, rd=rd: natural_env.make_env(port=p, env_path=env_path_for(p, verbose=True),
-                                                                 render_distance=rd, spots=spots)
-                         for p, rd in zip(ports, args.distances)])
+    ports = instance_ports(args.port, 2)
+    env = launch_vec_env([lambda p=p, rd=rd: natural_env.make_env(port=p, env_path=game_folder(p),
+                                                                  render_distance=rd, spots=spots)
+                          for p, rd in zip(ports, args.distances)], ports)
     OUT.mkdir(parents=True, exist_ok=True)
     actions = script()
     sheet_rows = []

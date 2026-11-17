@@ -1,7 +1,7 @@
 """Does launching many Minecraft instances at once crash, and why? Arena vs natural.
 
-    run.bat launch_test.py --envs arena natural --instances 6 --trials 4
-    run.bat launch_test.py --envs arena --instances 6 --trials 4 --serial    # with launch_lock.SerialLaunch
+    run.bat tools/launch_test.py --envs arena natural --instances 6 --trials 4
+    run.bat tools/launch_test.py --envs arena --instances 6 --trials 4 --serial    # with launch_lock.SerialLaunch
 
 Each trial starts N instances of one world at the same moment (like train.py,
 evaluate.py and benchmark.py do), waits for each one's first reset, then closes
@@ -29,6 +29,7 @@ from pathlib import Path
 
 import psutil
 
+import _bootstrap  # noqa: F401  (makes the chop package importable from tools/)
 from chop.reports.csvio import append_row
 
 LOG_DIR = Path("launch_logs")

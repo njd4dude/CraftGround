@@ -11,6 +11,7 @@ from pathlib import Path
 
 from PIL import Image
 
+import _bootstrap  # noqa: F401  (makes the chop package importable from tools/)
 from chop.envs.common import ACTION_NAMES
 from chop.envs.arena import ChopTreesEnv
 

@@ -1,7 +1,7 @@
 """Where Minecraft instances' memory goes, over time: run it next to training or memtest.py.
 
-    python memprobe.py --minutes 50                  # instances on ports 8023 8033 8043 8053
-    python memprobe.py --ports 8023 8033 --every 60
+    python tools/memprobe.py --minutes 50                  # instances on ports 8023 8033 8043 8053
+    python tools/memprobe.py --ports 8023 8033 --every 60
 
 Every --every seconds, for each port's Minecraft process it records, to results/memprobe.csv:
   process      rss (what Windows counts as in RAM) and private (memory only it owns)
@@ -26,6 +26,7 @@ from pathlib import Path
 
 import psutil
 
+import _bootstrap  # noqa: F401  (makes the chop package importable from tools/)
 from chop.infra.instances import instance_processes
 
 CSV = Path("results/memprobe.csv")

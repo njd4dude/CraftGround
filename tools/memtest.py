@@ -1,7 +1,7 @@
 """How much memory natural-world instances use over time, at a given render distance.
 
-    python memtest.py --render-distance 4 --minutes 20      # 4 instances, random actions
-    python memtest.py --render-distance 4 --jvm-max-memory 2G
+    python tools/memtest.py --render-distance 4 --minutes 20      # 4 instances, random actions
+    python tools/memtest.py --render-distance 4 --jvm-max-memory 2G
 
 Plays random actions (episodes and resets as in training, no model) and every minute
 records each instance's memory (all of its processes: cmd, Gradle, Minecraft) and the
@@ -17,10 +17,11 @@ from pathlib import Path
 
 import numpy as np
 import psutil
-from stable_baselines3.common.vec_env import SubprocVecEnv
 
+import _bootstrap  # noqa: F401  (makes the chop package importable from tools/)
 from chop.envs import natural as natural_env
-from chop.infra.instances import close_vec_env, env_path_for, instance_processes, kill_instance_processes
+from chop.infra.instances import instance_processes
+from chop.infra.vec import close_vec_env, game_folder, instance_ports, launch_vec_env
 
 CSV = Path("results/memtest.csv")
 FIELDS = ["started", "render_distance", "jvm_max_memory", "n_envs", "minute", "steps", "free_gb", "instances_gb", "per_instance_gb"]
@@ -45,12 +46,11 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8023)
     args = parser.parse_args()
 
-    ports = [args.port + 10 * i for i in range(args.n_envs)]
-    kill_instance_processes(ports, verbose=True)
+    ports = instance_ports(args.port, args.n_envs)
     rd, heap = args.render_distance, args.jvm_max_memory
-    env = SubprocVecEnv([lambda p=p: natural_env.make_env(port=p, env_path=env_path_for(p, verbose=True),
-                                                          render_distance=rd, jvm_max_memory=heap)
-                         for p in ports])
+    env = launch_vec_env([lambda p=p: natural_env.make_env(port=p, env_path=game_folder(p),
+                                                           render_distance=rd, jvm_max_memory=heap)
+                          for p in ports], ports)
     started = datetime.now().isoformat(timespec="seconds")
     new_file = not CSV.exists()
     rng = np.random.default_rng()

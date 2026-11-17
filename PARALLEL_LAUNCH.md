@@ -4,6 +4,12 @@ Why running 6 Minecraft instances side by side sometimes hung at startup, what w
 tried, what worked, and what the code does now. Investigated 2026-11-14 and
 2026-11-15.
 
+File names below are from before the code moved into the `chop` package (2026-11-17):
+`instances.py` and `launch_lock.py` are now in `chop/infra/`, `tree_env.py` and
+`natural_env.py` are `chop/envs/arena.py` and `chop/envs/natural.py`, and
+`launch_test.py` is in `tools/`. The launch/close steps every script shares are in
+`chop/infra/vec.py`.
+
 ## Summary
 
 - **Problem:** with 6 instances started at the same moment, one instance sometimes

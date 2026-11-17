@@ -31,16 +31,13 @@ from pathlib import Path
 
 import numpy as np
 import psutil
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
-from chop.envs import natural as natural_env
-from chop.envs import arena as arena_env
-from chop.infra.instances import clear_stale_loom_locks, env_path_for
+from chop.envs import ENVS
+from chop.infra.vec import game_folder, instance_ports, launch_vec_env
 from chop.infra.launch_lock import SerialLaunch
 from chop.reports.csvio import append_row, read_rows
 from chop.reports.markdown import END, START, table, write_report
 
-ENVS = {"arena": arena_env, "natural": natural_env}
 BENCH_CSV = Path("results") / "benchmark.csv"
 BENCH_REPORT = Path("BENCHMARK.md")
 RESETS_CSV = Path("results") / "benchmark_resets.csv"  # one row per timed reset (where its time went)
@@ -118,14 +115,13 @@ def run_setup(env_name: str, n: int, port: int, steps: int, warmup: int, machine
     used_before = psutil.virtual_memory().used
     print(f"[{env_name} x{n}] launching {n} Minecraft instance(s)...")
     t_launch = time.perf_counter()
-    clear_stale_loom_locks()  # see chop/infra/instances.py
 
     def build(p: int):
-        env = make_env(port=p, env_path=None if shared_folder else env_path_for(p, verbose=True))
+        env = make_env(port=p, env_path=game_folder(p, shared_folder))
         return SerialLaunch(env, name=str(p)) if serial_launch else env
 
-    factories = [(lambda p=port + 10 * i: build(p)) for i in range(n)]
-    env = SubprocVecEnv(factories) if n > 1 else DummyVecEnv(factories)
+    ports = instance_ports(port, n)
+    env = launch_vec_env([(lambda p=p: build(p)) for p in ports], ports, shared_folder)
     procs: list[psutil.Process] = []
     try:
         env.reset()

@@ -1,7 +1,7 @@
 # CraftGround Experiments: Chop Trees in a Natural World
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
-forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
+forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
 _Tables last updated 2026-11-17 13:58._
