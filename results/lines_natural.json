@@ -35,6 +35,13 @@
    "name": "fine-tune Line 3 @ 1.0M for 500k more at a small LR",
    "tested": "Line 3 ended with its learning rate at 0. Does 500k more steps at a small rate (5e-5 -> 0) still improve it, or is it at its limit with this setup?",
    "found": "No: 21.9 on fixed spots at 1.5M, -0.5 +/- 3.1 logs vs Line 3 @ 1.0M spot by spot (better at 41 spots, worse at 51). The extra 500k steps changed nothing measurable; with this setup the model looks to be at its limit."
+  },
+  {
+   "folder": "line3c_linear-lr-3M",
+   "id": "3c",
+   "name": "3M linear LR schedule, from Line 3 @ 257k",
+   "tested": "Line 3's 1M schedule stalled near 22 and fine-tuning (3b) didn't help. Does one longer schedule (2.29e-4 -> 0 over 257k -> 3M, as if a single 3M run) keep improving past 22? Also the first run with 4 instances (same 2048-step updates).",
+   "found": "No: 23.9 on fixed spots at 3M, tied with Line 3 @ 1M (+1.5 +/- 3.4 spot by spot, better at 47, worse at 48) and Line 2b (-0.8 +/- 3.5). At 1M, with its rate still high, it was behind Line 3 (16.1, -6.2 +/- 3.6) and then climbed back to the same level. Every recipe so far ends at ~22-25, so the limit is the setup, not training length."
   }
  ],
  "piece_notes": {
