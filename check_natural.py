@@ -1,4 +1,4 @@
-"""Sanity check for natural_env.py: reset a few times and save what the agent sees.
+"""Sanity check for chop/envs/natural.py: reset a few times and save what the agent sees.
 
     run.bat check_natural.py
 
@@ -13,8 +13,8 @@ from pathlib import Path
 
 from PIL import Image
 
-import natural_env
-from natural_env import NaturalChopTreesEnv
+from chop.envs import natural as natural_env
+from chop.envs.natural import NaturalChopTreesEnv
 
 natural_env.DEBUG = True
 

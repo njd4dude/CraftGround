@@ -26,7 +26,7 @@ from pathlib import Path
 
 import psutil
 
-from instances import instance_processes
+from chop.infra.instances import instance_processes
 
 CSV = Path("results/memprobe.csv")
 JCMD = Path(psutil.Process().exe()).parent / "Library" / "lib" / "jvm" / "bin" / "jcmd.exe"

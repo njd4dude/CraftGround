@@ -14,8 +14,9 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-import natural_env
-import tree_env
+from chop.envs import natural as natural_env
+from chop.envs import arena as arena_env
+from chop.envs import common
 
 RESULTS_DIR = Path("results")
 EVAL_CSV = RESULTS_DIR / "eval_results.csv"
@@ -43,7 +44,7 @@ Write your observations, ideas and next steps here. This section is never overwr
 NATURAL_TEMPLATE = f"""# CraftGround Experiments: Chop Trees in a Natural World
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
-forest instead of the walled arena (natural_env.py). Arena results are in EXPERIMENTS.md.
+forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS.md.
 
 {START}
 {END}
@@ -90,15 +91,15 @@ def table(headers: list[str], rows: list[list]) -> str:
 
 def setup_section() -> str:
     rows = [
-        ["World", "Superflat arena, stone-brick walls at ±%d blocks" % tree_env.ARENA_RADIUS],
-        ["Trees", f"{len(tree_env.TREE_POSITIONS)} oaks × {tree_env.TRUNK_HEIGHT} logs = {tree_env.MAX_LOGS} logs max"],
+        ["World", "Superflat arena, stone-brick walls at ±%d blocks" % arena_env.ARENA_RADIUS],
+        ["Trees", f"{len(arena_env.TREE_POSITIONS)} oaks × {arena_env.TRUNK_HEIGHT} logs = {arena_env.MAX_LOGS} logs max"],
         ["Rebuilt each episode", "yes (trees regrow on reset)"],
         ["Tool", "Unbreakable diamond axe, Efficiency X (1 hit per log)"],
         ["Spawn", "Arena centre, random facing (15° steps)"],
-        ["Observation", f"RGB image {tree_env.IMAGE_WIDTH}×{tree_env.IMAGE_HEIGHT}"],
-        ["Actions", f"{len(tree_env.ACTION_NAMES)} discrete: " + ", ".join(tree_env.ACTION_NAMES)],
-        ["Reward", tree_env.REWARD],
-        ["Episode length", f"{tree_env.EPISODE_STEPS} steps (or all logs chopped)"],
+        ["Observation", f"RGB image {common.IMAGE_WIDTH}×{common.IMAGE_HEIGHT}"],
+        ["Actions", f"{len(common.ACTION_NAMES)} discrete: " + ", ".join(common.ACTION_NAMES)],
+        ["Reward", arena_env.REWARD],
+        ["Episode length", f"{common.EPISODE_STEPS} steps (or all logs chopped)"],
     ]
     return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
 
@@ -148,7 +149,7 @@ def summary_section(evals: list[dict], runs: list[dict]) -> str:
     return (
         "## Summary\n\n"
         "One row per agent. **Mean logs** is the real score: the average over all `evaluate.py` "
-        f"episodes for that agent (max {tree_env.MAX_LOGS}). **Training avg** is the last-20-episode "
+        f"episodes for that agent (max {arena_env.MAX_LOGS}). **Training avg** is the last-20-episode "
         "average seen during training. It's a useful hint, but the agent was still exploring then, "
         "so evaluate before trusting it. **vs random** = how many times more logs than random actions.\n\n"
         + table(["Agent", "Training avg", "Eval episodes", "Mean logs", "Min", "Max", "vs random"], rows)
@@ -272,14 +273,14 @@ def natural_setup_section() -> str:
         ["Render distance", f"{ne.RENDER_DISTANCE} chunks, Minecraft heap {ne.JVM_MAX_MEMORY} "
                             "(since 2026-11-15, to fit 4 instances in memory; earlier runs: 6 chunks, 3G)"],
         ["Tool", "Unbreakable diamond axe, Efficiency X (1 hit per log)"],
-        ["Observation", f"RGB image {tree_env.IMAGE_WIDTH}×{tree_env.IMAGE_HEIGHT} (same as the arena)"],
-        ["Actions", f"{len(tree_env.ACTION_NAMES_JUMP)} discrete: the arena's {len(tree_env.ACTION_NAMES)} plus "
-                    + ", ".join(tree_env.JUMP_ACTIONS) + " (since 2026-11-15; earlier runs and the random "
+        ["Observation", f"RGB image {common.IMAGE_WIDTH}×{common.IMAGE_HEIGHT} (same as the arena)"],
+        ["Actions", f"{len(common.ACTION_NAMES_JUMP)} discrete: the arena's {len(common.ACTION_NAMES)} plus "
+                    + ", ".join(common.JUMP_ACTIONS) + " (since 2026-11-15; earlier runs and the random "
                     "baseline use the arena's 11)"],
         ["Reward", ne.REWARD],
         ["Damage", "Lava, fire, drowning etc. hurt and dying ends the episode; no fall damage "
                    "(since 2026-11-16; earlier runs: player immune to all damage)"],
-        ["Episode length", f"{tree_env.EPISODE_STEPS} steps (no log cap), or until the agent dies"],
+        ["Episode length", f"{common.EPISODE_STEPS} steps (no log cap), or until the agent dies"],
     ]
     return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
 
@@ -363,7 +364,7 @@ def _describe(agent: str, runs: list[dict]) -> str:
         s if k == len(merged) - 1 or e is None else f"{s} to {_short_steps(e)}" for k, (s, e) in enumerate(merged))
     if merged and merged[0][0] == "arena":
         history = history.replace("arena, then ", "arena model, then ", 1)
-    parts = ["jump" if len(env.get("actions", [])) == len(tree_env.ACTION_NAMES_JUMP) else "no jump", history]
+    parts = ["jump" if len(env.get("actions", [])) == len(common.ACTION_NAMES_JUMP) else "no jump", history]
     total = _steps_of(agent, runs)
     if total:
         parts.append(f"{_short_steps(total)} steps")

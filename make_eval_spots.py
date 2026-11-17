@@ -30,8 +30,8 @@ from datetime import datetime
 
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-import natural_env
-from instances import close_vec_env, env_path_for, kill_instance_processes
+from chop.envs import natural as natural_env
+from chop.infra.instances import close_vec_env, env_path_for, kill_instance_processes
 
 MIN_SPACING = 300  # blocks between any two spots
 YAW_SEED = 20261116

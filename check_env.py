@@ -11,7 +11,8 @@ from pathlib import Path
 
 from PIL import Image
 
-from tree_env import ACTION_NAMES, ChopTreesEnv
+from chop.envs.common import ACTION_NAMES
+from chop.envs.arena import ChopTreesEnv
 
 A = {name: i for i, name in enumerate(ACTION_NAMES)}
 FRAMES = Path("check_frames")

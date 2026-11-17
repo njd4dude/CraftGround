@@ -10,10 +10,10 @@
     python train.py --env natural --resume runs/arena/chop_ppo_20261113_135620/model.zip   # fine-tune an arena model there
     python train.py --env natural --no-jump                  # natural world with the arena's 11 actions (no jump)
 
---env picks the world: arena (tree_env.py, walled superflat arena, the default)
-or natural (natural_env.py, a fresh forest spot every episode). Both have the
+--env picks the world: arena (chop/envs/arena.py, walled superflat arena, the default)
+or natural (chop/envs/natural.py, a fresh forest spot every episode). Both have the
 same images, but the natural world adds jump and forward_jump (13 actions, see
-tree_env.JUMP_ACTIONS) because of its hills and ledges. 11-action models still --resume
+common.JUMP_ACTIONS) because of its hills and ledges. 11-action models still --resume
 there (jump is turned off automatically to match); --no-jump forces the 11 actions.
 Without jump the two worlds share the same actions, so --resume works across them. Natural runs get their
 own folders (runs/natural/<line>/<time>/, grouped by training line: --resume continues the
@@ -33,7 +33,7 @@ timeout, so they understate it). Training runs ~20% below these raw speeds
 (model inference each step, PPO updates): 4 natural instances trained at ~173.
 
 Each instance runs from its own copy of CraftGround's game folder
-(~/craftground_instances/mc121_port<port>, see instances.py), because instances
+(~/craftground_instances/mc121_port<port>, see chop/infra/instances.py), because instances
 started together in CraftGround's one shared folder sometimes collide and one
 fails to start, which hangs the whole run. --shared-folder goes back to the
 shared folder. The first run on a new port is ~75 s slower while its copy builds.
@@ -83,12 +83,13 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.save_util import load_from_zip_file
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnvWrapper
 
-import natural_env
-import tree_env
+from chop.envs import natural as natural_env
+from chop.envs import arena as arena_env
+from chop.envs import common
 from experiments import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row, update_report
-from instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_instance_processes
+from chop.infra.instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_instance_processes
 
-ENVS = {"arena": tree_env, "natural": natural_env}
+ENVS = {"arena": arena_env, "natural": natural_env}
 
 RUNS_DIR = Path("runs")
 # Layout: runs/arena/<name>_<time>/ and runs/natural/<line folder>/<time>/. A natural-world line
@@ -154,9 +155,9 @@ def env_settings(env_name: str, jump: bool = False) -> dict:
     """The environment's settings, saved in config.json (EXPERIMENTS.md flags changes between runs)."""
     common = {
         "world": env_name,
-        "episode_steps": tree_env.EPISODE_STEPS,
-        "image": f"{tree_env.IMAGE_WIDTH}x{tree_env.IMAGE_HEIGHT}",
-        "actions": tree_env.ACTION_NAMES_JUMP if jump else tree_env.ACTION_NAMES,
+        "episode_steps": common.EPISODE_STEPS,
+        "image": f"{common.IMAGE_WIDTH}x{common.IMAGE_HEIGHT}",
+        "actions": common.ACTION_NAMES_JUMP if jump else common.ACTION_NAMES,
     }
     if env_name == "natural":
         return {
@@ -171,11 +172,11 @@ def env_settings(env_name: str, jump: bool = False) -> dict:
         }
     return {
         **common,
-        "reward": tree_env.REWARD,
-        "trees": len(tree_env.TREE_POSITIONS),
-        "logs_per_tree": tree_env.TRUNK_HEIGHT,
-        "max_logs": tree_env.MAX_LOGS,
-        "arena_radius": tree_env.ARENA_RADIUS,
+        "reward": arena_env.REWARD,
+        "trees": len(arena_env.TREE_POSITIONS),
+        "logs_per_tree": arena_env.TRUNK_HEIGHT,
+        "max_logs": arena_env.MAX_LOGS,
+        "arena_radius": arena_env.ARENA_RADIUS,
     }
 
 
@@ -294,7 +295,7 @@ N_ENVS_NATURAL = 3
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--env", choices=sorted(ENVS), default="arena",
-                        help="arena = walled superflat arena (tree_env.py); natural = forest in a normal world (natural_env.py)")
+                        help="arena = walled superflat arena (chop/envs/arena.py); natural = forest in a normal world (chop/envs/natural.py)")
     parser.add_argument("--timesteps", type=int, default=200_000)
     parser.add_argument("--resume", type=str, default=None, help="checkpoint .zip to continue from")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
@@ -331,12 +332,12 @@ def main():
     # Natural world: 13 actions with jump unless --no-jump; a resumed model keeps the set it was trained with.
     jump = args.env == "natural" and not args.no_jump
     if saved and args.env == "natural":
-        jump = saved["action_space"].n == len(tree_env.ACTION_NAMES_JUMP)
+        jump = saved["action_space"].n == len(common.ACTION_NAMES_JUMP)
         if args.no_jump and jump:
             parser.error("--no-jump: the --resume model was trained with jump (13 actions)")
-    elif saved and saved["action_space"].n != len(tree_env.ACTION_NAMES):
+    elif saved and saved["action_space"].n != len(common.ACTION_NAMES):
         parser.error(f"--resume model has {saved['action_space'].n} actions; the {args.env} world has "
-                     f"{len(tree_env.ACTION_NAMES)} (jump models only run in the natural world)")
+                     f"{len(common.ACTION_NAMES)} (jump models only run in the natural world)")
     # SB3's n_steps is per env; ours is the total, so split it across the instances.
     steps_per_env = max(ppo_settings["n_steps"] // args.n_envs, 1)
     sb3_settings = {**ppo_settings, "n_steps": steps_per_env}
@@ -403,7 +404,7 @@ def main():
     ports = [args.port + 10 * i for i in range(args.n_envs)]
     if not args.shared_folder:
         kill_instance_processes(ports, verbose=True)  # leftovers of a killed run would block these ports
-    clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
+    clear_stale_loom_locks()  # also needed with --shared-folder; see chop/infra/instances.py
     factories = [env_factory(args.env, args.port + 10 * i, str(run_dir / f"monitor_{i}"), args.shared_folder, jump)
                  for i in range(args.n_envs)]
     step_timer = StepTimer(SubprocVecEnv(factories) if args.n_envs > 1 else DummyVecEnv(factories))

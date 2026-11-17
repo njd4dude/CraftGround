@@ -7,8 +7,10 @@ two Gradle builds write the same logging config, and one instance fails to start
 (about 1 launch in 7 with 6 instances; see results/launch_test.csv). With a folder
 each, 25 of 25 test rounds started cleanly, just as fast.
 
-    from instances import env_path_for
-    env = tree_env.make_env(port=port, env_path=env_path_for(port))
+    from chop.infra.instances import env_path_for
+    env = arena.make_env(port=port, env_path=env_path_for(port))
+
+(Scripts that run several instances use chop.infra.vec, which does this for each port.)
 
 env_path_for(port):
   * returns C:/Users/<you>/craftground_instances/mc121_port<port>, copying it from
@@ -34,7 +36,7 @@ Ctrl+Break, and killing a parent on Windows leaves its children running, so Mine
 instances kept running and held ~8 GB and their ports. And SubprocVecEnv.close() waits
 for every worker with no time limit, so one stuck close hung a whole training run.
 close_vec_env() closes with a time limit and then kills whatever is left of each port's
-instance (kill_instance_processes); train.py and evaluate.py also clear their ports'
+instance (kill_instance_processes); chop.infra.vec.launch_vec_env also clears its ports'
 leftovers before launching.
 
 After upgrading CraftGround, call refresh_instances() (or delete the folder) so

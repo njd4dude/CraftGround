@@ -1,6 +1,6 @@
 """Tree chopping in a natural Minecraft world.
 
-Same task as tree_env.py: same image, diamond axe and +1 reward per log. Actions are
+Same task as the arena (chop/envs/arena.py): same image, diamond axe and +1 reward per log. Actions are
 the arena's 11 plus jump and forward_jump (13), since the terrain has hills and ledges;
 make_env(jump=False) gives the arena's 11 for models trained before jump was added.
 The difference is the world. Instead of a walled superflat arena with 8 placed
@@ -21,7 +21,7 @@ single `execute if ...` command, which replies "Test passed" when it passes
 (a failure shows nothing, so a miss is a short timeout).
 These setup steps are not part of the episode.
 
-Run check_natural.py to see it working (frames go to check_frames/).
+Run tools/check_natural.py to see it working (frames go to check_frames/).
 """
 
 import json
@@ -39,8 +39,9 @@ import craftground
 from craftground import InitialEnvironmentConfig
 from craftground.initial_environment_config import Difficulty, GameMode, WorldType
 
-from tree_env import (ACTION_NAMES, ACTION_NAMES_JUMP, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH,
-                      to_craftground_action)
+from chop.envs.common import (ACTION_NAMES, ACTION_NAMES_JUMP, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH,
+                              to_craftground_action)
+from chop.paths import ROOT
 
 # --- Experiment settings -----------------------------------------------------
 
@@ -74,7 +75,7 @@ MIN_GROUND = 0.15         # and at least this much of the view must be terrain (
 DEBUG = False
 # Fixed evaluation spots (make_eval_spots.py): the same forest spots for every model, so
 # evaluations differ by the agent, not by which forests it happened to land in.
-EVAL_SPOTS = Path(__file__).parent / "results" / "eval_spots_natural.json"
+EVAL_SPOTS = ROOT / "results" / "eval_spots_natural.json"
 
 
 def eval_spots_path(seed: str = SEED) -> Path:
@@ -86,7 +87,7 @@ def eval_spots_path(seed: str = SEED) -> Path:
 # CraftGround's defaults (3G heap, render distance 6) 4 instances outgrew this 32 GB machine
 # about 15-20 minutes into a run, twice. Each instance uses ~1.5 GB on top of the heap (code,
 # graphics, Gradle launcher processes), so a 2G heap caps it at ~3.3-3.7 GB.
-# memtest.py, 20 min, 4 instances (results/memtest.csv): 3G -> 12.3 GB, 2G -> 12.0 GB and still
+# tools/memtest.py, 20 min, 4 instances (results/memtest.csv): 3G -> 12.3 GB, 2G -> 12.0 GB and still
 # levelling off, no slowdown or crash. Both at render distance 4 (less terrain per spot; 2G at 6
 # is untested). Changed 2026-11-15; earlier runs used 6 / 3G (see each run's config.json).
 RENDER_DISTANCE = 4   # chunks drawn around the player (CraftGround's default: 6)
@@ -190,7 +191,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
                     return obs, m.message
             if time.monotonic() > deadline:
                 if not quiet:
-                    print(f"[natural_env] no reply to: {command}")
+                    print(f"[natural] no reply to: {command}")
                 return obs, None
 
     def _try_spot(self, x: int, z: int, r: int):
@@ -228,7 +229,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
                 return obs
             if now - start >= RENDER_MAX_S:
                 if DEBUG:
-                    print("[natural_env] terrain still changing after "
+                    print("[natural] terrain still changing after "
                           f"{RENDER_MAX_S:.0f}s; starting anyway")
                 return obs
 
@@ -269,12 +270,12 @@ class NaturalChopTreesEnv(gym.Wrapper):
                 obs, self.found = self._try_spot(0, 0, FAR_RANGE)
             if DEBUG:
                 f = obs["full"]
-                print(f"[natural_env] try {attempt}: forest={self.found} at ({f.x:.0f}, {f.y:.0f}, {f.z:.0f})")
+                print(f"[natural] try {attempt}: forest={self.found} at ({f.x:.0f}, {f.y:.0f}, {f.z:.0f})")
             if self.found:
                 break
         else:
             if fixed is None:
-                print(f"[natural_env] no forest spot found in {MAX_TRIES} tries; playing anyway")
+                print(f"[natural] no forest spot found in {MAX_TRIES} tries; playing anyway")
 
         t_search = time.perf_counter()
         yaw = fixed["yaw"] if fixed is not None else self._rng.choice(range(-180, 180, 15))
@@ -325,7 +326,7 @@ def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = 
              jump: bool = True, render_distance: int = RENDER_DISTANCE,
              jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
              seed: str = SEED) -> NaturalChopTreesEnv:
-    """env_path: game folder to run from (instances.env_path_for(port)); None = CraftGround's shared one.
+    """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation)."""

@@ -2,7 +2,7 @@
 
     run.bat play.py                 # natural world (training seed)
     run.bat play.py --held-out      # natural world the agent never trains on
-    run.bat play.py --arena         # the flat 8-oak arena (tree_env.py)
+    run.bat play.py --arena         # the flat 8-oak arena (chop/envs/arena.py)
 
 Each step you get one of the agent's actions, no more: the env takes one discrete action per
 game tick (1/20 s), so e.g. you can't walk and turn at the same time, just like the agent.
@@ -23,7 +23,7 @@ import tkinter as tk
 
 from PIL import Image, ImageTk
 
-from tree_env import EPISODE_STEPS
+from chop.envs.common import EPISODE_STEPS
 
 SCALE = 7          # 114x64 -> 798x448
 TICK_SECONDS = 0.05  # 20 steps a second, Minecraft's tick rate
@@ -49,14 +49,14 @@ BINDINGS = [
 
 def make_env(args):
     # Own game folder per port, like train.py / evaluate.py, so this can run alongside training.
-    from instances import clear_stale_loom_locks, env_path_for, kill_instance_processes
+    from chop.infra.instances import clear_stale_loom_locks, env_path_for, kill_instance_processes
     kill_instance_processes([args.port])  # leftovers of an earlier play.py on this port only
     clear_stale_loom_locks()
     env_path = env_path_for(args.port, verbose=True)
     if args.arena:
-        from tree_env import ChopTreesEnv
+        from chop.envs.arena import ChopTreesEnv
         return ChopTreesEnv(port=args.port, env_path=env_path)
-    import natural_env
+    from chop.envs import natural as natural_env
     seed = natural_env.HELD_OUT_SEED if args.held_out else natural_env.SEED
     return natural_env.NaturalChopTreesEnv(port=args.port, env_path=env_path, seed=seed)
 
@@ -143,7 +143,7 @@ class Player:
 
 
 def _arena_names():
-    from tree_env import ACTION_NAMES
+    from chop.envs.common import ACTION_NAMES
     return ACTION_NAMES
 
 

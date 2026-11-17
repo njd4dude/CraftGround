@@ -20,9 +20,9 @@ import numpy as np
 from PIL import Image, ImageDraw
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-import natural_env
-from instances import close_vec_env, env_path_for, kill_instance_processes
-from tree_env import ACTION_NAMES_JUMP
+from chop.envs import natural as natural_env
+from chop.infra.instances import close_vec_env, env_path_for, kill_instance_processes
+from chop.envs.common import ACTION_NAMES_JUMP
 
 OUT = Path("runs/tools/render_distance")
 SCALE = 4

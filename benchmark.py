@@ -33,13 +33,13 @@ import numpy as np
 import psutil
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
-import natural_env
-import tree_env
-from instances import clear_stale_loom_locks, env_path_for
-from launch_lock import SerialLaunch
+from chop.envs import natural as natural_env
+from chop.envs import arena as arena_env
+from chop.infra.instances import clear_stale_loom_locks, env_path_for
+from chop.infra.launch_lock import SerialLaunch
 from experiments import END, START, _write_report, append_row, read_rows, table
 
-ENVS = {"arena": tree_env, "natural": natural_env}
+ENVS = {"arena": arena_env, "natural": natural_env}
 BENCH_CSV = Path("results") / "benchmark.csv"
 BENCH_REPORT = Path("BENCHMARK.md")
 RESETS_CSV = Path("results") / "benchmark_resets.csv"  # one row per timed reset (where its time went)
@@ -117,7 +117,7 @@ def run_setup(env_name: str, n: int, port: int, steps: int, warmup: int, machine
     used_before = psutil.virtual_memory().used
     print(f"[{env_name} x{n}] launching {n} Minecraft instance(s)...")
     t_launch = time.perf_counter()
-    clear_stale_loom_locks()  # see instances.py
+    clear_stale_loom_locks()  # see chop/infra/instances.py
 
     def build(p: int):
         env = make_env(port=p, env_path=None if shared_folder else env_path_for(p, verbose=True))
@@ -235,8 +235,8 @@ def build_report() -> None:
                    "Reset share", "RAM/instance (GB)", "Launch (s)", "Measured"]
         if env_name == "arena":
             headers.insert(2, "Claimed in train.py")
-        world = ("walled superflat arena, `tree_env.py`" if env_name == "arena"
-                 else "forest in a normal world, `natural_env.py`")
+        world = ("walled superflat arena, `chop/envs/arena.py`" if env_name == "arena"
+                 else "forest in a normal world, `chop/envs/natural.py`")
         parts.append(f"## {env_name.capitalize()} ({world})\n\nLatest measurement per instance count.\n\n"
                      + table(headers, out))
 
@@ -256,7 +256,7 @@ def main():
     parser.add_argument("--warmup", type=int, default=WARMUP)
     parser.add_argument("--port", type=int, default=8523, help="first instance's port (others go up by 10)")
     parser.add_argument("--serial-launch", action="store_true",
-                        help="start instances one at a time (another way to avoid startup collisions, launch_lock.py)")
+                        help="start instances one at a time (another way to avoid startup collisions, chop/infra/launch_lock.py)")
     parser.add_argument("--shared-folder", action="store_true",
                         help="run all instances from CraftGround's one shared game folder (old behaviour)")
     args = parser.parse_args()

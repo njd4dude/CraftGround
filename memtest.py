@@ -19,8 +19,8 @@ import numpy as np
 import psutil
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-import natural_env
-from instances import close_vec_env, env_path_for, instance_processes, kill_instance_processes
+from chop.envs import natural as natural_env
+from chop.infra.instances import close_vec_env, env_path_for, instance_processes, kill_instance_processes
 
 CSV = Path("results/memtest.csv")
 FIELDS = ["started", "render_distance", "jvm_max_memory", "n_envs", "minute", "steps", "free_gb", "instances_gb", "per_instance_gb"]

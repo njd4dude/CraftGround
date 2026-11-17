@@ -14,7 +14,7 @@ agent's score in EXPERIMENTS.md (EXPERIMENTS_NATURAL.md for --env natural), so t
 
 Episodes are spread over --n-envs Minecraft instances running side by side
 (default 6, natural world 3, never more than --episodes), each running from its own copy of the
-game folder (instances.py; --shared-folder for CraftGround's one shared folder,
+game folder (chop/infra/instances.py; --shared-folder for CraftGround's one shared folder,
 where instances started together sometimes collide and hang the run). Each instance gets a fixed share of the
 episodes decided up front (100 over 6 = 17,17,17,17,16,16) and only its first
 share counts, so no half-played episode is ever dropped. (Stopping at "the first
@@ -67,16 +67,16 @@ from PIL import Image, ImageDraw
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
-import natural_env
-import tree_env
+from chop.envs import natural as natural_env
+from chop.envs import arena as arena_env
 from experiments import EVAL_CSV, NATURAL_EVAL_CSV, append_row, normalize_agent, update_report
-from instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_instance_processes
-from tree_env import ACTION_NAMES, EPISODE_STEPS, action_names
+from chop.infra.instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_instance_processes
+from chop.envs.common import ACTION_NAMES, EPISODE_STEPS, action_names
 
-ENVS = {"arena": tree_env, "natural": natural_env}
+ENVS = {"arena": arena_env, "natural": natural_env}
 # Natural-world scores aren't comparable with the arena, so they get their own CSV
 # and their own report (EXPERIMENTS_NATURAL.md).
-MAX_LOGS = tree_env.MAX_LOGS  # shown on video frames; None in the natural world (no cap)
+MAX_LOGS = arena_env.MAX_LOGS  # shown on video frames; None in the natural world (no cap)
 
 VIDEO_SCALE = 4
 VIDEO_FPS = 20  # one step is one game tick (1/20 s), so videos play at real Minecraft speed
@@ -230,7 +230,7 @@ def main():
                         help=f"videos of the N best, N worst and N median episodes "
                              f"(default {RECORD_PER_GROUP}, so {3 * RECORD_PER_GROUP} videos; 0 = none)")
     parser.add_argument("--env", choices=sorted(ENVS), default="arena",
-                        help="arena = walled superflat arena (tree_env.py); natural = forest in a normal world (natural_env.py)")
+                        help="arena = walled superflat arena (chop/envs/arena.py); natural = forest in a normal world (chop/envs/natural.py)")
     parser.add_argument("--video-fps", type=int, nargs="+", default=[VIDEO_FPS],
                         help=f"one video per playback rate given (default real speed only); "
                              f"{VIDEO_FPS} = real speed, 5 = quarter speed, e.g. --video-fps {VIDEO_FPS} 5 for both")
@@ -297,7 +297,7 @@ def main():
     ports = [args.port + 10 * i for i in range(n_envs)]
     if not shared:
         kill_instance_processes(ports, verbose=True)  # leftovers of a killed run would block these ports
-    clear_stale_loom_locks()  # also needed with --shared-folder; see instances.py
+    clear_stale_loom_locks()  # also needed with --shared-folder; see chop/infra/instances.py
     factories = [(lambda port=args.port + 10 * i, extra=({"spots": per_instance_spots[i]} if fixed else {}):
                   make_env(port=port, env_path=None if shared else env_path_for(port, verbose=True),
                            **env_kwargs, **extra))

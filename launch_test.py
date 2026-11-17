@@ -60,12 +60,11 @@ def _worker(env_name: str, port: int, log_path: str, serial: bool, out: mp.Queue
         return real_popen(cmd, **kw)
 
     cge.subprocess.Popen = logging_popen
-    import natural_env
-    import tree_env
+    from chop.envs import arena as arena_env, natural as natural_env
 
-    env = {"arena": tree_env, "natural": natural_env}[env_name].make_env(port=port, env_path=env_path)
+    env = {"arena": arena_env, "natural": natural_env}[env_name].make_env(port=port, env_path=env_path)
     if serial:
-        from launch_lock import SerialLaunch
+        from chop.infra.launch_lock import SerialLaunch
         env = SerialLaunch(env, name=str(port))
     t = time.perf_counter()
     try:
@@ -109,7 +108,7 @@ def run_trial(env_name: str, n: int, trial: int, port: int, serial: bool, plant:
     ports = [port + 10 * i for i in range(n)]
     paths = [None] * n
     if separate:
-        from instances import env_path_for
+        from chop.infra.instances import env_path_for
         paths = [env_path_for(p) for p in ports]
     stamp = datetime.now()
     ctx = mp.get_context("spawn")
@@ -169,7 +168,7 @@ def main():
     parser.add_argument("--plant-disowned", action="store_true",
                         help="before each trial, leave the lock file a crashed Loom build leaves behind")
     parser.add_argument("--separate-folders", action="store_true",
-                        help="each instance runs from its own copy of the game folder (instances.py)")
+                        help="each instance runs from its own copy of the game folder (chop/infra/instances.py)")
     parser.add_argument("--alternate", action="store_true",
                         help="each trial runs one shared-folder and one separate-folder launch, "
                              "swapping which goes first every trial")
