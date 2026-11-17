@@ -4,7 +4,7 @@
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip               # a trained model
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --episodes 10 # quick check (default 100)
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --record 0    # no videos
-    python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --record 100  # video of every episode
+    python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --record 34   # video of every episode (3 x 34 >= 100)
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --env natural # forest in a normal world
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --env natural --held-out  # a world never trained in
 
@@ -23,19 +23,26 @@ an episode ends early once every log is chopped.)
 
 (The model path for each training run is listed in EXPERIMENTS.md.)
 
-The first 20 episodes are saved as MP4 videos by default (--record N for the
-first N, --record 0 for none). All episodes still count toward the score; only
-the videos are limited. Each video is ~5 MB at real speed and ~7 MB at 5 fps,
-so the default 20 recordings take ~240 MB. The videos show what the agent sees,
+21 episodes are saved as MP4 videos by default, picked by score once every episode is
+done so they show where the agent succeeds and fails: the 7 best (file names start
+top1..top7, top1 = most logs), the 7 worst (low1..low7, low1 = fewest) and the 7 around
+the median (mid1..mid7, lowest first). --record N picks N per group (--record 0 for no
+videos); when 3N covers every episode, all of them are saved. Ties go to the earlier
+episode. All episodes still count toward the score; only the videos are limited.
+Choosing after the fact means every episode's frames are kept until the end: they're
+written as compressed .npz files to a temporary _frames_<time> folder next to the videos
+(roughly 5-15 MB per episode) and deleted once the chosen ones are encoded. The encoding
+happens after Minecraft has closed, so it doesn't slow the playing or the timing.
+
+Each video is ~5 MB at real speed. The videos show what the agent sees,
 enlarged 4x, with the step, logs chopped and current action written on each frame.
 They open in any video player and go in the model's run folder under
 videos/arena/ or videos/natural/, depending on --env (random agent:
 runs/baselines/random/videos/<env>/).
 
-The agent acts every tick, so real speed looks frantic. By default each
-recorded episode is saved twice from the same frames: at real speed and at
-quarter speed (5 fps, each step shown for 1/5 s, file name ends in _5fps).
---video-fps picks the speeds: --video-fps 20 for real speed only, --video-fps 5 10 20 for three.
+Videos play at real speed by default. The agent acts every tick, so that looks frantic;
+--video-fps adds slower copies: --video-fps 20 5 also saves a quarter-speed copy
+(each step shown for 1/5 s, file name ends in _5fps).
 
 At the end it prints how long the run took and how fast it went: launch time
 (starting Minecraft), playing time, env steps per second (total and per
@@ -48,6 +55,7 @@ and the tables in EXPERIMENTS.md are refreshed.
 """
 
 import argparse
+import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -72,7 +80,8 @@ MAX_LOGS = tree_env.MAX_LOGS  # shown on video frames; None in the natural world
 
 VIDEO_SCALE = 4
 VIDEO_FPS = 20  # one step is one game tick (1/20 s), so videos play at real Minecraft speed
-MAX_PENDING_VIDEOS = 8  # episodes waiting to be encoded before playing pauses to let encoding catch up
+MAX_PENDING_VIDEOS = 8  # episodes waiting to be written before playing pauses to let writing catch up
+RECORD_PER_GROUP = 7    # videos of the best, worst and median episodes, this many each
 
 FIELDS = ["timestamp", "agent", "episodes", "episode_steps", "mean_logs", "min_logs", "max_logs", "per_episode",
           "n_envs", "minutes", "launch_minutes", "steps_per_s", "reset_share", "spots", "spot_per_episode",
@@ -129,11 +138,45 @@ def save_video(frames: list[np.ndarray], path: Path, fps: int = VIDEO_FPS) -> No
 
 def save_episode_videos(raw: list[tuple], base: Path, speeds: list[int]) -> None:
     """Build the annotated frames from the raw (image, step, logs, action) records and write
-    one video per speed. Runs in a background thread so Minecraft keeps playing meanwhile."""
+    one video per speed."""
     frames = [video_frame(*r) for r in raw]
     for fps in speeds:
         speed = "" if fps == VIDEO_FPS else f"_{fps}fps"
         save_video(frames, base.with_name(f"{base.name}{speed}.mp4"), fps=fps)
+
+
+def save_raw_episode(raw: list[tuple], path: Path) -> None:
+    """Keep one episode's small frames + labels on disk until we know whether it gets a video.
+    Runs in a background thread so Minecraft keeps playing meanwhile."""
+    images, steps, logs, actions = zip(*raw)
+    np.savez_compressed(path, images=np.stack(images), steps=np.array(steps),
+                        logs=np.array(logs), actions=np.array(actions))
+
+
+def encode_saved_episode(path: Path, base: Path, speeds: list[int]) -> None:
+    with np.load(path) as d:
+        raw = list(zip(d["images"], d["steps"].tolist(), d["logs"].tolist(), d["actions"].tolist()))
+    save_episode_videos(raw, base, speeds)
+
+
+def pick_video_episodes(results: dict[int, int], per_group: int) -> list[tuple[str, int]]:
+    """(label, episode) for the per_group best, worst and median-most episodes.
+    Labels: top1 = most logs, low1 = fewest, mid1..midN = around the median, lowest first.
+    Ties go to the earlier episode; an episode in two groups is saved once (top, then low, then mid)."""
+    if per_group <= 0:
+        return []
+    order = sorted(results, key=lambda e: (results[e], e))           # fewest logs first
+    best = sorted(results, key=lambda e: (-results[e], e))[:per_group]
+    worst = order[:per_group]
+    start = max(0, min(len(order) - per_group, len(order) // 2 - per_group // 2))
+    middle = order[start:start + per_group]
+    picked, seen = [], set()
+    for prefix, group in (("top", best), ("low", worst), ("mid", middle)):
+        for rank, ep in enumerate(group, 1):
+            if ep not in seen:
+                seen.add(ep)
+                picked.append((f"{prefix}{rank}", ep))
+    return picked
 
 
 def timing_summary(n_envs: int, launch_s: float, play_s: float, total_s: float,
@@ -148,7 +191,7 @@ def timing_summary(n_envs: int, launch_s: float, play_s: float, total_s: float,
     no_reset_rate = env_steps / busy if busy > 0 else 0.0
     avg_reset = reset_s / resets if resets else 0.0
     print(f"\nTiming: {total_s / 60:.1f} min total = {launch_s / 60:.1f} min launching Minecraft "
-          f"+ {play_s / 60:.1f} min playing (incl. finishing videos)")
+          f"+ {play_s / 60:.1f} min playing (incl. saving frames for videos)")
     print(f"  {env_steps:,} env steps over {n_envs} instance(s): {total_rate:.0f} steps/s total, "
           f"{per_instance:.0f} per instance")
     print(f"  {resets} resets, {avg_reset:.1f} s each on average = {reset_share:.0%} of instance time; "
@@ -183,12 +226,14 @@ def main():
                         help="Minecraft instances to run in parallel (default: 6 in the arena, 3 in the natural world)")
     parser.add_argument("--shared-folder", action="store_true",
                         help="run all instances from CraftGround's one shared game folder (old behaviour)")
-    parser.add_argument("--record", type=int, default=20, metavar="N",
-                        help="save the first N episodes as MP4 videos (default 20; 0 = none)")
+    parser.add_argument("--record", type=int, default=RECORD_PER_GROUP, metavar="N",
+                        help=f"videos of the N best, N worst and N median episodes "
+                             f"(default {RECORD_PER_GROUP}, so {3 * RECORD_PER_GROUP} videos; 0 = none)")
     parser.add_argument("--env", choices=sorted(ENVS), default="arena",
                         help="arena = walled superflat arena (tree_env.py); natural = forest in a normal world (natural_env.py)")
-    parser.add_argument("--video-fps", type=int, nargs="+", default=[VIDEO_FPS, 5],
-                        help=f"one video per playback rate given; {VIDEO_FPS} = real speed, 5 = quarter speed")
+    parser.add_argument("--video-fps", type=int, nargs="+", default=[VIDEO_FPS],
+                        help=f"one video per playback rate given (default real speed only); "
+                             f"{VIDEO_FPS} = real speed, 5 = quarter speed, e.g. --video-fps {VIDEO_FPS} 5 for both")
     parser.add_argument("--random-spots", action="store_true",
                         help="natural world: random spawns instead of the fixed evaluation spots")
     parser.add_argument("--spots", type=Path, default=None,
@@ -262,6 +307,10 @@ def main():
     video_dir = (Path("runs/baselines/random") if args.random else Path(args.model).parent) / "videos" / args.env
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     speeds = list(dict.fromkeys(args.video_fps))
+    recording = args.record > 0 and bool(speeds)
+    frames_dir = video_dir / f"_frames_{stamp}"  # every episode's frames until the videos are chosen
+    if recording:
+        frames_dir.mkdir(parents=True, exist_ok=True)
     print(f"{args.episodes} episodes over {n_envs} Minecraft instance(s): {shares}")
 
     done_count = [0] * n_envs        # counted episodes each instance has finished
@@ -278,6 +327,7 @@ def main():
     env_steps = resets = 0
     reset_s = 0.0
     t_play = None
+    played_all = False
     try:
         obs = env.reset()
         t_play = time.perf_counter()  # every instance is up and in its first episode
@@ -298,7 +348,6 @@ def main():
                     continue  # this instance has played its share; whatever it does now doesn't count
                 steps[i] += 1
                 ep = episode_id[i]
-                recording = ep < args.record
                 if recording:
                     # On the last step obs[i] is already the next episode's first frame.
                     image = infos[i]["terminal_observation"] if dones[i] else obs[i]
@@ -310,9 +359,8 @@ def main():
                 done_count[i] += 1
                 print(f"episode {ep + 1} (instance {i}): {logs}{f' / {MAX_LOGS}' if MAX_LOGS else ''} logs "
                       f"[{len(results)}/{args.episodes} done]")
-                if recording and speeds:
-                    pending.append(encoder.submit(save_episode_videos, raw[i],
-                                                  video_dir / f"eval_{stamp}_ep{ep + 1}_{logs}logs", speeds))
+                if recording:
+                    pending.append(encoder.submit(save_raw_episode, raw[i], frames_dir / f"ep{ep + 1}.npz"))
                 raw[i], steps[i] = [], 0
                 if done_count[i] < shares[i]:
                     episode_id[i], next_id = next_id, next_id + 1
@@ -320,16 +368,24 @@ def main():
             # Don't let unencoded episodes pile up in memory.
             while sum(not f.done() for f in pending) > MAX_PENDING_VIDEOS:
                 pending[next(k for k, f in enumerate(pending) if not f.done())].result()
+        played_all = True
     finally:
         close_vec_env(env, ports, shared)
         for f in pending:
-            f.result()  # finish writing videos (and surface any encoding error)
+            if played_all:
+                f.result()  # finish writing frames (and surface any error)
+            else:
+                f.exception()  # just wait; the error that stopped the run is the one to report
         encoder.shutdown()
+        if not played_all:
+            shutil.rmtree(frames_dir, ignore_errors=True)  # no score is saved, so no videos either
     t_end = time.perf_counter()
 
+    scores = dict(results)
     episodes_done = sorted(results)
     results = [results[k] for k in episodes_done]
     if not results or t_play is None:
+        shutil.rmtree(frames_dir, ignore_errors=True)
         return
     spots_played = [spot_of.get(k) for k in episodes_done] if fixed else None
     timing = timing_summary(n_envs, launch_s=t_play - t_launch, play_s=t_end - t_play,
@@ -338,6 +394,19 @@ def main():
                  world_seed=args.seed if args.env == "natural" else "")
     print(f"\n{label} [{args.env}]: {np.mean(results):.1f} logs per episode on average "
           f"(min {min(results)}, max {max(results)}, {len(results)} episodes)")
+
+    if recording:
+        picked = pick_video_episodes(scores, args.record)
+        print(f"\nEncoding {len(picked)} videos (best, worst and median episodes) to {video_dir}")
+        try:
+            with ThreadPoolExecutor(max_workers=4) as pool:  # Minecraft is closed, so the CPU is free
+                jobs = [pool.submit(encode_saved_episode, frames_dir / f"ep{ep + 1}.npz",
+                                    video_dir / f"eval_{stamp}_{tag}_ep{ep + 1}_{scores[ep]}logs", speeds)
+                        for tag, ep in picked]
+                for job in jobs:
+                    job.result()
+        finally:
+            shutil.rmtree(frames_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
