@@ -37,7 +37,8 @@ from chop.envs import natural as natural_env
 from chop.envs import arena as arena_env
 from chop.infra.instances import clear_stale_loom_locks, env_path_for
 from chop.infra.launch_lock import SerialLaunch
-from experiments import END, START, _write_report, append_row, read_rows, table
+from chop.reports.csvio import append_row, read_rows
+from chop.reports.markdown import END, START, table, write_report
 
 ENVS = {"arena": arena_env, "natural": natural_env}
 BENCH_CSV = Path("results") / "benchmark.csv"
@@ -245,7 +246,7 @@ def build_report() -> None:
                  r.get("per_instance") or "–", r.get("status")] for r in reversed(rows)]
         parts.append("## All runs\n\nEvery measurement, newest first.\n\n"
                      + table(["When", "World", "Instances", "Steps/s total", "Per instance", "Status"], hist))
-    _write_report(BENCH_REPORT, TEMPLATE, "\n\n".join(parts))
+    write_report(BENCH_REPORT, TEMPLATE, "\n\n".join(parts))
 
 
 def main():

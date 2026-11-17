@@ -29,7 +29,7 @@ from pathlib import Path
 
 import psutil
 
-from experiments import append_row
+from chop.reports.csvio import append_row
 
 LOG_DIR = Path("launch_logs")
 CSV = Path("results") / "launch_test.csv"

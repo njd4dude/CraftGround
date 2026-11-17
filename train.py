@@ -86,7 +86,8 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnvW
 from chop.envs import natural as natural_env
 from chop.envs import arena as arena_env
 from chop.envs import common
-from experiments import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row, update_report
+from chop.reports import update_report
+from chop.reports.csvio import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row
 from chop.infra.instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_instance_processes
 
 ENVS = {"arena": arena_env, "natural": natural_env}
@@ -153,7 +154,7 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
 
 def env_settings(env_name: str, jump: bool = False) -> dict:
     """The environment's settings, saved in config.json (EXPERIMENTS.md flags changes between runs)."""
-    common = {
+    shared = {
         "world": env_name,
         "episode_steps": common.EPISODE_STEPS,
         "image": f"{common.IMAGE_WIDTH}x{common.IMAGE_HEIGHT}",
@@ -161,7 +162,7 @@ def env_settings(env_name: str, jump: bool = False) -> dict:
     }
     if env_name == "natural":
         return {
-            **common,
+            **shared,
             "reward": natural_env.REWARD,
             "seed": natural_env.SEED,
             "forest_check": natural_env.FOREST_CHECK,
@@ -171,7 +172,7 @@ def env_settings(env_name: str, jump: bool = False) -> dict:
             "jvm_max_memory": natural_env.JVM_MAX_MEMORY,
         }
     return {
-        **common,
+        **shared,
         "reward": arena_env.REWARD,
         "trees": len(arena_env.TREE_POSITIONS),
         "logs_per_tree": arena_env.TRUNK_HEIGHT,

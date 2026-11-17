@@ -4,7 +4,7 @@ How many env steps per second the tree-chopping environments run at, measured by
 `benchmark.py`. Rebuild these tables by running it again; each run adds rows.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-15 15:44._
+_Tables last updated 2026-11-17 14:05._
 
 ## How it was measured
 
@@ -12,7 +12,7 @@ _Tables last updated 2026-11-15 15:44._
 
 Machine: AMD Ryzen 7 7700X 8-Core Processor, 8 cores / 16 threads, 31 GB RAM
 
-## Arena (walled superflat arena, `tree_env.py`)
+## Arena (walled superflat arena, `chop/envs/arena.py`)
 
 Latest measurement per instance count.
 
@@ -23,7 +23,7 @@ Latest measurement per instance count.
 | 4 | **977** | 858 | 244 | 2.01× | 12 | 0.01 | – | 0% | 2.38 | 110 | 2026-11-14 18:08 |
 | 6 | **1046** | – | 174 | 2.15× | 18 | 0.01 | – | 0% | 2.43 | 142 | 2026-11-14 18:10 |
 
-## Natural (forest in a normal world, `natural_env.py`)
+## Natural (forest in a normal world, `chop/envs/natural.py`)
 
 Latest measurement per instance count.
 

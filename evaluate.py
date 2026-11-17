@@ -69,7 +69,8 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
 from chop.envs import natural as natural_env
 from chop.envs import arena as arena_env
-from experiments import EVAL_CSV, NATURAL_EVAL_CSV, append_row, normalize_agent, update_report
+from chop.reports import update_report
+from chop.reports.csvio import EVAL_CSV, NATURAL_EVAL_CSV, append_row, normalize_agent
 from chop.infra.instances import clear_stale_loom_locks, close_vec_env, env_path_for, kill_instance_processes
 from chop.envs.common import ACTION_NAMES, EPISODE_STEPS, action_names
 
