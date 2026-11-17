@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("model", nargs="?", help="path to a saved model .zip")
     parser.add_argument("--random", action="store_true", help="use random actions instead of a model")
-    parser.add_argument("--episodes", type=int, default=100, help="episodes to run (default 100, for a stable mean)")
+    parser.add_argument("--episodes", type=int, default=50, help="episodes to run (default 50: mean within about ±0.5 logs; use 100 to separate close agents)")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
     parser.add_argument("--n-envs", type=int, default=None,
                         help="Minecraft instances to run in parallel (default: 6 in the arena, 3 in the natural world)")
