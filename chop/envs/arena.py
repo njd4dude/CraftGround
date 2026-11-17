@@ -32,7 +32,10 @@ from craftground.initial_environment_config import (
     WorldType,
 )
 
-from chop.envs.common import ACTION_NAMES, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH, to_craftground_action
+from craftground.environment.action_space import ActionSpaceVersion
+
+from chop.envs.common import (ACTION_NAMES, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH, MULTI_NVEC,
+                              to_craftground_action, to_craftground_multi)
 
 # --- Experiment settings -----------------------------------------------------
 
@@ -94,9 +97,15 @@ def arena_commands() -> list[str]:
 
 
 class ChopTreesEnv(gym.Wrapper):
-    """Gymnasium env: image in, discrete action out, +1 reward per log chopped."""
+    """Gymnasium env: image in, action out, +1 reward per log chopped.
+    actions: "single" = one of ACTION_NAMES per step; "multi" = (move, turn, look) every step
+    with attack always held (common.MULTI_NVEC)."""
 
-    def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None):
+    def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
+                 actions: str = "single"):
+        if actions not in ("single", "multi"):
+            raise ValueError(f"actions must be 'single' or 'multi', not {actions!r}")
+        self.multi = actions == "multi"
         config = InitialEnvironmentConfig(
             image_width=IMAGE_WIDTH,
             image_height=IMAGE_HEIGHT,
@@ -109,9 +118,13 @@ class ChopTreesEnv(gym.Wrapper):
             initial_extra_commands=arena_commands(),
         )
         config.set_daylight_cycle_mode(DaylightMode.ALWAYS_DAY)
-        super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path))
+        # Multi actions turn by exact degrees, which needs CraftGround's V2 action format.
+        version = ActionSpaceVersion.V2_MINERL_HUMAN if self.multi else ActionSpaceVersion.V1_MINEDOJO
+        super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path,
+                                          action_space_version=version))
 
-        self.action_space = gym.spaces.Discrete(len(ACTION_NAMES))
+        self.action_space = (gym.spaces.MultiDiscrete(MULTI_NVEC) if self.multi
+                             else gym.spaces.Discrete(len(ACTION_NAMES)))
         self.observation_space = gym.spaces.Box(
             low=0, high=255, shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.uint8
         )
@@ -143,7 +156,8 @@ class ChopTreesEnv(gym.Wrapper):
         return self._image(obs), {"logs_chopped": 0, "reset_seconds": time.perf_counter() - start}
 
     def step(self, action):
-        obs, _, _, _, _ = self.env.step(to_craftground_action(int(action)))
+        obs, _, _, _, _ = self.env.step(to_craftground_multi(action) if self.multi
+                                        else to_craftground_action(int(action)))
         self._steps += 1
 
         logs_now = self._logs_mined_total(obs) - self._logs_at_start
@@ -156,6 +170,8 @@ class ChopTreesEnv(gym.Wrapper):
         return self._image(obs), reward, terminated, truncated, info
 
 
-def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None) -> ChopTreesEnv:
-    """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one."""
-    return ChopTreesEnv(port=port, verbose=verbose, env_path=env_path)
+def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
+             actions: str = "single") -> ChopTreesEnv:
+    """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
+    actions: "single" or "multi" (see ChopTreesEnv)."""
+    return ChopTreesEnv(port=port, verbose=verbose, env_path=env_path, actions=actions)

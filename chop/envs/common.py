@@ -1,6 +1,6 @@
 """What the arena and the natural world share: the agent's view, episode length, tool and actions."""
 
-from craftground.environment.action_space import no_op
+from craftground.environment.action_space import no_op, no_op_v2
 
 IMAGE_WIDTH = 114
 IMAGE_HEIGHT = 64
@@ -66,3 +66,39 @@ def to_craftground_action(index: int) -> list[int]:
     if name in ("attack", "forward_attack"):
         act[5] = 3
     return act
+
+
+# --- Multi-choice actions (train.py --actions multi, arena only for now) -------------------
+# Every step the agent makes three choices at once (SB3 MultiDiscrete([3, 11, 9])) and always
+# holds attack, so it only has to learn to walk and aim. Turns are exact degrees (CraftGround's
+# V2 action format), not the 15-degree steps of the single actions above.
+# Negative turn = left, negative look = up (Minecraft's pitch), same as turn_left / look_up.
+MOVES = ["none", "forward", "back"]
+TURN_DEGREES = [-45, -20, -10, -5, -2, 0, 2, 5, 10, 20, 45]
+LOOK_DEGREES = [-20, -10, -5, -2, 0, 2, 5, 10, 20]
+MULTI_NVEC = [len(MOVES), len(TURN_DEGREES), len(LOOK_DEGREES)]
+MULTI_SETTINGS = {"move": MOVES, "turn_degrees": TURN_DEGREES, "look_degrees": LOOK_DEGREES,
+                  "attack": "always held"}
+
+
+def to_craftground_multi(action) -> dict:
+    """Turn a (move, turn, look) choice into CraftGround's V2 (MineRL-style) action."""
+    move, turn, look = (int(a) for a in action)
+    act = no_op_v2()
+    act["attack"] = True
+    act["forward"] = MOVES[move] == "forward"
+    act["back"] = MOVES[move] == "back"
+    act["camera_yaw"] = float(TURN_DEGREES[turn])
+    act["camera_pitch"] = float(LOOK_DEGREES[look])
+    return act
+
+
+def multi_label(action) -> str:
+    """Short text for one (move, turn, look) choice, e.g. 'forward turn+5 look-2' (for videos)."""
+    move, turn, look = (int(a) for a in action)
+    parts = [MOVES[move] if MOVES[move] != "none" else "stay"]
+    if TURN_DEGREES[turn]:
+        parts.append(f"turn{TURN_DEGREES[turn]:+d}")
+    if LOOK_DEGREES[look]:
+        parts.append(f"look{LOOK_DEGREES[look]:+d}")
+    return " ".join(parts)

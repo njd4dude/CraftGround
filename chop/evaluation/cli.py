@@ -5,12 +5,13 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import gymnasium as gym
 import numpy as np
 from stable_baselines3 import PPO
 
 from chop.envs import ENVS
 from chop.envs import natural as natural_env
-from chop.envs.common import ACTION_NAMES, action_names
+from chop.envs.common import ACTION_NAMES, action_names, multi_label
 from chop.evaluation.results import episode_shares, save_results, timing_summary
 from chop.evaluation.video import RECORD_PER_GROUP, VIDEO_FPS, EpisodeRecorder
 from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, game_folder, instance_ports, launch_vec_env
@@ -21,6 +22,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("model", nargs="?", help="path to a saved model .zip")
     parser.add_argument("--random", action="store_true", help="use random actions instead of a model")
+    parser.add_argument("--actions", choices=["single", "multi"], default="single",
+                        help="--random only: the action set to play randomly in (a model uses its own). "
+                             "multi = move + turn + look every step, attack held (arena only)")
     parser.add_argument("--episodes", type=int, default=50, help="episodes to run (default 50: mean within about ±0.5 logs; use 100 to separate close agents)")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
     parser.add_argument("--n-envs", type=int, default=None,
@@ -88,12 +92,20 @@ def main():
     # (natural world: 13 with jump, or the arena's 11 for models trained before jump was added).
     # The random baseline keeps the 11 actions so it stays comparable with earlier runs.
     model = None if args.random else PPO.load(args.model, device="cpu")
-    n_actions = len(ACTION_NAMES) if model is None else model.action_space.n
-    names = action_names(n_actions)
-    if args.env != "natural" and n_actions != len(ACTION_NAMES):
-        args.error(f"this model has {n_actions} actions (with jump); only --env natural offers those")
+    multi = (args.actions == "multi" if model is None
+             else isinstance(model.action_space, gym.spaces.MultiDiscrete))
+    if multi and args.env != "arena":
+        args.error("multi-action agents only run in the arena for now")
+    if multi:
+        n_actions, label = None, multi_label
+    else:
+        n_actions = len(ACTION_NAMES) if model is None else model.action_space.n
+        names = action_names(n_actions)
+        label = lambda action: names[int(action)]  # noqa: E731
+        if args.env != "natural" and n_actions != len(ACTION_NAMES):
+            args.error(f"this model has {n_actions} actions (with jump); only --env natural offers those")
     env_kwargs = ({"jump": n_actions != len(ACTION_NAMES), "seed": args.seed}
-                  if args.env == "natural" else {})
+                  if args.env == "natural" else {"actions": "multi" if multi else "single"})
     make_env = ENVS[args.env].make_env
     max_logs = getattr(ENVS[args.env], "MAX_LOGS", None)  # shown on video frames; the natural world has no cap
     n_envs = max(1, min(args.n_envs, args.episodes))
@@ -110,10 +122,11 @@ def main():
                   make_env(port=port, env_path=game_folder(port, args.shared_folder), **env_kwargs, **extra))
                  for i, port in enumerate(ports)]
     env = launch_vec_env(factories, ports, args.shared_folder)
-    label = "random" if args.random else normalize_agent(args.model)
-    video_dir = (Path("runs/baselines/random") if args.random else Path(args.model).parent) / "videos" / args.env
+    random_name = "random-multi" if multi else "random"
+    agent = random_name if args.random else normalize_agent(args.model)
+    video_dir = (Path("runs/baselines") / random_name if args.random else Path(args.model).parent) / "videos" / args.env
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    recorder = EpisodeRecorder(video_dir, stamp, list(dict.fromkeys(args.video_fps)), names, max_logs, n_envs,
+    recorder = EpisodeRecorder(video_dir, stamp, list(dict.fromkeys(args.video_fps)), label, max_logs, n_envs,
                                enabled=args.record > 0)
     print(f"{args.episodes} episodes over {n_envs} Minecraft instance(s): {shares}")
 
@@ -151,7 +164,7 @@ def main():
                 ep = episode_id[i]
                 # On the last step obs[i] is already the next episode's first frame.
                 image = infos[i]["terminal_observation"] if dones[i] else obs[i]
-                recorder.add_frame(i, image, steps[i], infos[i]["logs_chopped"], int(actions[i]))
+                recorder.add_frame(i, image, steps[i], infos[i]["logs_chopped"], actions[i])
                 if not dones[i]:
                     continue
                 logs = infos[i]["logs_chopped"]
@@ -179,8 +192,8 @@ def main():
     spots_played = [spot_of.get(k) for k in episodes_done] if fixed else None
     timing = timing_summary(n_envs, launch_s=t_play - t_launch, play_s=t_end - t_play,
                             total_s=t_end - t_launch, env_steps=env_steps, resets=resets, reset_s=reset_s)
-    save_results(label, scores, env=args.env, timing=timing, spots=spot_label, spot_per_episode=spots_played,
+    save_results(agent, scores, env=args.env, timing=timing, spots=spot_label, spot_per_episode=spots_played,
                  world_seed=args.seed if args.env == "natural" else "")
-    print(f"\n{label} [{args.env}]: {np.mean(scores):.1f} logs per episode on average "
+    print(f"\n{agent} [{args.env}]: {np.mean(scores):.1f} logs per episode on average "
           f"(min {min(scores)}, max {max(scores)}, {len(scores)} episodes)")
     recorder.encode(results, args.record)

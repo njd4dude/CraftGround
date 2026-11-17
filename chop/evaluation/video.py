@@ -3,7 +3,7 @@
 Which episodes get a video is decided once all are played (the best, worst and median ones,
 pick_video_episodes), so EpisodeRecorder keeps every episode's small frames on disk until then:
 
-    rec = EpisodeRecorder(video_dir, stamp, speeds, names, max_logs)
+    rec = EpisodeRecorder(video_dir, stamp, speeds, label, max_logs)   # label(action) -> text
     rec.add_frame(i, image, step, logs, action)    # every step of instance i
     rec.end_episode(i, episode)                     # written to _frames_<stamp>/ep<N>.npz in the background
     rec.finish(played_all)                          # after the envs are closed
@@ -11,6 +11,7 @@ pick_video_episodes), so EpisodeRecorder keeps every episode's small frames on d
 """
 
 import shutil
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
@@ -23,8 +24,10 @@ VIDEO_FPS = 20  # one step is one game tick (1/20 s), so videos play at real Min
 MAX_PENDING = 8  # episodes waiting to be written before playing pauses to let writing catch up
 RECORD_PER_GROUP = 7  # videos of the best, worst and median episodes, this many each
 
+ActionLabel = Callable[[object], str]  # one action (an index, or a (move, turn, look) list) -> its text
 
-def video_frame(image: np.ndarray, step: int, logs: int, action: int, names: list[str],
+
+def video_frame(image: np.ndarray, step: int, logs: int, action, label: ActionLabel,
                 max_logs: int | None = None) -> np.ndarray:
     """Enlarge the agent's view and write step / logs / action across the top."""
     h, w = image.shape[:2]
@@ -32,7 +35,7 @@ def video_frame(image: np.ndarray, step: int, logs: int, action: int, names: lis
     draw = ImageDraw.Draw(frame)
     draw.rectangle([0, 0, frame.width, 16], fill=(0, 0, 0))
     cap = f"/{max_logs}" if max_logs else ""
-    draw.text((4, 2), f"step {step:4d}   logs {logs:2d}{cap}   {names[action]}", fill=(255, 255, 255))
+    draw.text((4, 2), f"step {step:4d}   logs {logs:2d}{cap}   {label(action)}", fill=(255, 255, 255))
     return np.asarray(frame)
 
 
@@ -46,11 +49,11 @@ def save_video(frames: list[np.ndarray], path: Path, fps: int = VIDEO_FPS) -> No
     print(f"  saved video {path} ({path.stat().st_size / 1e6:.1f} MB)")
 
 
-def save_episode_videos(raw: list[tuple], base: Path, speeds: list[int], names: list[str],
+def save_episode_videos(raw: list[tuple], base: Path, speeds: list[int], label: ActionLabel,
                         max_logs: int | None = None) -> None:
     """Build the annotated frames from the raw (image, step, logs, action) records and write
     one video per speed (file name ends in _<fps>fps except at real speed)."""
-    frames = [video_frame(*r, names=names, max_logs=max_logs) for r in raw]
+    frames = [video_frame(*r, label=label, max_logs=max_logs) for r in raw]
     for fps in speeds:
         speed = "" if fps == VIDEO_FPS else f"_{fps}fps"
         save_video(frames, base.with_name(f"{base.name}{speed}.mp4"), fps=fps)
@@ -63,11 +66,11 @@ def save_raw_episode(raw: list[tuple], path: Path) -> None:
                         logs=np.array(logs), actions=np.array(actions))
 
 
-def encode_saved_episode(path: Path, base: Path, speeds: list[int], names: list[str],
+def encode_saved_episode(path: Path, base: Path, speeds: list[int], label: ActionLabel,
                          max_logs: int | None = None) -> None:
     with np.load(path) as d:
         raw = list(zip(d["images"], d["steps"].tolist(), d["logs"].tolist(), d["actions"].tolist()))
-    save_episode_videos(raw, base, speeds, names, max_logs)
+    save_episode_videos(raw, base, speeds, label, max_logs)
 
 
 def pick_video_episodes(results: dict[int, int], per_group: int) -> list[tuple[str, int]]:
@@ -94,10 +97,10 @@ class EpisodeRecorder:
     """Collects every episode's frames per instance and, at the end, encodes the chosen ones.
     Disabled (does nothing) when enabled is False, so callers needn't check."""
 
-    def __init__(self, video_dir: Path, stamp: str, speeds: list[int], names: list[str],
+    def __init__(self, video_dir: Path, stamp: str, speeds: list[int], label: ActionLabel,
                  max_logs: int | None, n_envs: int, enabled: bool = True):
         self.video_dir, self.stamp, self.speeds = video_dir, stamp, speeds
-        self.names, self.max_logs = names, max_logs
+        self.label, self.max_logs = label, max_logs
         self.enabled = enabled and bool(speeds)
         self.frames_dir = video_dir / f"_frames_{stamp}"  # every episode's frames until the videos are chosen
         self._raw: list[list[tuple]] = [[] for _ in range(n_envs)]  # small frames; enlarged only when encoding
@@ -106,9 +109,9 @@ class EpisodeRecorder:
         if self.enabled:
             self.frames_dir.mkdir(parents=True, exist_ok=True)
 
-    def add_frame(self, i: int, image: np.ndarray, step: int, logs: int, action: int) -> None:
+    def add_frame(self, i: int, image: np.ndarray, step: int, logs: int, action) -> None:
         if self.enabled:
-            self._raw[i].append((np.array(image), step, logs, action))
+            self._raw[i].append((np.array(image), step, logs, np.asarray(action).tolist()))
 
     def end_episode(self, i: int, episode: int) -> None:
         """Instance i finished `episode` (0-based): write its frames, start a fresh list."""
@@ -147,7 +150,7 @@ class EpisodeRecorder:
             with ThreadPoolExecutor(max_workers=4) as pool:  # Minecraft is closed, so the CPU is free
                 jobs = [pool.submit(encode_saved_episode, self.frames_dir / f"ep{ep + 1}.npz",
                                     self.video_dir / f"eval_{self.stamp}_{tag}_ep{ep + 1}_{scores[ep]}logs",
-                                    self.speeds, self.names, self.max_logs)
+                                    self.speeds, self.label, self.max_logs)
                         for tag, ep in picked]
                 for job in jobs:
                     job.result()

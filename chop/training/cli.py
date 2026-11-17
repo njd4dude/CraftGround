@@ -6,6 +6,7 @@ import sys
 import time
 from datetime import datetime
 
+import gymnasium as gym
 import numpy as np
 import torch
 import wandb
@@ -46,6 +47,9 @@ def main():
     parser.add_argument("--no-jump", action="store_true",
                         help="natural world: use the arena's 11 actions instead of 13 with jump "
                              "(automatic when --resume is an 11-action model)")
+    parser.add_argument("--actions", choices=["single", "multi"], default=None,
+                        help="single (default): one of 11 actions per step; multi (arena only): move + turn + "
+                             "look every step with attack always held. A resumed model keeps its own")
     parser.add_argument("--lr-schedule", choices=["linear", "constant"], default="linear",
                         help="linear (default): --learning-rate falls to 0 by the end of this run; "
                              "constant: stays fixed (all runs before 2026-11-15)")
@@ -62,9 +66,21 @@ def main():
     if saved and "n_steps" not in overrides:
         # Keep the resumed model's own rollout size (stored per env, so multiply back up).
         ppo_settings["n_steps"] = saved["n_steps"] * saved.get("n_envs", 1)
+    # Multi actions: from --actions, or the resumed model's own action space.
+    multi = args.actions == "multi"
+    if saved:
+        saved_multi = isinstance(saved["action_space"], gym.spaces.MultiDiscrete)
+        if args.actions is not None and multi != saved_multi:
+            parser.error(f"--actions {args.actions}: the --resume model uses "
+                         f"{'multi' if saved_multi else 'single'} actions")
+        multi = saved_multi
+    if multi and args.env != "arena":
+        parser.error("multi actions are arena only for now")
     # Natural world: 13 actions with jump unless --no-jump; a resumed model keeps the set it was trained with.
     jump = args.env == "natural" and not args.no_jump
-    if saved and args.env == "natural":
+    if saved and multi:
+        pass  # multi models are arena-only and have no jump, checked above
+    elif saved and args.env == "natural":
         jump = saved["action_space"].n == len(common.ACTION_NAMES_JUMP)
         if args.no_jump and jump:
             parser.error("--no-jump: the --resume model was trained with jump (13 actions)")
@@ -90,7 +106,7 @@ def main():
         run_dir = line_dir / f"{started:%Y%m%d_%H%M%S}"
         run_name = f"{line_dir.name}/{run_dir.name}"
     else:
-        run_dir = RUNS_DIR / "arena" / f"{args.name or 'chop_ppo'}_{started:%Y%m%d_%H%M%S}"
+        run_dir = RUNS_DIR / "arena" / f"{args.name or ('chop_ppo_multi' if multi else 'chop_ppo')}_{started:%Y%m%d_%H%M%S}"
         run_name = run_dir.name
     run_dir.mkdir(parents=True)
     print(f"Run folder: {run_dir}")
@@ -107,7 +123,7 @@ def main():
         "lr_schedule": args.lr_schedule,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
-        "env": env_settings(args.env, jump),
+        "env": env_settings(args.env, jump, multi),
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
@@ -125,8 +141,9 @@ def main():
             "resumed_from": args.resume,
             "n_envs": args.n_envs,
             "lr_schedule": args.lr_schedule,
+            "actions": "multi" if multi else "single",
             **ppo_settings,
-            **{f"env/{k}": v for k, v in env_settings(args.env, jump).items()},
+            **{f"env/{k}": v for k, v in env_settings(args.env, jump, multi).items()},
         },
     )
     # Plot everything against training steps.
@@ -135,12 +152,14 @@ def main():
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
 
     ports = instance_ports(args.port, args.n_envs)
-    factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump)
+    factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump, multi)
                  for i, port in enumerate(ports)]
     step_timer = StepTimer(launch_vec_env(factories, ports, args.shared_folder))
     env = step_timer
     print(f"{args.env} world, {args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
-          f"({steps_per_env * args.n_envs} total), {env.action_space.n} actions{' (with jump)' if jump else ''}")
+          f"({steps_per_env * args.n_envs} total), "
+          + ("multi actions: move x turn x look " + "x".join(map(str, common.MULTI_NVEC)) + ", attack held" if multi
+             else f"{env.action_space.n} actions{' (with jump)' if jump else ''}"))
 
     if args.resume:
         load_settings = {**overrides, "n_steps": steps_per_env}
