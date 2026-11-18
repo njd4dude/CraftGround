@@ -32,14 +32,15 @@ from craftground.initial_environment_config import (
     WorldType,
 )
 
-from craftground.environment.action_space import ActionSpaceVersion
+from craftground.environment.action_space import ActionSpaceVersion, no_op, no_op_v2
 
 from chop.envs.common import (ACTION_NAMES, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH, MULTI_NVEC,
                               to_craftground_action, to_craftground_multi)
 
 # --- Experiment settings -----------------------------------------------------
 
-# Superflat ground: grass is at y=-61, so the player stands at y=-60.
+# Superflat ground: grass is at y=-61 over two layers of dirt (-63, -62) on bedrock (-64),
+# so the player stands at y=-60.
 GROUND_Y = -60
 TRUNK_HEIGHT = 4  # logs per tree
 TREE_POSITIONS = [(5, 0), (-5, 0), (0, 5), (0, -5), (4, 4), (-4, 4), (4, -4), (-4, -4)]
@@ -72,6 +73,12 @@ def arena_commands() -> list[str]:
         # Wipe the inside of the arena (old stumps, leaves) and any dropped items.
         f"fill -{r - 1} {y0} -{r - 1} {r - 1} {y0 + 10} {r - 1} air",
         "kill @e[type=item]",
+        # Repair the ground, walls' footprint included: the agent can dig (an axe breaks dirt in
+        # ~15 ticks of attack) and holes used to stay for the rest of the run. Move the player
+        # onto the surface first so a player standing in a hole isn't buried by the refill.
+        f"tp @p 0.5 {y0} 0.5",
+        f"fill -{r} {y0 - 3} -{r} {r} {y0 - 2} {r} dirt",
+        f"fill -{r} {y0 - 1} -{r} {r} {y0 - 1} {r} grass_block",
         # Walls.
         f"fill -{r} {y0} -{r} {r} {top} -{r} stone_bricks",
         f"fill -{r} {y0} {r} {r} {top} {r} stone_bricks",
@@ -142,13 +149,21 @@ class ChopTreesEnv(gym.Wrapper):
         return np.ascontiguousarray(obs["pov"])
 
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
+        """options={"extra_commands": [...]}: commands run after the random spawn (tools/ use it to
+        teleport the player somewhere exact)."""
         start = time.perf_counter()
         # Face a random direction each episode so the agent can't memorise one path.
         yaw = random.choice(range(-180, 180, 15))
+        extra = list((options or {}).get("extra_commands", []))
         obs, info = self.env.reset(
             seed=seed,
-            options={"extra_commands": [f"tp @p 0.5 {GROUND_Y} 0.5 {yaw} 0"]},
+            options={"extra_commands": [f"tp @p 0.5 {GROUND_Y} 0.5 {yaw} 0", *extra]},
         )
+        # Let go of every key and button for one tick. CraftGround only sends Minecraft a mouse
+        # press when attack goes from off to on, and Minecraft lets go of held buttons during a
+        # reset, so an attack still held from the last episode would never press again: in multi
+        # mode (attack always held) the agent couldn't chop after its first episode.
+        obs, _, _, _, _ = self.env.step(no_op_v2() if self.multi else no_op())
         self._steps = 0
         # Minecraft stats never reset, so count logs relative to the episode start.
         self._logs_at_start = self._logs_mined_total(obs)
