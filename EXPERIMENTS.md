@@ -4,7 +4,7 @@ Goal: train an agent to chop as many oak logs as possible in one episode. Natura
 are in EXPERIMENTS_NATURAL.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-18 15:01._
+_Tables last updated 2026-11-18 15:15._
 
 ## Setup
 
@@ -87,7 +87,7 @@ _Tables last updated 2026-11-18 15:01._
 
 **Question:** Experiment 2 again on the fixed arena: 1 run each of single and multi at 4 ticks, compared with experiment 3's 1-tick runs (listed again here).
 
-**Found:** Yes, 4 ticks is worse, for both action sets: single 24.0 vs 30.5 at 1 tick (every 1-tick run scored 29.7 or more), multi 27.8 vs 31.3. One 4-tick run each, but the gaps are many times the spread between seeds. The scores match experiment 2's (single 23.0 and 23.6, multi 27.7), so the ground bug barely touched the 4-tick runs; single agents still leave most bottom logs. Keep 1 tick.
+**Found:** Yes, 4 ticks is worse, for both action sets: single 24.0 vs 30.5 at 1 tick (every 1-tick run scored 29.7 or more), multi 27.8 vs 31.3. One 4-tick run each, but the gaps are many times the spread between seeds. The scores match experiment 2's (single 23.0 and 23.6, multi 27.7), so the ground bug barely touched the 4-tick runs; single agents still leave most bottom logs. Runs were matched on decisions (200k), so the 4-tick agents saw 4x the game time (800k ticks) and still lost; matched on game time instead it's worse still (experiment 2's 4-tick checkpoint at 40k decisions scored 21.7). Wall time doesn't save it either: 4-tick runs took about twice as long. Keep 1 tick.
 
 | Run | Actions | Ticks/step | Ground fixed | Steps | Train min | Eval mean ± 95% (episodes) | Min | Max | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
