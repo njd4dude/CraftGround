@@ -1,10 +1,11 @@
 # CraftGround Experiments: Chop Trees in a Natural World
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
-forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS_ARENA.md.
+forest instead of the walled arena (chop/envs/natural.py). Arena results are in [EXPERIMENTS_ARENA.md](EXPERIMENTS_ARENA.md);
+the summary of findings is [FINDINGS.md](FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-18 15:20._
+_Tables last updated 2026-11-18 15:31._
 
 ## Results
 
@@ -37,6 +38,8 @@ Fixed spots in a world training never uses (seed 20261117, `results/eval_spots_n
 
 Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are the run folders inside, split by crashes, memory kills or deliberate stops, in order. `train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.
 
+<a id="line-1"></a>
+
 ### Line 1 · no jump, constant LR
 
 `runs/natural/line1_no-jump/`
@@ -50,6 +53,8 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261115_155106` | from an arena model | 0 → 100k | 4 | constant | 9.8 | completed | – |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/jnm6lysy) |
 | `20261115_160512` | continued | 100k → ~200k | 6 | constant | – | no record (killed or hung) | – | 6 instances; hung while closing them (stopped from W&B), so no CSV row | – |
 | `20261115_161832` | continued | 200k → 503k | 4 | constant | 19.0 | completed | 9.7* @ 503k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/6hob06tk) |
+
+<a id="line-2"></a>
 
 ### Line 2 · jump, constant LR
 
@@ -66,6 +71,8 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261115_185527` | continued | 502k → ~682k | 4 | constant | – | no record (killed or hung) | **18.1** @ 602k | killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b | – |
 | `20261115_192015` | continued | 682k → 1.0M | 4 | constant | 21.8 | completed | **15.0** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
 
+<a id="line-2b"></a>
+
 ### Line 2b · linear LR from Line 2's 601k checkpoint
 
 `runs/natural/line2b_linear-lr-from-601k/`
@@ -77,6 +84,8 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261115_231007` | branch from Line 2 | 602k → 1.0M | 3 | linear | 29.7 | completed | **24.7** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/f61norjd) |
+
+<a id="line-3"></a>
 
 ### Line 3 · jump, linear LR, from scratch
 
@@ -91,6 +100,8 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261115_235545` | from an arena model | 0 → 257k | 3 | linear | 20.5 | interrupted | **12.3** @ 257k | stopped on purpose (Ctrl+C) to free the machine for fixed spots | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
 | `20261116_123155` | continued | 257k → 1.0M | 3 | linear | 67.5 | completed | **22.4** @ 1.0M | resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2x96rt9o) |
 
+<a id="line-3b"></a>
+
 ### Line 3b · fine-tune Line 3 @ 1.0M for 500k more at a small LR
 
 `runs/natural/line3b_finetune-500k/`
@@ -102,6 +113,8 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261116_145213` | branch from Line 3 | 1.0M → 1.5M | 3 | linear | 34.3 | completed | **21.9** @ 1.5M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/nsc8z41e) |
+
+<a id="line-3c"></a>
 
 ### Line 3c · 3M linear LR schedule, from Line 3 @ 257k
 
@@ -116,6 +129,8 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261116_165326` | branch from Line 3 | 257k → ~717k | 4 | linear | – | no record (killed or hung) | – |  | – |
 | `20261116_173633` | continued | 717k → 2.1M | 4 | linear | 103.2 | interrupted | **16.1** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/rlc5ue18) |
 | `20261117_114712` | continued | 2.1M → 3.0M | 3 | linear | 84.7 | completed | **23.9** @ 3.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/ato3q2uf) |
+
+<a id="line-4"></a>
 
 ### Line 4 · multi actions (move x turn x look x jump, attack held), linear LR, from scratch
 

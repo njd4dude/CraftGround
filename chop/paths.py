@@ -9,5 +9,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = Path("results")
+DOCS_DIR = Path("docs")  # the reports (EXPERIMENTS_*.md, BENCHMARK.md) and FINDINGS.md
 RUNS_DIR = Path("runs")
 NATURAL_RUNS = RUNS_DIR / "natural"

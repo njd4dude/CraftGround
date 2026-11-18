@@ -12,14 +12,16 @@ from chop.reports.csvio import (EVAL_CSV, NATURAL_EVAL_CSV, NATURAL_TRAIN_CSV, e
                                 read_rows)
 from chop.reports.markdown import END, START, mean_ci, table, write_report
 from chop.reports.sections import evals_section
+from chop.paths import DOCS_DIR
 
-NATURAL_REPORT = Path("EXPERIMENTS_NATURAL.md")
+NATURAL_REPORT = DOCS_DIR / "EXPERIMENTS_NATURAL.md"
 
 
 NATURAL_TEMPLATE = f"""# CraftGround Experiments: Chop Trees in a Natural World
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
-forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS_ARENA.md.
+forest instead of the walled arena (chop/envs/natural.py). Arena results are in [EXPERIMENTS_ARENA.md](EXPERIMENTS_ARENA.md);
+the summary of findings is [FINDINGS.md](FINDINGS.md).
 
 {START}
 {END}
@@ -155,7 +157,7 @@ def lines_section(fixed: list[dict], random_spawns: list[dict], runs: list[dict]
                          row["status"] if row else "no record (killed or hung)", ", ".join(scores) or "–",
                          notes.get(run_dir.name, ""),
                          f"[open]({row['wandb_url']})" if row and row.get("wandb_url") else "–"])
-        blocks.append(f"### Line {meta['id']} · {meta['name']}\n\n`{line_dir.as_posix()}/`\n\n"
+        blocks.append(f"<a id=\"line-{meta['id']}\"></a>\n\n### Line {meta['id']} · {meta['name']}\n\n`{line_dir.as_posix()}/`\n\n"
                       + (f"**Question:** {meta['tested']}\n\n" if meta.get("tested") else "")
                       + (f"**Found:** {meta['found']}\n\n" if meta.get("found") else
                          "**Found:** _not yet (add `found` in `results/lines_natural.json`)_\n\n")

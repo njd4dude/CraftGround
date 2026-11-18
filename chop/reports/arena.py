@@ -12,16 +12,17 @@ from pathlib import Path
 
 from chop.envs import arena as arena_env
 from chop.envs import common
-from chop.paths import RESULTS_DIR
+from chop.paths import DOCS_DIR, RESULTS_DIR
 from chop.reports.csvio import EVAL_CSV, TRAIN_CSV, episodes_by_agent, normalize_agent, read_rows
 from chop.reports.markdown import END, START, mean_ci, table, write_report
 
-REPORT = Path("EXPERIMENTS_ARENA.md")
+REPORT = DOCS_DIR / "EXPERIMENTS_ARENA.md"
 EXPERIMENTS_FILE = RESULTS_DIR / "experiments_arena.json"
 
 TEMPLATE = f"""# CraftGround Experiments: Chop Trees (arena)
 
-Goal: train an agent to chop as many oak logs as possible in one episode.
+Goal: train an agent to chop as many oak logs as possible in one episode. Natural-world results
+are in [EXPERIMENTS_NATURAL.md](EXPERIMENTS_NATURAL.md); the summary of findings is [FINDINGS.md](FINDINGS.md).
 
 {START}
 {END}
@@ -142,7 +143,7 @@ def experiments_section(runs: Runs) -> tuple[str, set[str]]:
             rows.append(cells)
             setups.append((setup, cells[4], eps, checkpoint_steps(runs.model_of(entry)) is None))
         found = exp.get("found") or "_not yet_"
-        blocks.append(f"### {exp['id']} · {exp['name']}\n\n**Question:** {exp.get('tested', '')}\n\n"
+        blocks.append(f"<a id=\"arena-exp-{exp['id']}\"></a>\n\n### {exp['id']} · {exp['name']}\n\n**Question:** {exp.get('tested', '')}\n\n"
                       f"**Found:** {found}\n\n" + table(HEADERS, rows) + by_setup_table(setups))
     if not blocks:
         return "", listed

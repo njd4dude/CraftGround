@@ -1,10 +1,10 @@
 # CraftGround Experiments: Chop Trees (arena)
 
 Goal: train an agent to chop as many oak logs as possible in one episode. Natural-world results
-are in EXPERIMENTS_NATURAL.md.
+are in [EXPERIMENTS_NATURAL.md](EXPERIMENTS_NATURAL.md); the summary of findings is [FINDINGS.md](FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-18 15:20._
+_Tables last updated 2026-11-18 15:31._
 
 ## Setup
 
@@ -27,6 +27,8 @@ _Tables last updated 2026-11-18 15:20._
 
 **Eval** is the mean over `evaluate.py` episodes (max 32), ± its 95% range. **Ground fixed** = no: holes the agent dug stayed for the rest of the run (fixed 2026-11-17), so those scores are rough. Edit the questions and findings in `results/experiments_arena.json`.
 
+<a id="arena-exp-1"></a>
+
 ### 1 · First runs
 
 **Question:** Can PPO with the default CNN learn to chop the arena's 32 logs at all?
@@ -37,6 +39,8 @@ _Tables last updated 2026-11-18 15:20._
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `chop_ppo_20261113_131702` | single | 1 | **no** | 200k | 11.1 | **31.67** ± 0.19 (24) | 31 | 32 | – |
 | `chop_ppo_20261113_135620` | single | 1 | **no** | 51k | 4.3 | **26.20** ± 0.17 (429) | 18 | 31 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/9te3935j) |
+
+<a id="arena-exp-2"></a>
 
 ### 2 · Action repeat: 1 vs 4 ticks per step (before the ground fix: preliminary)
 
@@ -63,11 +67,13 @@ _Tables last updated 2026-11-18 15:20._
 | multi, 1 tick, ground not fixed, 200k | 1 | **30.80** | 30.8 |
 | multi, 4 ticks, ground not fixed, 200k | 1 | **27.68** | 27.7 |
 
+<a id="arena-exp-3"></a>
+
 ### 3 · Single vs multi actions (ground fixed)
 
 **Question:** Multi actions choose move, turn and look every step with attack always held, and turn by exact degrees. Do they beat the 11 single actions? 3 runs each, 1 tick, after the ground fix.
 
-**Found:** Multi slightly ahead, not proven: 31.3 vs 30.5 average, and multi's worst episodes are better, but the groups overlap (permutation test p = 0.2). Both are near the 32 cap, so the arena can't separate them; in the natural world multi won clearly: 26.6 vs 22.4 for the same recipe (EXPERIMENTS_NATURAL.md, Line 4).
+**Found:** Multi slightly ahead, not proven: 31.3 vs 30.5 average, and multi's worst episodes are better, but the groups overlap (permutation test p = 0.2). Both are near the 32 cap, so the arena can't separate them; in the natural world multi won clearly: 26.6 vs 22.4 for the same recipe (docs/EXPERIMENTS_NATURAL.md, Line 4).
 
 | Run | Actions | Ticks/step | Ground fixed | Steps | Train min | Eval mean ± 95% (episodes) | Min | Max | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -82,6 +88,8 @@ _Tables last updated 2026-11-18 15:20._
 | --- | --- | --- | --- |
 | single, 1 tick, 200k | 3 | **30.46** | 30.6 31.1 29.7 |
 | multi, 1 tick, 200k | 3 | **31.34** | 30.9 31.7 31.4 |
+
+<a id="arena-exp-4"></a>
 
 ### 4 · Action repeat: 1 vs 4 ticks per step (ground fixed)
 

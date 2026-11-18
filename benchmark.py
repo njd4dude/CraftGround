@@ -1,4 +1,4 @@
-"""Measure how fast the environments run, and record it in BENCHMARK.md.
+"""Measure how fast the environments run, and record it in docs/BENCHMARK.md.
 
     run.bat benchmark.py                                  # arena + natural, 1 2 4 6 instances
     run.bat benchmark.py --envs natural --instances 4     # just one setup
@@ -18,7 +18,7 @@ spent resetting is reported separately.
 RAM per instance = (used system RAM while running - used RAM before launching) / instances.
 A setup is skipped if free RAM looks too small for it.
 
-Results go to results/benchmark.csv (one row per setup and run) and BENCHMARK.md
+Results go to results/benchmark.csv (one row per setup and run) and docs/BENCHMARK.md
 (tables rebuilt from the CSV; notes you write below the tables are kept).
 """
 
@@ -39,7 +39,7 @@ from chop.reports.csvio import append_row, read_rows
 from chop.reports.markdown import END, START, table, write_report
 
 BENCH_CSV = Path("results") / "benchmark.csv"
-BENCH_REPORT = Path("BENCHMARK.md")
+BENCH_REPORT = Path("docs") / "BENCHMARK.md"
 RESETS_CSV = Path("results") / "benchmark_resets.csv"  # one row per timed reset (where its time went)
 RESET_FIELDS = ["run", "env", "n_envs", "instance", "step", "reset_seconds", "base_reset_s", "search_s",
                 "setup_s", "render_s", "near_tries", "far_tries", "found"]
