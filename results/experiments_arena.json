@@ -1,0 +1,62 @@
+{
+ "about": "Experiments for EXPERIMENTS.md (python experiments.py). Each experiment lists its runs (run folder names under runs/arena/, or a checkpoint path) with the question it tested and what it found. Runs not listed here show up under 'Other runs'. Edit freely, then run experiments.py.",
+ "experiments": [
+  {
+   "id": "1",
+   "name": "First runs",
+   "tested": "Can PPO with the default CNN learn to chop the arena's 32 logs at all?",
+   "found": "Yes, fast: 31.7 of 32 at 200k steps, 26.2 after a 50k run. The arena is close to solved, so later experiments compare setups by small differences near the cap.",
+   "runs": [
+    "chop_ppo_20261113_131702",
+    "chop_ppo_20261113_135620"
+   ]
+  },
+  {
+   "id": "2",
+   "name": "Action repeat: 1 vs 4 ticks per step (before the ground fix: preliminary)",
+   "tested": "CraftGround shows an action's effects 1-3 ticks late (tools/check_timing.py). Does holding each action for 4 ticks, so each step shows its own result, learn better? Tried with single and multi actions.",
+   "found": "Not valid as a comparison: these ran before the ground fix, so holes the agents dug stayed for the rest of the run, and that hurt agents unevenly (single_1tick_seed2's 24.2 is mostly agents stuck in their own pits). What looks real: 4-tick single agents leave the bottom log of every tree (24 = 8 trees x 3), and their scores are tight, so pits don't explain them. Rerun on the fixed arena: experiment 4.",
+   "runs": [
+    "single_1tick_20261117_172920",
+    "single_1tick_seed2_20261117_190806",
+    "single_4tick_20261117_173652",
+    "runs/arena/single_4tick_20261117_173652/checkpoints/ppo_chop_39996_steps.zip",
+    "runs/arena/single_4tick_20261117_173652/checkpoints/ppo_chop_59994_steps.zip",
+    "single_4tick_seed2_20261117_181309",
+    "multi_1tick_20261117_183147",
+    "multi_1tick_seed2_20261117_191858",
+    "multi_4tick_20261117_184506"
+   ]
+  },
+  {
+   "id": "3",
+   "name": "Single vs multi actions (ground fixed)",
+   "tested": "Multi actions choose move, turn and look every step with attack always held, and turn by exact degrees. Do they beat the 11 single actions? 3 runs each, 1 tick, after the ground fix.",
+   "found": "Multi slightly ahead, not proven: 31.3 vs 30.5 average, and multi's worst episodes are better, but the groups overlap (permutation test p = 0.2). Both are near the 32 cap, so the arena can't separate them; in the natural world multi won clearly: 26.6 vs 22.4 for the same recipe (EXPERIMENTS_NATURAL.md, Line 4).",
+   "runs": [
+    "fixed_single_1tick_r1_20261117_212824",
+    "fixed_single_1tick_r2_20261117_215228",
+    "fixed_single_1tick_r3_20261117_221638",
+    "fixed_multi_1tick_r1_20261117_213859",
+    "fixed_multi_1tick_r2_20261117_220328",
+    "fixed_multi_1tick_r3_resumed_20261118_114725"
+   ]
+  },
+  {
+   "id": "4",
+   "name": "Action repeat: 1 vs 4 ticks per step (ground fixed)",
+   "tested": "Experiment 2 again on the fixed arena: 1 run each of single and multi at 4 ticks, compared with experiment 3's 1-tick runs (listed again here).",
+   "found": "Yes, 4 ticks is worse, for both action sets: single 24.0 vs 30.5 at 1 tick (every 1-tick run scored 29.7 or more), multi 27.8 vs 31.3. One 4-tick run each, but the gaps are many times the spread between seeds. The scores match experiment 2's (single 23.0 and 23.6, multi 27.7), so the ground bug barely touched the 4-tick runs; single agents still leave most bottom logs. Keep 1 tick.",
+   "runs": [
+    "fixed_single_4tick_20261118_142327",
+    "fixed_multi_4tick_20261118_144105",
+    "fixed_single_1tick_r1_20261117_212824",
+    "fixed_single_1tick_r2_20261117_215228",
+    "fixed_single_1tick_r3_20261117_221638",
+    "fixed_multi_1tick_r1_20261117_213859",
+    "fixed_multi_1tick_r2_20261117_220328",
+    "fixed_multi_1tick_r3_resumed_20261118_114725"
+   ]
+  }
+ ]
+}
