@@ -46,7 +46,7 @@ default linear). With a constant rate the natural-world jump model peaked at ~60
 
 Every PPO setting in PPO_SETTINGS has a flag (--n-steps, --batch-size, --n-epochs,
 --learning-rate, --gamma, --ent-coef, --clip-range). Use --notes to say what's
-special about a run (e.g. a reward change); it shows up in EXPERIMENTS.md.
+special about a run (e.g. a reward change); it's saved in the run's config.json.
 
 Live graphs (logs chopped per episode, reward, losses) go to Weights & Biases,
 project "craftground-chop-trees". Log in once first with:  wandb login
@@ -61,8 +61,8 @@ Every run gets one folder with everything in it:
         wandb/                 W&B's local copy of the run
 
 Press Ctrl+C at any time: the current model is saved before exiting.
-Each run is added to the Training runs table in EXPERIMENTS.md (or
-EXPERIMENTS_NATURAL.md), with a link to its W&B page.
+Each run is added to results/training_runs.csv and EXPERIMENTS_ARENA.md (list it under an
+experiment in results/experiments_arena.json), or to EXPERIMENTS_NATURAL.md's training lines.
 """
 
 from chop.training.cli import main

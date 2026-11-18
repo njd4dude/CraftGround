@@ -19,7 +19,7 @@ NATURAL_REPORT = Path("EXPERIMENTS_NATURAL.md")
 NATURAL_TEMPLATE = f"""# CraftGround Experiments: Chop Trees in a Natural World
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
-forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS.md.
+forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS_ARENA.md.
 
 {START}
 {END}
@@ -192,7 +192,7 @@ def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], run
         "Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random "
         "forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an "
         "older setup (render distance 6, no damage). Use the Results table above to compare agents. "
-        "**Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md).\n\n"
+        "**Arena mean** is the same agent's score in the walled arena (EXPERIMENTS_ARENA.md).\n\n"
         + table(["Model", "Line", "Arena mean", "Episodes", "Mean logs", "Min", "Max", "vs random"],
                 rows)
     )

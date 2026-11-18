@@ -1,10 +1,10 @@
 # CraftGround Experiments: Chop Trees in a Natural World
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
-forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS.md.
+forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS_ARENA.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-18 14:23._
+_Tables last updated 2026-11-18 15:20._
 
 ## Results
 
@@ -160,7 +160,7 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 ## Earlier random-spawn evaluations
 
-Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an older setup (render distance 6, no damage). Use the Results table above to compare agents. **Arena mean** is the same agent's score in the walled arena (EXPERIMENTS.md).
+Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an older setup (render distance 6, no damage). Use the Results table above to compare agents. **Arena mean** is the same agent's score in the walled arena (EXPERIMENTS_ARENA.md).
 
 | Model | Line | Arena mean | Episodes | Mean logs | Min | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |

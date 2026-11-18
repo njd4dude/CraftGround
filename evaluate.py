@@ -9,7 +9,7 @@
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --env natural --held-out  # a world never trained in
 
 Runs 100 episodes by default so the mean is stable. Every run counts toward the
-agent's score in EXPERIMENTS.md (EXPERIMENTS_NATURAL.md for --env natural), so to just grab a couple of videos use a small
+agent's score in EXPERIMENTS_ARENA.md (EXPERIMENTS_NATURAL.md for --env natural), so to just grab a couple of videos use a small
 --episodes, e.g. --episodes 2.
 
 Episodes are spread over --n-envs Minecraft instances running side by side
@@ -21,7 +21,7 @@ share counts, so no half-played episode is ever dropped. (Stopping at "the first
 100 to finish" would favour short episodes, and here short means good, because
 an episode ends early once every log is chopped.)
 
-(The model path for each training run is listed in EXPERIMENTS.md.)
+(Each run's model is runs/arena/<run>/model.zip; EXPERIMENTS_ARENA.md lists the runs.)
 
 21 episodes are saved as MP4 videos by default, picked by score once every episode is
 done so they show where the agent succeeds and fails: the 7 best (file names start
@@ -51,7 +51,7 @@ are saved with the results too.
 
 Compare the trained model against the random baseline: that gap is what the
 agent actually learned. Every run is appended to results/eval_results.csv
-and the tables in EXPERIMENTS.md are refreshed.
+and the tables in EXPERIMENTS_ARENA.md are refreshed.
 """
 
 from chop.evaluation.cli import main

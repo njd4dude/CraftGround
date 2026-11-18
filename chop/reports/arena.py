@@ -1,4 +1,4 @@
-"""EXPERIMENTS.md: the arena's report.
+"""EXPERIMENTS_ARENA.md: the arena's report.
 
 Organised by experiment (results/experiments_arena.json): each one's question, what it found,
 and its runs with their setup and evaluation score. Runs no experiment lists go under
@@ -16,7 +16,7 @@ from chop.paths import RESULTS_DIR
 from chop.reports.csvio import EVAL_CSV, TRAIN_CSV, episodes_by_agent, normalize_agent, read_rows
 from chop.reports.markdown import END, START, mean_ci, table, write_report
 
-REPORT = Path("EXPERIMENTS.md")
+REPORT = Path("EXPERIMENTS_ARENA.md")
 EXPERIMENTS_FILE = RESULTS_DIR / "experiments_arena.json"
 
 TEMPLATE = f"""# CraftGround Experiments: Chop Trees (arena)
@@ -191,7 +191,7 @@ def setup_section(runs: Runs) -> str:
 
 
 def update(stamp: str | None = None) -> None:
-    """Rebuild EXPERIMENTS.md's generated part from the arena CSVs and results/experiments_arena.json."""
+    """Rebuild EXPERIMENTS_ARENA.md's generated part from the arena CSVs and results/experiments_arena.json."""
     stamp = stamp or f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
     runs = Runs()
     experiments, listed = experiments_section(runs)

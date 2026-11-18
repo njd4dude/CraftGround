@@ -49,7 +49,7 @@ WALL_HEIGHT = 3
 
 MAX_LOGS = len(TREE_POSITIONS) * TRUNK_HEIGHT  # 32
 # Describe the reward here whenever you change it in step(): every training run
-# records this text, and EXPERIMENTS.md flags the run where it changed.
+# records this text in its config.json.
 REWARD = "+1 per log chopped"
 
 # Blocks whose "mined" statistic counts as a chopped log.

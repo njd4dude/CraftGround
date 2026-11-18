@@ -4,7 +4,7 @@ Goal: train an agent to chop as many oak logs as possible in one episode. Natura
 are in EXPERIMENTS_NATURAL.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-18 15:15._
+_Tables last updated 2026-11-18 15:20._
 
 ## Setup
 
