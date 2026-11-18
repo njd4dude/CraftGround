@@ -42,6 +42,13 @@
    "name": "3M linear LR schedule, from Line 3 @ 257k",
    "tested": "Line 3's 1M schedule stalled near 22 and fine-tuning (3b) didn't help. Does one longer schedule (2.29e-4 -> 0 over 257k -> 3M, as if a single 3M run) keep improving past 22? Also the first run with 4 instances (same 2048-step updates).",
    "found": "No: 23.9 on fixed spots at 3M, tied with Line 3 @ 1M (+1.5 +/- 3.4 spot by spot, better at 47, worse at 48) and Line 2b (-0.8 +/- 3.5). At 1M, with its rate still high, it was behind Line 3 (16.1, -6.2 +/- 3.6) and then climbed back to the same level. Every recipe so far ends at ~22-25, so the limit is the setup, not training length."
+  },
+  {
+   "folder": "line4_multi-actions",
+   "id": "4",
+   "name": "multi actions (move x turn x look x jump, attack held), linear LR, from scratch",
+   "tested": "Every single-action recipe ends at ~22-25 logs, so the limit looks like the setup. Do multi-choice actions (choose move, turn, look and jump every step, attack always held, exact-degree turns) beat Line 3's 22.4 at 1M with the same schedule? In the fixed arena they scored 31.3 vs 30.5 (3 runs each, not significant: the arena is near its 32 cap).",
+   "found": "Yes: 26.6 on fixed spots at 1M, the best so far. Spot by spot +4.2 +/- 3.0 logs vs Line 3 @ 1M (same recipe, only the actions differ; better at 57 spots, worse at 36) and +1.9 +/- 3.4 vs Line 2b (not significant). It learned slower early (training avg 15.4 vs Line 3's 20.3 at 330k-423k) but kept improving after Line 3 levelled off (29.8 vs 25.5 at 900k-1M)."
   }
  ],
  "piece_notes": {
@@ -49,6 +56,7 @@
   "20261115_172419": "killed for low memory at ~188k; resumed from the 180k checkpoint",
   "20261115_185527": "killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b",
   "20261115_235545": "stopped on purpose (Ctrl+C) to free the machine for fixed spots",
-  "20261116_123155": "resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on"
+  "20261116_123155": "resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on",
+  "20261118_121806": "killed for low memory at ~8k steps, before any checkpoint; restarted from scratch"
  }
 }

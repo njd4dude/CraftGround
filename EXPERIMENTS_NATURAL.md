@@ -4,7 +4,7 @@ Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (chop/envs/natural.py). Arena results are in EXPERIMENTS.md.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-17 13:58._
+_Tables last updated 2026-11-18 14:23._
 
 ## Results
 
@@ -13,6 +13,7 @@ Every agent here played the same 100 forest spots (`results/eval_spots_natural.j
 | Model | Line | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | random actions | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
+| Line 4 @ 1.0M<br>`20261118_124345` | multi actions (move x turn x look x jump, attack held), linear LR, from scratch | 100 | **26.60** ± 3.42 | 28 | 9 | 67 | **23.3×** |
 | Line 2b @ 1.0M<br>`20261115_231007` | linear LR from Line 2's 601k checkpoint | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
 | Line 3c @ 3.0M<br>`20261117_114712` | 3M linear LR schedule, from Line 3 @ 257k | 100 | **23.93** ± 3.59 | 21 | 9 | 69 | **21.0×** |
 | Line 3 @ 1.0M<br>`20261116_123155` | jump, linear LR, from scratch | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | **19.6×** |
@@ -116,12 +117,26 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261116_173633` | continued | 717k → 2.1M | 4 | linear | 103.2 | interrupted | **16.1** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/rlc5ue18) |
 | `20261117_114712` | continued | 2.1M → 3.0M | 3 | linear | 84.7 | completed | **23.9** @ 3.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/ato3q2uf) |
 
+### Line 4 · multi actions (move x turn x look x jump, attack held), linear LR, from scratch
+
+`runs/natural/line4_multi-actions/`
+
+**Question:** Every single-action recipe ends at ~22-25 logs, so the limit looks like the setup. Do multi-choice actions (choose move, turn, look and jump every step, attack always held, exact-degree turns) beat Line 3's 22.4 at 1M with the same schedule? In the fixed arena they scored 31.3 vs 30.5 (3 runs each, not significant: the arena is near its 32 cap).
+
+**Found:** Yes: 26.6 on fixed spots at 1M, the best so far. Spot by spot +4.2 +/- 3.0 logs vs Line 3 @ 1M (same recipe, only the actions differ; better at 57 spots, worse at 36) and +1.9 +/- 3.4 vs Line 2b (not significant). It learned slower early (training avg 15.4 vs Line 3's 20.3 at 330k-423k) but kept improving after Line 3 levelled off (29.8 vs 25.5 at 900k-1M).
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261118_121806` | from an arena model | 0 → ~? | 3 | linear | – | no record (killed or hung) | – | killed for low memory at ~8k steps, before any checkpoint; restarted from scratch | – |
+| `20261118_124345` | from an arena model | 0 → 1.0M | 3 | linear | 88.8 | completed | **26.6** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/hg4felig) |
+
 ## Evaluation runs
 
 One row per `evaluate.py` run, newest first. **Minutes** includes launching Minecraft; **Steps/s** is env steps per second over all instances while playing (runs from before timing was added show –). **Spots**: fixed = the saved evaluation spots, random = random spawns (all runs before 2026-11-16). **World**: training = the world agents train in, held-out = one they never see (`--held-out`).
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s | Per episode |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-18T14:22:20 | `runs/natural/line4_multi-actions/20261118_124345/model.zip` | fixed | training | 100 | 26.60 | 0 | 67 | 3 | 9.3 | 226 | 15 63 50 15 23 30 32 42 14 20 29 0 40 32 37 14 23 3 41 34 14 51 54 14 23 40 21 56 28 11 31 29 30 33 21 6 14 28 3 0 40 30 6 29 0 0 9 8 0 56 49 5 31 15 53 40 37 9 0 9 17 34 15 49 35 0 0 9 47 15 55 38 20 49 11 31 40 33 27 46 13 24 35 59 28 27 4 14 26 67 35 52 42 30 0 26 55 6 7 49 |
 | 2026-11-17T13:43:24 | `runs/natural/line3c_linear-lr-3M/20261116_173633/checkpoints/ppo_chop_996932_steps.zip` | fixed | training | 100 | 16.15 | 0 | 47 | 3 | 10.0 | 216 | 6 28 28 4 13 7 14 47 6 9 14 5 22 35 30 29 5 2 33 16 18 29 28 20 0 24 23 19 15 15 21 3 38 24 23 9 18 25 13 14 29 27 0 9 20 15 0 2 0 39 15 31 33 9 21 15 10 7 0 11 8 17 0 10 41 7 14 0 29 20 16 20 25 4 16 10 11 9 35 3 13 21 11 21 10 20 2 0 24 24 25 10 24 0 18 21 17 19 0 15 |
 | 2026-11-17T13:32:59 | `runs/natural/line3c_linear-lr-3M/20261117_114712/model.zip` | fixed | training | 100 | 23.93 | 0 | 69 | 3 | 11.5 | 188 | 6 19 34 12 4 2 16 61 15 20 32 0 25 46 38 44 54 0 4 50 31 51 12 41 37 60 7 46 21 26 30 5 0 8 23 6 29 35 14 0 36 44 8 41 4 27 3 32 9 46 43 5 54 8 42 38 20 5 0 9 18 32 21 35 32 1 16 0 69 8 60 35 18 25 4 29 19 10 12 36 14 27 3 24 13 30 0 20 12 25 64 18 12 0 20 66 23 56 0 48 |
 | 2026-11-16T16:47:06 | `random` | fixed | held-out | 100 | 1.14 | 0 | 11 | 3 | 9.7 | 213 | 0 0 2 0 0 0 3 4 1 2 0 1 0 0 2 1 0 1 1 3 1 0 0 1 0 5 6 0 0 0 0 0 5 0 3 0 5 2 0 0 0 1 0 0 0 0 0 1 0 0 0 4 0 0 0 0 8 5 0 0 3 0 0 3 0 2 2 1 0 3 0 0 5 1 0 0 0 3 1 0 0 0 1 2 0 0 11 0 2 1 1 0 0 0 0 0 3 0 1 0 |
