@@ -22,10 +22,13 @@ class WandbOutputFormat(KVWriter):
 
 
 class LogsChoppedCallback(BaseCallback):
-    """Logs every finished episode's log count to W&B and the console."""
+    """Logs every finished episode's log count to W&B and the console.
+    ticks_per_step: the env's action repeat, so chop/game_ticks compares runs with different repeats
+    on game time (set it as the x-axis in W&B)."""
 
-    def __init__(self):
+    def __init__(self, ticks_per_step: int = 1):
         super().__init__()
+        self.ticks_per_step = ticks_per_step
         self.recent: list[int] = []
         self.episodes = 0
         self.best = 0
@@ -44,6 +47,7 @@ class LogsChoppedCallback(BaseCallback):
                         "chop/logs_per_episode": logs,
                         "chop/logs_per_episode_avg20": avg,
                         "chop/episode": self.episodes,
+                        "chop/game_ticks": self.num_timesteps * self.ticks_per_step,
                     })
                 print(f"[{self.num_timesteps:>8} steps] episode done: {logs:2d} logs (last-20 avg {avg:.1f})")
         return True

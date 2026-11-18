@@ -24,19 +24,21 @@ PPO_SETTINGS = dict(
 
 
 def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False, jump: bool = False,
-                multi: bool = False):
+                multi: bool = False, action_repeat: int = 1):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker.
     jump: natural world only, use the 13 actions with jump instead of the arena's 11.
-    multi: arena only, (move, turn, look) every step with attack held (common.MULTI_SETTINGS)."""
+    multi: arena only, (move, turn, look) every step with attack held (common.MULTI_SETTINGS).
+    action_repeat: arena only, game ticks per agent step (arena.ChopTreesEnv)."""
     def _make():
         make_env = ENVS[env_name].make_env
-        kwargs = {"jump": jump} if env_name == "natural" else {"actions": "multi" if multi else "single"}
+        kwargs = ({"jump": jump} if env_name == "natural"
+                  else {"actions": "multi" if multi else "single", "action_repeat": action_repeat})
         return Monitor(make_env(port=port, env_path=game_folder(port, shared_folder), **kwargs), filename=monitor_file,
                        info_keywords=("logs_chopped",))
     return _make
 
 
-def env_settings(env_name: str, jump: bool = False, multi: bool = False) -> dict:
+def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_repeat: int = 1) -> dict:
     """The environment's settings, saved in config.json (EXPERIMENTS.md flags changes between runs)."""
     shared = {
         "world": env_name,
@@ -62,5 +64,7 @@ def env_settings(env_name: str, jump: bool = False, multi: bool = False) -> dict
         "trees": len(arena_env.TREE_POSITIONS),
         "logs_per_tree": arena_env.TRUNK_HEIGHT,
         "max_logs": arena_env.MAX_LOGS,
+        "action_repeat": action_repeat,  # game ticks per agent step; episode_steps counts ticks
+        "ground_repaired_on_reset": True,  # before 2026-11-17 dug holes stayed for the whole run
         "arena_radius": arena_env.ARENA_RADIUS,
     }

@@ -50,13 +50,15 @@ def save_video(frames: list[np.ndarray], path: Path, fps: int = VIDEO_FPS) -> No
 
 
 def save_episode_videos(raw: list[tuple], base: Path, speeds: list[int], label: ActionLabel,
-                        max_logs: int | None = None) -> None:
+                        max_logs: int | None = None, step_ticks: int = 1) -> None:
     """Build the annotated frames from the raw (image, step, logs, action) records and write
-    one video per speed (file name ends in _<fps>fps except at real speed)."""
+    one video per speed (file name ends in _<fps>fps except at real speed).
+    speeds are game ticks per second; with step_ticks ticks per frame (action repeat) the video
+    plays at speed / step_ticks frames per second, so real speed stays real speed."""
     frames = [video_frame(*r, label=label, max_logs=max_logs) for r in raw]
     for fps in speeds:
         speed = "" if fps == VIDEO_FPS else f"_{fps}fps"
-        save_video(frames, base.with_name(f"{base.name}{speed}.mp4"), fps=fps)
+        save_video(frames, base.with_name(f"{base.name}{speed}.mp4"), fps=max(1, round(fps / step_ticks)))
 
 
 def save_raw_episode(raw: list[tuple], path: Path) -> None:
@@ -67,10 +69,10 @@ def save_raw_episode(raw: list[tuple], path: Path) -> None:
 
 
 def encode_saved_episode(path: Path, base: Path, speeds: list[int], label: ActionLabel,
-                         max_logs: int | None = None) -> None:
+                         max_logs: int | None = None, step_ticks: int = 1) -> None:
     with np.load(path) as d:
         raw = list(zip(d["images"], d["steps"].tolist(), d["logs"].tolist(), d["actions"].tolist()))
-    save_episode_videos(raw, base, speeds, label, max_logs)
+    save_episode_videos(raw, base, speeds, label, max_logs, step_ticks)
 
 
 def pick_video_episodes(results: dict[int, int], per_group: int) -> list[tuple[str, int]]:
@@ -98,9 +100,9 @@ class EpisodeRecorder:
     Disabled (does nothing) when enabled is False, so callers needn't check."""
 
     def __init__(self, video_dir: Path, stamp: str, speeds: list[int], label: ActionLabel,
-                 max_logs: int | None, n_envs: int, enabled: bool = True):
+                 max_logs: int | None, n_envs: int, enabled: bool = True, step_ticks: int = 1):
         self.video_dir, self.stamp, self.speeds = video_dir, stamp, speeds
-        self.label, self.max_logs = label, max_logs
+        self.label, self.max_logs, self.step_ticks = label, max_logs, step_ticks
         self.enabled = enabled and bool(speeds)
         self.frames_dir = video_dir / f"_frames_{stamp}"  # every episode's frames until the videos are chosen
         self._raw: list[list[tuple]] = [[] for _ in range(n_envs)]  # small frames; enlarged only when encoding
@@ -150,7 +152,7 @@ class EpisodeRecorder:
             with ThreadPoolExecutor(max_workers=4) as pool:  # Minecraft is closed, so the CPU is free
                 jobs = [pool.submit(encode_saved_episode, self.frames_dir / f"ep{ep + 1}.npz",
                                     self.video_dir / f"eval_{self.stamp}_{tag}_ep{ep + 1}_{scores[ep]}logs",
-                                    self.speeds, self.label, self.max_logs)
+                                    self.speeds, self.label, self.max_logs, self.step_ticks)
                         for tag, ep in picked]
                 for job in jobs:
                     job.result()

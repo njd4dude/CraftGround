@@ -106,13 +106,22 @@ def arena_commands() -> list[str]:
 class ChopTreesEnv(gym.Wrapper):
     """Gymnasium env: image in, action out, +1 reward per log chopped.
     actions: "single" = one of ACTION_NAMES per step; "multi" = (move, turn, look) every step
-    with attack always held (common.MULTI_NVEC)."""
+    with attack always held (common.MULTI_NVEC).
+    action_repeat: game ticks per agent step. Keys (walk, attack, jump) are held for all of them;
+    a turn / look is applied once, on the first tick, so it still turns by the amount chosen.
+    Rewards are summed and the agent sees the last tick's frame. CraftGround shows an action's
+    effects 1-3 ticks late (tools/check_timing.py), so 4 lets each step show its own action.
+    An episode is still EPISODE_STEPS ticks, so it's EPISODE_STEPS // action_repeat agent steps."""
 
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
-                 actions: str = "single"):
+                 actions: str = "single", action_repeat: int = 1):
         if actions not in ("single", "multi"):
             raise ValueError(f"actions must be 'single' or 'multi', not {actions!r}")
+        if action_repeat < 1:
+            raise ValueError(f"action_repeat must be at least 1, not {action_repeat}")
         self.multi = actions == "multi"
+        self.action_repeat = action_repeat
+        self.max_steps = EPISODE_STEPS // action_repeat
         config = InitialEnvironmentConfig(
             image_width=IMAGE_WIDTH,
             image_height=IMAGE_HEIGHT,
@@ -138,6 +147,18 @@ class ChopTreesEnv(gym.Wrapper):
         self._steps = 0
         self._logs_at_start = 0
         self._logs_chopped = 0
+
+    def _game_action(self, action, camera: bool):
+        """CraftGround's action for one tick; camera=False drops the turn / look (repeat ticks)."""
+        if self.multi:
+            act = to_craftground_multi(action)
+            if not camera:
+                act["camera_yaw"] = act["camera_pitch"] = 0.0
+        else:
+            act = to_craftground_action(int(action))
+            if not camera:
+                act[3] = act[4] = 12  # 12 = no pitch / yaw change
+        return act
 
     @staticmethod
     def _logs_mined_total(obs) -> int:
@@ -171,22 +192,26 @@ class ChopTreesEnv(gym.Wrapper):
         return self._image(obs), {"logs_chopped": 0, "reset_seconds": time.perf_counter() - start}
 
     def step(self, action):
-        obs, _, _, _, _ = self.env.step(to_craftground_multi(action) if self.multi
-                                        else to_craftground_action(int(action)))
+        reward = 0.0
+        terminated = False
+        for tick in range(self.action_repeat):
+            obs, _, _, _, _ = self.env.step(self._game_action(action, camera=tick == 0))
+            logs_now = self._logs_mined_total(obs) - self._logs_at_start
+            reward += float(logs_now - self._logs_chopped)
+            self._logs_chopped = logs_now
+            terminated = bool(obs["full"].is_dead)
+            if terminated or self._logs_chopped >= MAX_LOGS:
+                break
         self._steps += 1
 
-        logs_now = self._logs_mined_total(obs) - self._logs_at_start
-        reward = float(logs_now - self._logs_chopped)
-        self._logs_chopped = logs_now
-
-        terminated = bool(obs["full"].is_dead)
-        truncated = self._steps >= EPISODE_STEPS or self._logs_chopped >= MAX_LOGS
+        truncated = self._steps >= self.max_steps or self._logs_chopped >= MAX_LOGS
         info: dict[str, Any] = {"logs_chopped": self._logs_chopped}
         return self._image(obs), reward, terminated, truncated, info
 
 
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
-             actions: str = "single") -> ChopTreesEnv:
+             actions: str = "single", action_repeat: int = 1) -> ChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
-    actions: "single" or "multi" (see ChopTreesEnv)."""
-    return ChopTreesEnv(port=port, verbose=verbose, env_path=env_path, actions=actions)
+    actions: "single" or "multi"; action_repeat: game ticks per agent step (see ChopTreesEnv)."""
+    return ChopTreesEnv(port=port, verbose=verbose, env_path=env_path, actions=actions,
+                        action_repeat=action_repeat)

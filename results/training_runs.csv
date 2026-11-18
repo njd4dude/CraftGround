@@ -1,3 +1,11 @@
 started,timesteps_done,episodes,minutes,last20_avg_logs,best_episode_logs,status,resumed_from,model,wandb_url
 2026-11-13T13:17:02,200704,206,11.1,31.40,32,completed,,runs/arena/chop_ppo_20261113_131702/model.zip,
 2026-11-13T13:56:20,51200,51,4.3,24.85,28,completed,,runs/arena/chop_ppo_20261113_135620/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/9te3935j
+2026-11-17T17:29:20,200508,198,6.9,26.8,31,completed,,runs/arena/single_1tick_20261117_172920/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/x8bvlnzz
+2026-11-17T17:36:52,200508,801,15.2,22.9,25,completed,,runs/arena/single_4tick_20261117_173652/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/p84qqsaz
+2026-11-17T18:13:09,200508,801,14.9,23.5,26,completed,,runs/arena/single_4tick_seed2_20261117_181309/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/b2am6n1k
+2026-11-17T18:31:47,200508,200,9.1,24.85,32,completed,,runs/arena/multi_1tick_20261117_183147/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/vb3oj5uf
+2026-11-17T18:45:06,200508,801,18.6,21.65,32,completed,,runs/arena/multi_4tick_20261117_184506/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/aamm66rk
+2026-11-17T19:08:06,200508,203,6.9,30.65,32,completed,,runs/arena/single_1tick_seed2_20261117_190806/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/g2h16i1m
+2026-11-17T19:18:58,200508,200,9.2,29.6,32,completed,,runs/arena/multi_1tick_seed2_20261117_191858/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/mujfej23
+2026-11-17T21:28:24,200508,201,6.7,30.25,32,completed,,runs/arena/fixed_single_1tick_r1_20261117_212824/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/x7qpqe0q

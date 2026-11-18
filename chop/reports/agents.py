@@ -24,6 +24,15 @@ def run_dir_of(agent: str) -> Path:
     return parent.parent if parent.name == "checkpoints" else parent
 
 
+def run_action_repeat(agent: str) -> int:
+    """Game ticks per agent step the model was trained with (its run's config.json; 1 if not recorded)."""
+    try:
+        cfg = json.loads((run_dir_of(agent) / "config.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 1
+    return int(cfg.get("env", {}).get("action_repeat", 1))
+
+
 def agent_label(agent: str) -> str:
     """Run folder name, plus the step count for a checkpoint."""
     path = Path(agent)

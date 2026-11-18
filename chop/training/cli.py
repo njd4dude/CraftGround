@@ -19,6 +19,7 @@ from chop.envs import ENVS, common
 from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, instance_ports, launch_vec_env
 from chop.paths import RUNS_DIR
 from chop.reports import update_report
+from chop.reports.agents import run_action_repeat
 from chop.reports.csvio import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row
 from chop.training.callbacks import LogsChoppedCallback, SpeedCallback, StepTimer, WandbOutputFormat
 from chop.training.lines import natural_line_dir
@@ -50,6 +51,9 @@ def main():
     parser.add_argument("--actions", choices=["single", "multi"], default=None,
                         help="single (default): one of 11 actions per step; multi (arena only): move + turn + "
                              "look every step with attack always held. A resumed model keeps its own")
+    parser.add_argument("--action-repeat", type=int, default=None,
+                        help="arena only: game ticks per agent step (default 1; 4 lets each step show its own "
+                             "action, see tools/check_timing.py). A resumed model keeps its own unless given")
     parser.add_argument("--lr-schedule", choices=["linear", "constant"], default="linear",
                         help="linear (default): --learning-rate falls to 0 by the end of this run; "
                              "constant: stays fixed (all runs before 2026-11-15)")
@@ -76,6 +80,11 @@ def main():
         multi = saved_multi
     if multi and args.env != "arena":
         parser.error("multi actions are arena only for now")
+    action_repeat = args.action_repeat or (run_action_repeat(args.resume) if args.resume else 1)
+    if action_repeat < 1:
+        parser.error("--action-repeat must be at least 1")
+    if action_repeat > 1 and args.env != "arena":
+        parser.error("--action-repeat is arena only for now")
     # Natural world: 13 actions with jump unless --no-jump; a resumed model keeps the set it was trained with.
     jump = args.env == "natural" and not args.no_jump
     if saved and multi:
@@ -123,7 +132,7 @@ def main():
         "lr_schedule": args.lr_schedule,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
-        "env": env_settings(args.env, jump, multi),
+        "env": env_settings(args.env, jump, multi, action_repeat),
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
@@ -143,7 +152,7 @@ def main():
             "lr_schedule": args.lr_schedule,
             "actions": "multi" if multi else "single",
             **ppo_settings,
-            **{f"env/{k}": v for k, v in env_settings(args.env, jump, multi).items()},
+            **{f"env/{k}": v for k, v in env_settings(args.env, jump, multi, action_repeat).items()},
         },
     )
     # Plot everything against training steps.
@@ -152,14 +161,16 @@ def main():
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
 
     ports = instance_ports(args.port, args.n_envs)
-    factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump, multi)
+    factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump, multi,
+                             action_repeat)
                  for i, port in enumerate(ports)]
     step_timer = StepTimer(launch_vec_env(factories, ports, args.shared_folder))
     env = step_timer
     print(f"{args.env} world, {args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
           f"({steps_per_env * args.n_envs} total), "
           + ("multi actions: move x turn x look " + "x".join(map(str, common.MULTI_NVEC)) + ", attack held" if multi
-             else f"{env.action_space.n} actions{' (with jump)' if jump else ''}"))
+             else f"{env.action_space.n} actions{' (with jump)' if jump else ''}")
+          + (f", {action_repeat} ticks per step" if action_repeat > 1 else ""))
 
     if args.resume:
         load_settings = {**overrides, "n_steps": steps_per_env}
@@ -171,7 +182,7 @@ def main():
         model = PPO("CnnPolicy", env, device=device, verbose=1, **sb3_settings)
     model.set_logger(Logger(folder=str(run_dir), output_formats=[HumanOutputFormat(sys.stdout), WandbOutputFormat()]))
 
-    chop_stats = LogsChoppedCallback()
+    chop_stats = LogsChoppedCallback(action_repeat)
     callbacks = [
         chop_stats,
         SpeedCallback(args.n_envs, step_timer),
