@@ -49,8 +49,8 @@ def main():
                         help="natural world: use the arena's 11 actions instead of 13 with jump "
                              "(automatic when --resume is an 11-action model)")
     parser.add_argument("--actions", choices=["single", "multi"], default=None,
-                        help="single (default): one of 11 actions per step; multi (arena only): move + turn + "
-                             "look every step with attack always held. A resumed model keeps its own")
+                        help="single (default): one action per step; multi: move + turn + look (+ jump in the "
+                             "natural world) every step with attack always held. A resumed model keeps its own")
     parser.add_argument("--action-repeat", type=int, default=None,
                         help="arena only: game ticks per agent step (default 1; 4 lets each step show its own "
                              "action, see tools/check_timing.py). A resumed model keeps its own unless given")
@@ -78,8 +78,6 @@ def main():
             parser.error(f"--actions {args.actions}: the --resume model uses "
                          f"{'multi' if saved_multi else 'single'} actions")
         multi = saved_multi
-    if multi and args.env != "arena":
-        parser.error("multi actions are arena only for now")
     action_repeat = args.action_repeat or (run_action_repeat(args.resume) if args.resume else 1)
     if action_repeat < 1:
         parser.error("--action-repeat must be at least 1")
@@ -88,7 +86,12 @@ def main():
     # Natural world: 13 actions with jump unless --no-jump; a resumed model keeps the set it was trained with.
     jump = args.env == "natural" and not args.no_jump
     if saved and multi:
-        pass  # multi models are arena-only and have no jump, checked above
+        # A multi model's jump choice is its 4th dimension.
+        jump = len(saved["action_space"].nvec) == len(common.MULTI_NVEC_JUMP)
+        if jump and args.env != "natural":
+            parser.error("--resume model has a jump choice; only the natural world offers jump")
+        if args.no_jump and jump:
+            parser.error("--no-jump: the --resume model was trained with jump")
     elif saved and args.env == "natural":
         jump = saved["action_space"].n == len(common.ACTION_NAMES_JUMP)
         if args.no_jump and jump:
@@ -168,7 +171,8 @@ def main():
     env = step_timer
     print(f"{args.env} world, {args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
           f"({steps_per_env * args.n_envs} total), "
-          + ("multi actions: move x turn x look " + "x".join(map(str, common.MULTI_NVEC)) + ", attack held" if multi
+          + ("multi actions: move x turn x look" + (" x jump " if jump else " ")
+             + "x".join(map(str, common.multi_nvec(jump))) + ", attack held" if multi
              else f"{env.action_space.n} actions{' (with jump)' if jump else ''}")
           + (f", {action_repeat} ticks per step" if action_repeat > 1 else ""))
 

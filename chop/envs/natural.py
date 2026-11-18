@@ -3,6 +3,8 @@
 Same task as the arena (chop/envs/arena.py): same image, diamond axe and +1 reward per log. Actions are
 the arena's 11 plus jump and forward_jump (13), since the terrain has hills and ledges;
 make_env(jump=False) gives the arena's 11 for models trained before jump was added.
+make_env(actions="multi") gives multi-choice actions instead: move, turn, look and (with jump)
+jump every step, attack always held (common.MULTI_NVEC_JUMP).
 The difference is the world. Instead of a walled superflat arena with 8 placed
 oaks, the agent plays in a normal generated world (fixed seed) and spawns in a
 forest.
@@ -37,10 +39,11 @@ import numpy as np
 
 import craftground
 from craftground import InitialEnvironmentConfig
+from craftground.environment.action_space import ActionSpaceVersion, no_op_v2
 from craftground.initial_environment_config import Difficulty, GameMode, WorldType
 
 from chop.envs.common import (ACTION_NAMES, ACTION_NAMES_JUMP, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH,
-                              to_craftground_action)
+                              multi_nvec, to_craftground_action, to_craftground_multi)
 from chop.paths import ROOT
 
 # --- Experiment settings -----------------------------------------------------
@@ -94,6 +97,7 @@ RENDER_DISTANCE = 4   # chunks drawn around the player (CraftGround's default: 6
 JVM_MAX_MEMORY = "2G"  # Minecraft's Java heap limit, -Xmx (CraftGround's default: 3G)
 
 NOOP = to_craftground_action(0)
+NOOP_V2 = no_op_v2()  # the same, in the V2 format multi actions use
 
 
 def _setup_commands() -> list[str]:
@@ -130,20 +134,27 @@ def _ground_fraction(image: np.ndarray) -> float:
 
 
 class NaturalChopTreesEnv(gym.Wrapper):
-    """Gymnasium env: image in, discrete action out, +1 reward per log chopped."""
+    """Gymnasium env: image in, action out, +1 reward per log chopped."""
 
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
                  jump: bool = True, render_distance: int = RENDER_DISTANCE,
                  jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
-                 seed: str = SEED):
+                 seed: str = SEED, actions: str = "single"):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15).
+        actions: "single" = one action per step (as above); "multi" = (move, turn, look, jump)
+        every step with attack held, or (move, turn, look) with jump=False.
         spots: play these spots ({x, y, z, yaw}) in order, one per reset, instead of searching
         (evaluate.py's fixed evaluation set); once they run out, resets search as usual.
         seed: the world to generate. Training always uses SEED; HELD_OUT_SEED is for evaluation."""
+        if actions not in ("single", "multi"):
+            raise ValueError(f"actions must be 'single' or 'multi', not {actions!r}")
         self.world_seed = seed
+        self.multi = actions == "multi"
         self.action_names = ACTION_NAMES_JUMP if jump else ACTION_NAMES
+        # Multi actions turn by exact degrees, which needs CraftGround's V2 action format.
+        self._noop = NOOP_V2 if self.multi else NOOP
         # CraftGround's build.gradle reads this when it launches Minecraft (-Xmx).
         os.environ["CRAFTGROUND_JVM_MAX_MEMORY"] = jvm_max_memory
         config = InitialEnvironmentConfig(
@@ -160,9 +171,12 @@ class NaturalChopTreesEnv(gym.Wrapper):
             mined_stat_keys=LOG_KEYS,
             initial_extra_commands=_setup_commands(),
         )
-        super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path))
+        version = ActionSpaceVersion.V2_MINERL_HUMAN if self.multi else ActionSpaceVersion.V1_MINEDOJO
+        super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path,
+                                          action_space_version=version))
 
-        self.action_space = gym.spaces.Discrete(len(self.action_names))
+        self.action_space = (gym.spaces.MultiDiscrete(multi_nvec(jump)) if self.multi
+                             else gym.spaces.Discrete(len(self.action_names)))
         self.observation_space = gym.spaces.Box(
             low=0, high=255, shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.uint8
         )
@@ -185,7 +199,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self.env.unwrapped.add_command(command)
         deadline = time.monotonic() + timeout
         while True:
-            obs, _, _, _, _ = self.env.step(NOOP)
+            obs, _, _, _, _ = self.env.step(self._noop)
             for m in obs["full"].chat_messages:
                 if any(r in m.message for r in replies):
                     return obs, m.message
@@ -219,7 +233,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         start = last_change = time.monotonic()
         last = _ground_fraction(obs["pov"])
         while True:
-            obs, _, _, _, _ = self.env.step(NOOP)
+            obs, _, _, _, _ = self.env.step(self._noop)
             now = time.monotonic()
             frac = _ground_fraction(obs["pov"])
             if abs(frac - last) > RENDER_TOLERANCE:
@@ -309,7 +323,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
         return self._image(obs), {"logs_chopped": 0, **timing}
 
     def step(self, action):
-        obs, _, _, _, _ = self.env.step(to_craftground_action(int(action)))
+        obs, _, _, _, _ = self.env.step(to_craftground_multi(action) if self.multi
+                                        else to_craftground_action(int(action)))
         self._steps += 1
 
         logs_now = self._logs_mined_total(obs) - self._logs_at_start
@@ -325,14 +340,15 @@ class NaturalChopTreesEnv(gym.Wrapper):
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
              jump: bool = True, render_distance: int = RENDER_DISTANCE,
              jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
-             seed: str = SEED) -> NaturalChopTreesEnv:
+             seed: str = SEED, actions: str = "single") -> NaturalChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
+    actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation)."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
-                               seed=seed)
+                               seed=seed, actions=actions)
 
 
 def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:

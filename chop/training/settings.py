@@ -27,12 +27,14 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
                 multi: bool = False, action_repeat: int = 1):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker.
     jump: natural world only, use the 13 actions with jump instead of the arena's 11.
-    multi: arena only, (move, turn, look) every step with attack held (common.MULTI_SETTINGS).
+    multi: (move, turn, look) every step with attack held (common.MULTI_SETTINGS); natural world
+    with jump adds a jump choice.
     action_repeat: arena only, game ticks per agent step (arena.ChopTreesEnv)."""
     def _make():
         make_env = ENVS[env_name].make_env
-        kwargs = ({"jump": jump} if env_name == "natural"
-                  else {"actions": "multi" if multi else "single", "action_repeat": action_repeat})
+        actions = "multi" if multi else "single"
+        kwargs = ({"jump": jump, "actions": actions} if env_name == "natural"
+                  else {"actions": actions, "action_repeat": action_repeat})
         return Monitor(make_env(port=port, env_path=game_folder(port, shared_folder), **kwargs), filename=monitor_file,
                        info_keywords=("logs_chopped",))
     return _make
@@ -44,7 +46,7 @@ def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_
         "world": env_name,
         "episode_steps": common.EPISODE_STEPS,
         "image": f"{common.IMAGE_WIDTH}x{common.IMAGE_HEIGHT}",
-        "actions": (common.MULTI_SETTINGS if multi
+        "actions": ((common.MULTI_SETTINGS_JUMP if jump else common.MULTI_SETTINGS) if multi
                     else common.ACTION_NAMES_JUMP if jump else common.ACTION_NAMES),
     }
     if env_name == "natural":

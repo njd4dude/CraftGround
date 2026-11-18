@@ -68,37 +68,47 @@ def to_craftground_action(index: int) -> list[int]:
     return act
 
 
-# --- Multi-choice actions (train.py --actions multi, arena only for now) -------------------
+# --- Multi-choice actions (train.py --actions multi) ---------------------------------------
 # Every step the agent makes three choices at once (SB3 MultiDiscrete([3, 11, 9])) and always
 # holds attack, so it only has to learn to walk and aim. Turns are exact degrees (CraftGround's
 # V2 action format), not the 15-degree steps of the single actions above.
 # Negative turn = left, negative look = up (Minecraft's pitch), same as turn_left / look_up.
+# The natural world adds a 4th choice, jump yes/no (MULTI_NVEC_JUMP), for its hills and ledges.
 MOVES = ["none", "forward", "back"]
 TURN_DEGREES = [-45, -20, -10, -5, -2, 0, 2, 5, 10, 20, 45]
 LOOK_DEGREES = [-20, -10, -5, -2, 0, 2, 5, 10, 20]
 MULTI_NVEC = [len(MOVES), len(TURN_DEGREES), len(LOOK_DEGREES)]
+MULTI_NVEC_JUMP = MULTI_NVEC + [2]
 MULTI_SETTINGS = {"move": MOVES, "turn_degrees": TURN_DEGREES, "look_degrees": LOOK_DEGREES,
                   "attack": "always held"}
+MULTI_SETTINGS_JUMP = {**MULTI_SETTINGS, "jump": ["no", "yes"]}
+
+
+def multi_nvec(jump: bool) -> list[int]:
+    return MULTI_NVEC_JUMP if jump else MULTI_NVEC
 
 
 def to_craftground_multi(action) -> dict:
-    """Turn a (move, turn, look) choice into CraftGround's V2 (MineRL-style) action."""
-    move, turn, look = (int(a) for a in action)
+    """Turn a (move, turn, look[, jump]) choice into CraftGround's V2 (MineRL-style) action."""
+    move, turn, look = (int(a) for a in action[:3])
     act = no_op_v2()
     act["attack"] = True
     act["forward"] = MOVES[move] == "forward"
     act["back"] = MOVES[move] == "back"
     act["camera_yaw"] = float(TURN_DEGREES[turn])
     act["camera_pitch"] = float(LOOK_DEGREES[look])
+    act["jump"] = len(action) > 3 and bool(int(action[3]))
     return act
 
 
 def multi_label(action) -> str:
-    """Short text for one (move, turn, look) choice, e.g. 'forward turn+5 look-2' (for videos)."""
-    move, turn, look = (int(a) for a in action)
+    """Short text for one (move, turn, look[, jump]) choice, e.g. 'forward turn+5 look-2 jump'."""
+    move, turn, look = (int(a) for a in action[:3])
     parts = [MOVES[move] if MOVES[move] != "none" else "stay"]
     if TURN_DEGREES[turn]:
         parts.append(f"turn{TURN_DEGREES[turn]:+d}")
     if LOOK_DEGREES[look]:
         parts.append(f"look{LOOK_DEGREES[look]:+d}")
+    if len(action) > 3 and int(action[3]):
+        parts.append("jump")
     return " ".join(parts)
