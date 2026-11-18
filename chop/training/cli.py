@@ -22,6 +22,7 @@ from chop.reports import update_report
 from chop.reports.agents import run_action_repeat
 from chop.reports.csvio import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row
 from chop.training.callbacks import LogsChoppedCallback, SpeedCallback, StepTimer, WandbOutputFormat
+from chop.training.lineage import group_of, history, lineage_tag, tag_runs
 from chop.training.lines import natural_line_dir
 from chop.training.schedule import linear_lr
 from chop.training.settings import PPO_SETTINGS, TRAIN_FIELDS, WANDB_PROJECT, env_factory, env_settings
@@ -139,12 +140,16 @@ def main():
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
+    # Group the line's pieces on W&B, and tag this run and every run it continues with its lineage.
+    chain = history(args.resume)
+    group, lineage = group_of(run_dir, chain), lineage_tag(run_dir, chain)
     wandb.init(
         project=WANDB_PROJECT,
         name=run_name,
+        group=group,
         dir=str(run_dir),
         notes=args.notes or None,
-        tags=[args.env],
+        tags=[args.env, *([lineage] if lineage else [])],
         mode="disabled" if args.no_wandb else "online",
         config={
             "algorithm": "PPO",
@@ -162,6 +167,11 @@ def main():
     wandb.define_metric("global_step")
     wandb.define_metric("*", step_metric="global_step")
     wandb_url = wandb.run.url if wandb.run is not None and not args.no_wandb else ""
+    if wandb_url and chain:
+        try:
+            tag_runs(chain, lineage, group)
+        except Exception as e:  # never stop training over a tag
+            print(f"Couldn't tag the earlier runs on W&B ({e}); tools/wandb_lineage.py can")
 
     ports = instance_ports(args.port, args.n_envs)
     factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump, multi,

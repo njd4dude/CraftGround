@@ -12,3 +12,4 @@ repository root, e.g. `run.bat tools\memtest.py --minutes 20`.
 | `launch_test.py` | Whether launching many instances at once crashes, and why (`results/launch_test.csv`) |
 | `memtest.py` | How much memory natural-world instances use over time (`results/memtest.csv`) |
 | `memprobe.py` | Where running instances' memory goes, next to training (`results/memprobe.csv`) |
+| `wandb_lineage.py` | Sets the W&B group and `lineage:` tags on runs logged before train.py did (`--apply` to write) |
