@@ -5,7 +5,7 @@ forest instead of the walled arena (chop/envs/natural.py). Arena results are in 
 the summary of findings is [FINDINGS.md](FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-18 15:31._
+_Tables last updated 2026-11-18 15:51._
 
 ## Results
 
@@ -50,7 +50,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `20261115_155106` | from an arena model | 0 → 100k | 4 | constant | 9.8 | completed | – |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/jnm6lysy) |
+| `20261115_155106` | from scratch | 0 → 100k | 4 | constant | 9.8 | completed | – |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/jnm6lysy) |
 | `20261115_160512` | continued | 100k → ~200k | 6 | constant | – | no record (killed or hung) | – | 6 instances; hung while closing them (stopped from W&B), so no CSV row | – |
 | `20261115_161832` | continued | 200k → 503k | 4 | constant | 19.0 | completed | 9.7* @ 503k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/6hob06tk) |
 
@@ -66,7 +66,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `20261115_172419` | from an arena model | 0 → ~180k | 4 | constant | – | no record (killed or hung) | – | killed for low memory at ~188k; resumed from the 180k checkpoint | – |
+| `20261115_172419` | from scratch | 0 → ~180k | 4 | constant | – | no record (killed or hung) | – | killed for low memory at ~188k; resumed from the 180k checkpoint | – |
 | `20261115_173930` | continued | 180k → 502k | 4 | constant | 21.6 | completed | 18.0* @ 502k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wbto0vn4) |
 | `20261115_185527` | continued | 502k → ~682k | 4 | constant | – | no record (killed or hung) | **18.1** @ 602k | killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b | – |
 | `20261115_192015` | continued | 682k → 1.0M | 4 | constant | 21.8 | completed | **15.0** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
@@ -97,7 +97,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `20261115_235545` | from an arena model | 0 → 257k | 3 | linear | 20.5 | interrupted | **12.3** @ 257k | stopped on purpose (Ctrl+C) to free the machine for fixed spots | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
+| `20261115_235545` | from scratch | 0 → 257k | 3 | linear | 20.5 | interrupted | **12.3** @ 257k | stopped on purpose (Ctrl+C) to free the machine for fixed spots | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
 | `20261116_123155` | continued | 257k → 1.0M | 3 | linear | 67.5 | completed | **22.4** @ 1.0M | resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2x96rt9o) |
 
 <a id="line-3b"></a>
@@ -142,8 +142,8 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `20261118_121806` | from an arena model | 0 → ~? | 3 | linear | – | no record (killed or hung) | – | killed for low memory at ~8k steps, before any checkpoint; restarted from scratch | – |
-| `20261118_124345` | from an arena model | 0 → 1.0M | 3 | linear | 88.8 | completed | **26.6** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/hg4felig) |
+| `20261118_121806` | from scratch | 0 → ~? | 3 | linear | – | no record (killed or hung) | – | killed for low memory at ~8k steps, before any checkpoint; restarted from scratch | – |
+| `20261118_124345` | from scratch | 0 → 1.0M | 3 | linear | 88.8 | completed | **26.6** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/hg4felig) |
 
 ## Evaluation runs
 

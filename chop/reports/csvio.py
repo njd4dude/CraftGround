@@ -48,8 +48,9 @@ def read_rows(path: Path) -> list[dict]:
 
 
 def normalize_agent(agent: str) -> str:
-    """'runs\\x\\model.zip', './runs/x/model.zip' and 'runs/x/model.zip' are the same agent."""
-    return agent if agent == "random" else Path(agent).as_posix().removeprefix("./")
+    """'runs\\x\\model.zip', './runs/x/model.zip' and 'runs/x/model.zip' are the same agent.
+    "" (no model, e.g. a run from scratch) stays "", not Path's "."."""
+    return agent if agent in ("random", "") else Path(agent).as_posix().removeprefix("./")
 
 
 def episodes_by_agent(rows: list[dict]) -> dict[str, list[int]]:
