@@ -3,7 +3,7 @@
 Goal: train an agent to chop as many oak logs as possible in one episode.
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-17 21:38._
+_Tables last updated 2026-11-18 11:54._
 
 ## Summary
 
@@ -12,6 +12,11 @@ One row per agent. **Mean logs** is the real score: the average over all `evalua
 | Agent | Training avg | Eval episodes | Mean logs | Min | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | – | 3 | **3.00** | 0 | 5 | baseline |
+| `fixed_multi_1tick_r3_resumed_20261118_114725` | 31.35 | 50 | **31.38** | 29 | 32 | **10.5×** |
+| `fixed_single_1tick_r3_20261117_221638` | 30.05 | 50 | **29.70** | 27 | 32 | **9.9×** |
+| `fixed_multi_1tick_r2_20261117_220328` | 31.5 | 50 | **31.74** | 30 | 32 | **10.6×** |
+| `fixed_single_1tick_r2_20261117_215228` | 31.25 | 50 | **31.08** | 29 | 32 | **10.4×** |
+| `fixed_multi_1tick_r1_20261117_213859` | 31.1 | 50 | **30.90** | 29 | 32 | **10.3×** |
 | `fixed_single_1tick_r1_20261117_212824` | 30.25 | 50 | **30.60** | 28 | 32 | **10.2×** |
 | `multi_1tick_seed2_20261117_191858` | 29.6 | _not evaluated: `run.bat evaluate.py runs/arena/multi_1tick_seed2_20261117_191858/model.zip --episodes 20`_ |  |  |  |  |
 | `single_1tick_seed2_20261117_190806` | 30.65 | 50 | **24.20** | 2 | 32 | **8.1×** |
@@ -28,6 +33,47 @@ One row per agent. **Mean logs** is the real score: the average over all `evalua
 ## Agents
 
 One section per trained agent, newest first. Hyperparameters changed from the defaults in `train.py` are in bold. Environment changes (reward, episode length, trees...) are flagged on the first run that used them. Add notes with `train.py --notes "..."`, or edit `notes` in the run's `config.json` and rerun `python experiments.py`.
+
+### `fixed_multi_1tick_r3_resumed_20261118_114725`
+
+- **Trained:** 202,488 steps of 20,526 planned, 25 episodes, 3.1 min, 3 parallel envs (completed)
+- **Resumed from:** `runs/arena/fixed_multi_1tick_r3_20261117_222744/checkpoints/ppo_chop_179982_steps.zip`
+- **Result:** 31.38 logs/episode over 50 eval episodes (training last-20 avg 31.35)
+- **PPO settings:** n_steps=2046, batch_size=256, n_epochs=4, **learning_rate=2.5592e-05**, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** learning_rate: 0.00025 → **2.5592e-05**; env actions: ['noop', 'forward', 'back', 'strafe_left', 'strafe_right', 'turn_left', 'turn_right', 'look_up', 'look_down', 'attack', 'forward_attack'] → **{'move': ['none', 'forward', 'back'], 'turn_degrees': [-45, -20, -10, -5, -2, 0, 2, 5, 10, 20, 45], 'look_degrees': [-20, -10, -5, -2, 0, 2, 5, 10, 20], 'attack': 'always held'}** (changed since previous run)
+- **Notes:** Fixed arena: setup C, multi actions, 1 tick, run 3 (resumed at 179982 steps after a memory kill; LR continues the original linear schedule)
+
+### `fixed_single_1tick_r3_20261117_221638`
+
+- **Trained:** 200,508 steps of 200,000 planned, 200 episodes, 7.0 min, 3 parallel envs (completed)
+- **Result:** 29.70 logs/episode over 50 eval episodes (training last-20 avg 30.05)
+- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** env actions: {'move': ['none', 'forward', 'back'], 'turn_degrees': [-45, -20, -10, -5, -2, 0, 2, 5, 10, 20, 45], 'look_degrees': [-20, -10, -5, -2, 0, 2, 5, 10, 20], 'attack': 'always held'} → **['noop', 'forward', 'back', 'strafe_left', 'strafe_right', 'turn_left', 'turn_right', 'look_up', 'look_down', 'attack', 'forward_attack']** (changed since previous run)
+- **Notes:** Fixed arena (ground repaired): setup A, run 3
+
+### `fixed_multi_1tick_r2_20261117_220328`
+
+- **Trained:** 200,508 steps of 200,000 planned, 219 episodes, 9.3 min, 3 parallel envs (completed)
+- **Result:** 31.74 logs/episode over 50 eval episodes (training last-20 avg 31.5)
+- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** env actions: ['noop', 'forward', 'back', 'strafe_left', 'strafe_right', 'turn_left', 'turn_right', 'look_up', 'look_down', 'attack', 'forward_attack'] → **{'move': ['none', 'forward', 'back'], 'turn_degrees': [-45, -20, -10, -5, -2, 0, 2, 5, 10, 20, 45], 'look_degrees': [-20, -10, -5, -2, 0, 2, 5, 10, 20], 'attack': 'always held'}** (changed since previous run)
+- **Notes:** Fixed arena (ground repaired): setup C, run 2
+
+### `fixed_single_1tick_r2_20261117_215228`
+
+- **Trained:** 200,508 steps of 200,000 planned, 207 episodes, 7.0 min, 3 parallel envs (completed)
+- **Result:** 31.08 logs/episode over 50 eval episodes (training last-20 avg 31.25)
+- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** env actions: {'move': ['none', 'forward', 'back'], 'turn_degrees': [-45, -20, -10, -5, -2, 0, 2, 5, 10, 20, 45], 'look_degrees': [-20, -10, -5, -2, 0, 2, 5, 10, 20], 'attack': 'always held'} → **['noop', 'forward', 'back', 'strafe_left', 'strafe_right', 'turn_left', 'turn_right', 'look_up', 'look_down', 'attack', 'forward_attack']** (changed since previous run)
+- **Notes:** Fixed arena (ground repaired): setup A, run 2
+
+### `fixed_multi_1tick_r1_20261117_213859`
+
+- **Trained:** 200,508 steps of 200,000 planned, 205 episodes, 9.2 min, 3 parallel envs (completed)
+- **Result:** 30.90 logs/episode over 50 eval episodes (training last-20 avg 31.1)
+- **PPO settings:** n_steps=2048, batch_size=256, n_epochs=4, learning_rate=0.00025, gamma=0.99, ent_coef=0.01, clip_range=0.2
+- **What's special:** env actions: ['noop', 'forward', 'back', 'strafe_left', 'strafe_right', 'turn_left', 'turn_right', 'look_up', 'look_down', 'attack', 'forward_attack'] → **{'move': ['none', 'forward', 'back'], 'turn_degrees': [-45, -20, -10, -5, -2, 0, 2, 5, 10, 20, 45], 'look_degrees': [-20, -10, -5, -2, 0, 2, 5, 10, 20], 'attack': 'always held'}** (changed since previous run)
+- **Notes:** Fixed arena (ground repaired): setup C, multi actions, 1 tick, run 1
 
 ### `fixed_single_1tick_r1_20261117_212824`
 
@@ -115,6 +161,11 @@ One row per `train.py` run, newest first.
 
 | Started | Steps | Episodes | Minutes | Last-20 avg logs | Best episode | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-18T11:47:25 | 202488 | 25 | 3.1 | 31.35 | 32 | completed | `runs/arena/fixed_multi_1tick_r3_resumed_20261118_114725/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/17qszxj3) |
+| 2026-11-17T22:16:38 | 200508 | 200 | 7.0 | 30.05 | 32 | completed | `runs/arena/fixed_single_1tick_r3_20261117_221638/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/5lsm4fyz) |
+| 2026-11-17T22:03:28 | 200508 | 219 | 9.3 | 31.5 | 32 | completed | `runs/arena/fixed_multi_1tick_r2_20261117_220328/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/j21v4v2p) |
+| 2026-11-17T21:52:28 | 200508 | 207 | 7.0 | 31.25 | 32 | completed | `runs/arena/fixed_single_1tick_r2_20261117_215228/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/0nr3tr5u) |
+| 2026-11-17T21:38:59 | 200508 | 205 | 9.2 | 31.1 | 32 | completed | `runs/arena/fixed_multi_1tick_r1_20261117_213859/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/nzb09mc9) |
 | 2026-11-17T21:28:24 | 200508 | 201 | 6.7 | 30.25 | 32 | completed | `runs/arena/fixed_single_1tick_r1_20261117_212824/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/x7qpqe0q) |
 | 2026-11-17T19:18:58 | 200508 | 200 | 9.2 | 29.6 | 32 | completed | `runs/arena/multi_1tick_seed2_20261117_191858/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/mujfej23) |
 | 2026-11-17T19:08:06 | 200508 | 203 | 6.9 | 30.65 | 32 | completed | `runs/arena/single_1tick_seed2_20261117_190806/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/g2h16i1m) |
@@ -132,6 +183,11 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s | Per episode |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-18T11:54:37 | `runs/arena/fixed_multi_1tick_r3_resumed_20261118_114725/model.zip` | 50 | 31.38 | 29 | 32 | 3 | 3.3 | 532 | 31 32 31 32 31 32 31 32 32 31 30 32 32 31 32 32 31 32 31 32 32 32 32 32 30 32 31 31 32 32 31 29 32 31 32 32 30 31 32 31 31 31 31 32 32 31 32 30 30 32 |
+| 2026-11-17T22:27:32 | `runs/arena/fixed_single_1tick_r3_20261117_221638/model.zip` | 50 | 29.70 | 27 | 32 | 3 | 3.3 | 594 | 30 29 30 29 28 29 31 31 30 29 31 31 28 32 28 31 31 30 30 30 30 31 31 27 30 29 28 28 29 28 30 32 31 28 31 32 30 31 28 27 28 28 32 30 29 31 28 27 32 31 |
+| 2026-11-17T22:16:28 | `runs/arena/fixed_multi_1tick_r2_20261117_220328/model.zip` | 50 | 31.74 | 30 | 32 | 3 | 3.0 | 520 | 32 31 31 32 32 32 32 32 32 31 32 32 32 32 31 32 32 32 30 32 32 31 32 32 32 32 31 32 32 31 32 32 32 32 32 32 32 32 32 32 31 32 31 31 31 32 32 32 32 32 |
+| 2026-11-17T22:03:17 | `runs/arena/fixed_single_1tick_r2_20261117_215228/model.zip` | 50 | 31.08 | 29 | 32 | 3 | 3.2 | 579 | 30 29 32 31 31 31 32 31 29 32 32 29 30 31 32 32 32 31 31 32 31 31 32 30 32 31 32 32 32 31 30 31 32 32 32 30 31 30 30 32 30 31 32 31 31 32 31 31 31 30 |
+| 2026-11-17T21:52:16 | `runs/arena/fixed_multi_1tick_r1_20261117_213859/model.zip` | 50 | 30.90 | 29 | 32 | 3 | 3.4 | 536 | 32 31 31 30 31 32 32 32 31 32 30 30 30 30 32 31 31 32 32 31 30 32 31 32 31 30 31 29 32 30 31 29 30 31 31 32 30 32 31 30 31 29 30 32 30 30 31 31 31 32 |
 | 2026-11-17T21:38:48 | `runs/arena/fixed_single_1tick_r1_20261117_212824/model.zip` | 50 | 30.60 | 28 | 32 | 3 | 3.1 | 585 | 30 31 29 31 32 31 30 31 30 31 32 32 32 30 31 29 31 32 28 29 32 31 31 31 32 31 31 31 31 29 29 30 30 29 29 31 29 32 32 29 30 31 32 32 32 30 32 30 29 30 |
 | 2026-11-17T19:18:48 | `runs/arena/single_1tick_seed2_20261117_190806/model.zip` | 50 | 24.20 | 2 | 32 | 3 | 3.2 | 610 | 26 30 29 5 31 31 11 31 28 17 29 31 11 31 30 6 31 31 24 31 30 6 32 30 32 6 29 32 2 32 29 29 6 30 32 13 32 32 12 32 32 31 14 30 30 4 30 32 12 23 |
 | 2026-11-17T19:07:24 | `runs/arena/multi_4tick_20261117_184506/model.zip` | 50 | 27.68 | 24 | 31 | 3 | 3.0 | 175 | 28 26 29 25 28 25 26 30 27 31 26 28 29 29 29 28 30 30 27 30 27 26 27 25 28 27 28 29 28 29 29 29 28 29 30 25 27 26 26 27 29 29 26 28 24 27 25 29 28 28 |
