@@ -4,7 +4,7 @@ Goal: train an agent to chop as many oak logs as possible in one episode. Natura
 are in [natural/](../natural/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 11:53._
+_Tables last updated 2026-11-19 13:23._
 
 - [Experiments](experiments.md): each experiment's question, what it found, and its runs with their scores
 - [Other runs](other_runs.md): runs no experiment lists yet

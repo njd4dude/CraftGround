@@ -69,13 +69,14 @@
    "id": "5",
    "name": "wooded spawns, from Line 4c @ 3.0M, 1M more, linear LR from 1e-4",
    "tested": "Line 4 does badly in snow and gets stuck. Do spawns in any biome with trees (snowy taiga, taiga, jungle, swamp, dark forest...; not savanna) and a new region every 5 episodes make the agent better in unfamiliar biomes, without losing forest skill? Same recipe as 4c's last 1M; Line 4d is the control (forest spawns).",
-   "found": "Not on average: wooded spots 31.6 vs Line 4c's 30.5 (+1.1 +/- 4.5 spot by spot), forest spots 40.0 vs 41.2 (-1.2 +/- 4.7), both ties. But fewer 0-log spots on both sets (wooded 16 -> 9, forest 7 -> 4): it gets stuck or lost less. Line 5 also had 1M more steps than 4c; Line 4d separates the two."
+   "found": "Yes, against its control (Line 4d: same 1M steps, forest spawns): wooded spots 31.6 vs 25.7, +6.0 +/- 4.8 logs spot by spot (better at 58, worse at 32); forest spots tied (40.0 vs 41.3, -1.3 +/- 5.0). 0-log episodes over both sets halved, 13 vs 26 (McNemar p = 0.007). Against its start, Line 4c, it is a tie on both sets (wooded +1.1 +/- 4.5, forest -1.2 +/- 4.7): the gain is that wooded spawns stopped the drop outside forests that more forest training causes."
   },
   {
    "folder": "line4d_resume-3M",
    "id": "4d",
    "name": "resume Line 4c @ 3.0M for 1M more, forest spawns, linear LR from 1e-4",
-   "tested": "Control for Line 5: the same 1M steps and recipe with forest spawns only, so Line 5's effect can be told apart from simply training longer."
+   "tested": "Control for Line 5: the same 1M steps and recipe with forest spawns only, so Line 5's effect can be told apart from simply training longer.",
+   "found": "Forest score flat: 41.3 at 4M vs Line 4c's 41.2 (+0.1 +/- 4.5), so the line has levelled off. Wooded spots fell from 30.5 (4c) to 25.7: more forest-only training made it worse outside oak/birch forests. Line 5 (same steps, wooded spawns) beat it there by +6.0 +/- 4.8 and had half the 0-log episodes."
   }
  ],
  "piece_notes": {

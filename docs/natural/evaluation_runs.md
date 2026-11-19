@@ -3,12 +3,14 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 11:53._
+_Tables last updated 2026-11-19 13:23._
 
 One row per `evaluate.py` run, newest first. **Minutes** includes launching Minecraft; **Steps/s** is env steps per second over all instances while playing (runs from before timing was added show –). **Spots**: fixed = the saved forest spots, wooded = the saved wooded spots (any biome with trees), random = random spawns (all runs before 2026-11-16). **World**: training = the world agents train in, held-out = one they never see (`--held-out`).
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s | Per episode |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-19T13:22:10 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | wooded | training | 100 | 25.66 | 0 | 102 | 3 | 11.3 | 179 | 29 57 12 21 7 0 0 56 34 4 12 1 0 102 24 20 0 4 18 59 23 51 20 19 27 35 53 10 0 26 0 0 19 0 71 5 0 28 6 91 0 21 51 55 47 1 0 63 2 6 18 7 40 52 0 3 3 17 16 71 19 36 15 21 12 19 73 36 32 0 44 88 48 31 9 0 3 46 32 0 0 58 5 8 24 68 6 33 70 2 37 91 11 20 84 0 0 7 50 11 |
+| 2026-11-19T13:10:22 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | fixed | training | 100 | 41.27 | 0 | 109 | 3 | 10.2 | 203 | 16 87 69 13 24 30 21 96 60 12 37 0 61 80 109 88 41 0 30 59 59 84 41 19 71 56 36 105 64 70 37 14 41 39 31 8 14 57 12 0 35 46 3 58 0 1 11 22 5 48 30 8 82 27 56 28 40 79 0 39 66 28 32 85 66 1 0 46 97 51 30 44 40 10 24 62 33 5 72 58 5 25 39 53 26 46 0 46 17 61 46 43 59 61 0 71 103 41 34 92 |
 | 2026-11-19T01:52:24 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | fixed | training | 100 | 39.99 | 0 | 89 | 3 | 10.1 | 203 | 23 46 64 24 14 30 38 42 16 52 32 0 40 54 64 73 24 0 59 52 62 82 89 38 60 80 45 64 22 57 28 15 50 14 30 19 33 55 78 4 42 70 2 40 40 3 4 34 10 61 72 43 87 20 73 34 23 29 0 12 49 32 8 74 46 51 0 45 36 16 36 47 34 12 24 46 76 46 53 49 31 36 33 48 14 21 82 40 18 71 47 72 53 30 23 73 61 21 13 61 |
 | 2026-11-19T01:41:52 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | wooded | training | 100 | 31.64 | 0 | 101 | 3 | 11.6 | 171 | 40 50 47 14 26 0 48 31 38 0 58 25 98 16 54 23 24 43 33 48 14 25 29 95 39 50 35 0 34 58 49 29 21 83 20 1 39 8 42 2 14 52 37 101 7 4 21 34 7 6 6 7 49 52 0 34 3 63 30 34 39 34 32 36 0 28 61 88 50 9 45 31 13 61 18 7 43 37 26 0 15 65 4 8 25 24 7 11 67 0 4 30 12 44 84 0 37 68 51 0 |
 | 2026-11-19T01:29:47 | `runs/natural/line4c_resume-2M/20261118_183414/model.zip` | wooded | training | 100 | 30.50 | 0 | 88 | 3 | 11.0 | 183 | 50 68 37 19 3 0 0 26 19 2 0 2 14 74 18 56 14 6 33 52 27 85 52 59 34 28 63 43 0 30 20 3 33 0 77 0 0 44 12 80 0 37 16 12 83 1 0 81 0 5 4 0 34 64 0 40 6 47 26 25 36 23 46 28 24 20 69 0 45 12 48 77 7 21 15 5 7 54 44 8 26 74 0 23 48 47 39 11 88 0 50 87 28 22 74 21 0 86 62 11 |

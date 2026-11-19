@@ -3,13 +3,14 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 11:53._
+_Tables last updated 2026-11-19 13:23._
 
 Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one episode each, same starting direction, current setup), so differences come from the agents, not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose ranges overlap a lot may not really differ. Older random-spawn scores are in [Earlier random-spawn evaluations](random_spawns.md).
 
 | Model | Line | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | random actions | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
+| Line 4d @ 4.0M<br>`20261119_112830` | resume Line 4c @ 3.0M for 1M more, forest spawns, linear LR from 1e-4 | 100 | **41.27** ± 5.56 | 40 | 8 | 109 | **36.2×** |
 | Line 4c @ 3.0M<br>`20261118_183414` | resume Line 4b @ 2.0M for 1M more, linear LR from 1e-4 | 100 | **41.18** ± 4.90 | 41 | 7 | 94 | **36.1×** |
 | Line 5 @ 4.0M<br>`20261119_005447` | wooded spawns, from Line 4c @ 3.0M, 1M more, linear LR from 1e-4 | 100 | **39.99** ± 4.50 | 40 | 4 | 89 | **35.1×** |
 | Line 4b @ 2.0M<br>`20261118_162138` | resume Line 4 @ 1.0M for 1M more, linear LR from 1e-4 | 100 | **35.73** ± 4.68 | 37 | 10 | 97 | **31.3×** |

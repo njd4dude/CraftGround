@@ -3,7 +3,7 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 11:53._
+_Tables last updated 2026-11-19 13:23._
 
 Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are the run folders inside, split by crashes, memory kills or deliberate stops, in order. `train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.
 
@@ -150,7 +150,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 **Question:** Line 4 does badly in snow and gets stuck. Do spawns in any biome with trees (snowy taiga, taiga, jungle, swamp, dark forest...; not savanna) and a new region every 5 episodes make the agent better in unfamiliar biomes, without losing forest skill? Same recipe as 4c's last 1M; Line 4d is the control (forest spawns).
 
-**Found:** Not on average: wooded spots 31.6 vs Line 4c's 30.5 (+1.1 +/- 4.5 spot by spot), forest spots 40.0 vs 41.2 (-1.2 +/- 4.7), both ties. But fewer 0-log spots on both sets (wooded 16 -> 9, forest 7 -> 4): it gets stuck or lost less. Line 5 also had 1M more steps than 4c; Line 4d separates the two.
+**Found:** Yes, against its control (Line 4d: same 1M steps, forest spawns): wooded spots 31.6 vs 25.7, +6.0 +/- 4.8 logs spot by spot (better at 58, worse at 32); forest spots tied (40.0 vs 41.3, -1.3 +/- 5.0). 0-log episodes over both sets halved, 13 vs 26 (McNemar p = 0.007). Against its start, Line 4c, it is a tie on both sets (wooded +1.1 +/- 4.5, forest -1.2 +/- 4.7): the gain is that wooded spawns stopped the drop outside forests that more forest training causes.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -166,9 +166,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 **Question:** Control for Line 5: the same 1M steps and recipe with forest spawns only, so Line 5's effect can be told apart from simply training longer.
 
-**Found:** _not yet (add `found` in `results/lines_natural.json`)_
+**Found:** Forest score flat: 41.3 at 4M vs Line 4c's 41.2 (+0.1 +/- 4.5), so the line has levelled off. Wooded spots fell from 30.5 (4c) to 25.7: more forest-only training made it worse outside oak/birch forests. Line 5 (same steps, wooded spawns) beat it there by +6.0 +/- 4.8 and had half the 0-log episodes.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `20261119_112830` | branch from Line 4c | 3.0M → ~3.3M | 3 | linear | – | no record (killed or hung) | – |  | – |
+| `20261119_112830` | branch from Line 4c | 3.0M → 4.0M | 3 | linear | 90.5 | completed | **41.3** @ 4.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/m7mtph3f) |
 <!-- AUTO-GENERATED:END -->
