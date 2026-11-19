@@ -49,9 +49,14 @@ def main():
     parser.add_argument("--no-jump", action="store_true",
                         help="natural world: use the arena's 11 actions instead of 13 with jump "
                              "(automatic when --resume is an 11-action model)")
+    parser.add_argument("--jump", action="store_true",
+                        help="arena: offer the natural world's jump actions (13 single, or a 4th jump choice in "
+                             "multi) so the model can later be --resume'd in the natural world. "
+                             "A resumed model keeps its own")
     parser.add_argument("--actions", choices=["single", "multi"], default=None,
                         help="single (default): one action per step; multi: move + turn + look (+ jump in the "
-                             "natural world) every step with attack always held. A resumed model keeps its own")
+                             "natural world or with --jump) every step with attack always held. "
+                             "A resumed model keeps its own")
     parser.add_argument("--action-repeat", type=int, default=None,
                         help="arena only: game ticks per agent step (default 1; 4 lets each step show its own "
                              "action, see tools/check_timing.py). A resumed model keeps its own unless given")
@@ -84,22 +89,22 @@ def main():
         parser.error("--action-repeat must be at least 1")
     if action_repeat > 1 and args.env != "arena":
         parser.error("--action-repeat is arena only for now")
-    # Natural world: 13 actions with jump unless --no-jump; a resumed model keeps the set it was trained with.
-    jump = args.env == "natural" and not args.no_jump
-    if saved and multi:
-        # A multi model's jump choice is its 4th dimension.
-        jump = len(saved["action_space"].nvec) == len(common.MULTI_NVEC_JUMP)
-        if jump and args.env != "natural":
-            parser.error("--resume model has a jump choice; only the natural world offers jump")
+    # Jump: on in the natural world unless --no-jump, off in the arena unless --jump. A resumed
+    # model keeps the set it was trained with, in either world, so arena models can move to the
+    # natural world (and back) as long as they were trained with the same set.
+    if args.jump and args.env != "arena":
+        parser.error("--jump is for the arena; the natural world has jump unless --no-jump")
+    if args.no_jump and args.env != "natural":
+        parser.error("--no-jump is for the natural world; the arena has no jump unless --jump")
+    jump = args.jump if args.env == "arena" else not args.no_jump
+    if saved:
+        # A multi model's jump choice is its 4th dimension; a single model's is 13 actions instead of 11.
+        jump = (len(saved["action_space"].nvec) == len(common.MULTI_NVEC_JUMP) if multi
+                else saved["action_space"].n == len(common.ACTION_NAMES_JUMP))
         if args.no_jump and jump:
             parser.error("--no-jump: the --resume model was trained with jump")
-    elif saved and args.env == "natural":
-        jump = saved["action_space"].n == len(common.ACTION_NAMES_JUMP)
-        if args.no_jump and jump:
-            parser.error("--no-jump: the --resume model was trained with jump (13 actions)")
-    elif saved and saved["action_space"].n != len(common.ACTION_NAMES):
-        parser.error(f"--resume model has {saved['action_space'].n} actions; the {args.env} world has "
-                     f"{len(common.ACTION_NAMES)} (jump models only run in the natural world)")
+        if args.jump and not jump:
+            parser.error("--jump: the --resume model was trained without jump")
     # SB3's n_steps is per env; ours is the total, so split it across the instances.
     steps_per_env = max(ppo_settings["n_steps"] // args.n_envs, 1)
     sb3_settings = {**ppo_settings, "n_steps": steps_per_env}

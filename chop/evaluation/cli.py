@@ -25,7 +25,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--random", action="store_true", help="use random actions instead of a model")
     parser.add_argument("--actions", choices=["single", "multi"], default="single",
                         help="--random only: the action set to play randomly in (a model uses its own). "
-                             "multi = move + turn + look (+ jump in the natural world) every step, attack held")
+                             "multi = move + turn + look (+ jump in the natural world) every step, attack held. "
+                             "Models trained with jump can run in either world")
     parser.add_argument("--action-repeat", type=int, default=None,
                         help="arena: game ticks per agent step (default: the model's own from its run's "
                              "config.json; 1 for --random)")
@@ -103,21 +104,17 @@ def main():
         # A multi model's jump choice is its 4th dimension; --random multi plays with jump in the natural world.
         jump = (args.env == "natural" if model is None
                 else len(model.action_space.nvec) == len(MULTI_NVEC_JUMP))
-        if jump and args.env != "natural":
-            args.error("this model has a jump choice; only --env natural offers jump")
     else:
         n_actions = len(ACTION_NAMES) if model is None else model.action_space.n
         names = action_names(n_actions)
         jump = n_actions != len(ACTION_NAMES)
         label = lambda action: names[int(action)]  # noqa: E731
-        if args.env != "natural" and n_actions != len(ACTION_NAMES):
-            args.error(f"this model has {n_actions} actions (with jump); only --env natural offers those")
     action_repeat = args.action_repeat or (1 if model is None else run_action_repeat(args.model))
     if action_repeat > 1 and args.env != "arena":
         args.error("--action-repeat / repeat-trained models are arena only for now")
     actions = "multi" if multi else "single"
     env_kwargs = ({"jump": jump, "seed": args.seed, "actions": actions}
-                  if args.env == "natural" else {"actions": actions, "action_repeat": action_repeat})
+                  if args.env == "natural" else {"actions": actions, "action_repeat": action_repeat, "jump": jump})
     if action_repeat > 1:
         print(f"{action_repeat} game ticks per step")
     make_env = ENVS[args.env].make_env

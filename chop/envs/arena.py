@@ -34,8 +34,8 @@ from craftground.initial_environment_config import (
 
 from craftground.environment.action_space import ActionSpaceVersion, no_op, no_op_v2
 
-from chop.envs.common import (ACTION_NAMES, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH, MULTI_NVEC,
-                              to_craftground_action, to_craftground_multi)
+from chop.envs.common import (ACTION_NAMES, ACTION_NAMES_JUMP, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH,
+                              multi_nvec, to_craftground_action, to_craftground_multi)
 
 # --- Experiment settings -----------------------------------------------------
 
@@ -107,6 +107,10 @@ class ChopTreesEnv(gym.Wrapper):
     """Gymnasium env: image in, action out, +1 reward per log chopped.
     actions: "single" = one of ACTION_NAMES per step; "multi" = (move, turn, look) every step
     with attack always held (common.MULTI_NVEC).
+    jump: off by default (the arena is flat). On, it offers the natural world's action set instead
+    (13 single actions, or a 4th jump choice in multi), so an idea tested here can go to the
+    natural world unchanged, and a model trained here can be --resume'd there. The walls are 3
+    blocks high, so jumping can't get the agent out.
     action_repeat: game ticks per agent step. Keys (walk, attack, jump) are held for all of them;
     a turn / look is applied once, on the first tick, so it still turns by the amount chosen.
     Rewards are summed and the agent sees the last tick's frame. CraftGround shows an action's
@@ -114,12 +118,13 @@ class ChopTreesEnv(gym.Wrapper):
     An episode is still EPISODE_STEPS ticks, so it's EPISODE_STEPS // action_repeat agent steps."""
 
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
-                 actions: str = "single", action_repeat: int = 1):
+                 actions: str = "single", action_repeat: int = 1, jump: bool = False):
         if actions not in ("single", "multi"):
             raise ValueError(f"actions must be 'single' or 'multi', not {actions!r}")
         if action_repeat < 1:
             raise ValueError(f"action_repeat must be at least 1, not {action_repeat}")
         self.multi = actions == "multi"
+        self.jump = jump
         self.action_repeat = action_repeat
         self.max_steps = EPISODE_STEPS // action_repeat
         config = InitialEnvironmentConfig(
@@ -139,8 +144,8 @@ class ChopTreesEnv(gym.Wrapper):
         super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path,
                                           action_space_version=version))
 
-        self.action_space = (gym.spaces.MultiDiscrete(MULTI_NVEC) if self.multi
-                             else gym.spaces.Discrete(len(ACTION_NAMES)))
+        self.action_space = (gym.spaces.MultiDiscrete(multi_nvec(jump)) if self.multi
+                             else gym.spaces.Discrete(len(ACTION_NAMES_JUMP if jump else ACTION_NAMES)))
         self.observation_space = gym.spaces.Box(
             low=0, high=255, shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.uint8
         )
@@ -210,8 +215,9 @@ class ChopTreesEnv(gym.Wrapper):
 
 
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
-             actions: str = "single", action_repeat: int = 1) -> ChopTreesEnv:
+             actions: str = "single", action_repeat: int = 1, jump: bool = False) -> ChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
-    actions: "single" or "multi"; action_repeat: game ticks per agent step (see ChopTreesEnv)."""
+    actions: "single" or "multi"; action_repeat: game ticks per agent step; jump: offer the natural
+    world's jump actions (see ChopTreesEnv)."""
     return ChopTreesEnv(port=port, verbose=verbose, env_path=env_path, actions=actions,
-                        action_repeat=action_repeat)
+                        action_repeat=action_repeat, jump=jump)
