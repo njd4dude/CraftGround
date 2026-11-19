@@ -13,8 +13,8 @@ def evals_section(evals: list[dict]) -> str:
              *([("wooded" if is_wooded(r) else "fixed" if is_fixed(r) else "random")] if with_spots else []),
              *([("held-out" if is_held_out(r) else "training")] if with_world else []),
              r["episodes"], r["mean_logs"], r["min_logs"],
-             r["max_logs"], r.get("n_envs") or "–", r.get("minutes") or "–", r.get("steps_per_s") or "–",
-             r["per_episode"]] for r in reversed(evals)]
+             r["max_logs"], r.get("n_envs") or "–", r.get("minutes") or "–", r.get("steps_per_s") or "–"]
+            for r in reversed(evals)]
     return ("## Evaluation runs\n\nOne row per `evaluate.py` run, newest first. **Minutes** includes "
             "launching Minecraft; **Steps/s** is env steps per second over all instances while playing "
             "(runs from before timing was added show –)."
@@ -24,7 +24,9 @@ def evals_section(evals: list[dict]) -> str:
                "(`--held-out`)." if with_world else "") + "\n\n"
             + table(["When", "Agent", *(["Spots"] if with_spots else []), *(["World"] if with_world else []),
                      "Episodes", "Mean logs", "Min", "Max",
-                     "Instances", "Minutes", "Steps/s", "Per episode"], rows))
+                     "Instances", "Minutes", "Steps/s"], rows)
+            + "\n\nEvery episode's score is in the CSV (`per_episode`, with `spot_per_episode` saying which "
+              "spot each one played).")
 
 
 def training_section(runs: list[dict], start_cmd: str = "run.bat train.py") -> str:
