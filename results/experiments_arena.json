@@ -1,5 +1,5 @@
 {
- "about": "Experiments for docs/EXPERIMENTS_ARENA.md (python experiments.py). Each experiment lists its runs (run folder names under runs/arena/, or a checkpoint path) with the question it tested and what it found. Runs not listed here show up under 'Other runs'. Edit freely, then run experiments.py.",
+ "about": "Experiments for docs/arena/experiments.md (python experiments.py). Each experiment lists its runs (run folder names under runs/arena/, or a checkpoint path) with the question it tested and what it found. Runs not listed here show up under 'Other runs'. Edit freely, then run experiments.py.",
  "experiments": [
   {
    "id": "1",

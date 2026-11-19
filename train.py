@@ -61,7 +61,7 @@ Every run gets one folder with everything in it:
         wandb/                 W&B's local copy of the run
 
 Press Ctrl+C at any time: the current model is saved before exiting.
-Each run is added to results/training_runs.csv and docs/EXPERIMENTS_ARENA.md (list it under an
+Each run is added to results/training_runs.csv and docs/arena/experiments.md (list it under an
 experiment in results/experiments_arena.json), or to docs/natural/lines.md.
 """
 

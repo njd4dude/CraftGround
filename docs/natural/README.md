@@ -2,10 +2,10 @@
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (chop/envs/natural.py). Arena results are in
-[EXPERIMENTS_ARENA.md](../EXPERIMENTS_ARENA.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
+[arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 11:50._
+_Tables last updated 2026-11-19 11:53._
 
 - [Results](results.md): the 100 fixed forest spots, one row per agent: the main comparison
 - [Wooded spots](wooded.md): 100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), next to each agent's forest score

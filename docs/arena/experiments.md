@@ -1,29 +1,9 @@
-# CraftGround Experiments: Chop Trees (arena)
+# Arena: Experiments
 
-Goal: train an agent to chop as many oak logs as possible in one episode. Natural-world results
-are in [natural/](natural/README.md); the summary of findings is [FINDINGS.md](FINDINGS.md).
+[← Arena index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 11:50._
-
-## Setup
-
-| Setting | Value |
-| --- | --- |
-| World | Superflat arena, stone-brick walls at ±13 blocks |
-| Trees | 8 oaks × 4 logs = 32 logs max, rebuilt every episode |
-| Ground | Refilled every episode (since 2026-11-17; before, dug holes stayed) |
-| Tool | Unbreakable diamond axe, Efficiency X (1 hit per log) |
-| Spawn | Arena centre, random facing (15° steps) |
-| Observation | RGB image 114×64 |
-| Single actions (default) | 11, one per step: noop, forward, back, strafe_left, strafe_right, turn_left, turn_right, look_up, look_down, attack, forward_attack; turns are 15° |
-| Multi actions (`--actions multi`) | every step: move (none, forward, back) × turn (-45, -20, -10, -5, -2, 0, 2, 5, 10, 20, 45°) × look (-20, -10, -5, -2, 0, 2, 5, 10, 20°), attack always held |
-| Ticks per step | 1 (default); `--action-repeat N` holds each action for N ticks |
-| Reward | +1 per log chopped |
-| Episode length | 1000 ticks (or all logs chopped) |
-| Random actions | 3.00 logs over 3 episodes (too few to trust) |
-
-## Experiments
+_Tables last updated 2026-11-19 11:53._
 
 **Eval** is the mean over `evaluate.py` episodes (max 32), ± its 95% range. **Ground fixed** = no: holes the agent dug stayed for the rest of the run (fixed 2026-11-17), so those scores are rough. Edit the questions and findings in `results/experiments_arena.json`.
 
@@ -115,12 +95,3 @@ _Tables last updated 2026-11-19 11:50._
 | single, 1 tick, 200k | 3 | **30.46** | 30.6 31.1 29.7 |
 | multi, 1 tick, 200k | 3 | **31.34** | 30.9 31.7 31.4 |
 <!-- AUTO-GENERATED:END -->
-
-## Notes
-
-Write your observations, ideas and next steps here. This section is never overwritten.
-
-- **2026-11-13:** `check_env.py` passed. A scripted agent chopped 3 logs per episode and the trees regrew after reset. Rewards sometimes show up 1–2 steps after the attack that earned them.
-- **2026-11-13, run 1 (`chop_ppo_20261113_131702`):** PPO learned fast. Logs per episode went 3.5 → 18 → 25 → 28 over the first 70 episodes and finished at a last-20 average of 31.4/32. The task may now be too easy, so next ideas are harder layouts, more trees or random tree positions.
-- **2026-11-13:** Parallel envs: `train.py` runs 6 Minecraft instances by default (`--n-envs`); `--n-steps` is the total across all envs, so each update is still ~2048 steps. Raw env benchmark (random actions): 1 env 451, 2 → 714, 4 → 858, 8 → 1076 steps/s, with 8 using 92% CPU and 17 GB RAM. The CPU is the limit; the GPU stays under 40%.
-- **2026-11-17:** Speed with 3 instances: single actions ~490 steps/s, multi ~370 (turning the camera looks like the slow part, not verified), 4 ticks per step ~220 steps/s (~880 ticks/s). Each arena instance uses ~2.4 GB, so 3 is the safe number on this machine when anything else is open.

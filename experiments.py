@@ -1,4 +1,4 @@
-"""Rebuild docs/EXPERIMENTS_ARENA.md (arena) and docs/natural/ (natural world, one page per table) from results/.
+"""Rebuild docs/arena/ (arena, one page per table) and docs/natural/ (natural world, one page per table) from results/.
 
     python experiments.py
 

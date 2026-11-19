@@ -5,7 +5,7 @@ the table that supports it. The tables are in the reports, which rebuild themsel
 every run:
 
 - [natural/](natural/README.md): the natural world (training lines, fixed-spot results)
-- [EXPERIMENTS_ARENA.md](EXPERIMENTS_ARENA.md): the walled arena (experiments)
+- [arena/](arena/README.md): the walled arena (experiments)
 - [BENCHMARK.md](BENCHMARK.md): environment speed; [PARALLEL_LAUNCH.md](PARALLEL_LAUNCH.md): running several instances
 
 This file is written by hand: update it when a result changes a statement.
@@ -46,10 +46,10 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
    memorise one map. [Held-out world](natural/held_out.md)
 6. **1 game tick per decision is best.** It beats 4 ticks for both action sets on the fixed
    arena (single 30.5 vs 24.0, multi 31.3 vs 27.8), whether runs are matched on decisions,
-   game time or wall time. [Arena experiment 4](EXPERIMENTS_ARENA.md#arena-exp-4)
+   game time or wall time. [Arena experiment 4](arena/experiments.md#arena-exp-4)
 7. **The arena is easy.** At 1 tick per step, PPO reaches 30–32 of 32 logs in 200k steps
    (~7 minutes) with either action set. Good for quick checks, too easy to rank good setups.
-   [Arena experiment 1](EXPERIMENTS_ARENA.md#arena-exp-1), [experiment 3](EXPERIMENTS_ARENA.md#arena-exp-3)
+   [Arena experiment 1](arena/experiments.md#arena-exp-1), [experiment 3](arena/experiments.md#arena-exp-3)
 8. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
    moves by ±3–4 logs from spawn luck alone; every model now plays the same 100 spots.
    [Results](natural/results.md)
@@ -59,7 +59,7 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
 1. **Holding each action for 4 ticks (action repeat).** Worse in every comparison (see above).
    The 4-tick single agent skips the bottom log of most trees. It also takes about twice as
    long to train, since each decision simulates 4 ticks.
-   [Arena experiment 4](EXPERIMENTS_ARENA.md#arena-exp-4)
+   [Arena experiment 4](arena/experiments.md#arena-exp-4)
 2. **A constant learning rate past ~600k.** Line 2 peaked at 18.1 and slid to 15.0 by 1M
    (−3.1 ± 2.6 spot by spot). [Line 2](natural/lines.md#line-2)
 3. **Training single-action agents longer.** Every single-action recipe ends at ~22–25 logs:
@@ -75,7 +75,7 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
 
 1. **Multi vs single actions in the arena.** Multi is ahead, 31.3 vs 30.5 over 3 runs each,
    but the groups overlap (p = 0.2); both are near the 32 cap.
-   [Arena experiment 3](EXPERIMENTS_ARENA.md#arena-exp-3)
+   [Arena experiment 3](arena/experiments.md#arena-exp-3)
 2. **Line 4 vs the previous best (Line 2b).** +1.9 ± 3.4 spot by spot: ahead, not significant.
 3. **Why 4 ticks is worse.** Likely coarser control (it can only correct every 4 ticks) and
    wasted ticks (a 1-tick axe swing held for 4). Untested; a 2-tick run or the 4-tick videos
@@ -100,7 +100,7 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
 
 1. **Dug holes stayed in the arena** (fixed 2026-11-17). Pits from earlier episodes trapped
    agents, so arena results before the fix aren't valid comparisons
-   ([experiment 2](EXPERIMENTS_ARENA.md#arena-exp-2) is marked preliminary). The arena now
+   ([experiment 2](arena/experiments.md#arena-exp-2) is marked preliminary). The arena now
    refills the ground every reset.
 2. **Held attack stopped working after a reset.** CraftGround only presses attack when it goes
    from off to on, so an agent holding attack (multi actions) couldn't chop after its first

@@ -3,7 +3,6 @@
 README.md is the index (and keeps your Notes); every other page is rebuilt from the CSVs. Like any
 report, a page keeps what you write outside its AUTO-GENERATED block."""
 
-import re
 from datetime import datetime
 from pathlib import Path
 
@@ -14,7 +13,7 @@ from chop.reports.agents import (label_with_folder, line_folders, line_meta, lin
                                  start_of)
 from chop.reports.csvio import (EVAL_CSV, NATURAL_EVAL_CSV, NATURAL_TRAIN_CSV, episodes_by_agent, is_fixed, is_held_out,
                                 is_wooded, normalize_agent, read_rows)
-from chop.reports.markdown import END, START, mean_ci, table, write_report
+from chop.reports.markdown import END, START, mean_ci, table, write_pages
 from chop.reports.sections import evals_section
 from chop.paths import DOCS_DIR
 
@@ -37,7 +36,7 @@ INDEX_TEMPLATE = f"""# CraftGround Experiments: Chop Trees in a Natural World
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
 forest instead of the walled arena (chop/envs/natural.py). Arena results are in
-[EXPERIMENTS_ARENA.md](../EXPERIMENTS_ARENA.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
+[arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 {START}
 {END}
@@ -46,21 +45,6 @@ forest instead of the walled arena (chop/envs/natural.py). Arena results are in
 
 Write your observations, ideas and next steps here. This section is never overwritten.
 """
-
-
-def page_template(title: str) -> str:
-    return f"""# Natural world: {title}
-
-[← Natural world index](README.md)
-
-{START}
-{END}
-"""
-
-
-def body(section: str) -> str:
-    """A section without its own "## Title" line (the page's title replaces it)."""
-    return re.sub(r"\A## [^\n]*\n+", "", section)
 
 
 def natural_setup_section() -> str:
@@ -262,7 +246,7 @@ def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], run
         "forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an "
         "older setup (render distance 6, no damage). Use [Results](results.md) to compare agents. "
         "**Arena mean** is the same agent's score in the walled arena "
-        "([EXPERIMENTS_ARENA.md](../EXPERIMENTS_ARENA.md)).\n\n"
+        "([arena/](../arena/README.md)).\n\n"
         + table(["Model", "Line", "Arena mean", "Episodes", "Mean logs", "Min", "Max", "vs random"],
                 rows)
     )
@@ -286,10 +270,4 @@ def update(stamp: str | None = None) -> None:
         "random_spawns.md": natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),
         "setup.md": natural_setup_section(),
     }
-    NATURAL_DIR.mkdir(parents=True, exist_ok=True)
-    index = []
-    for name, title, about in PAGES:
-        text = body(sections[name]) or "_No results yet._"
-        write_report(NATURAL_DIR / name, page_template(title), f"{stamp}\n\n{text}")
-        index.append(f"- [{title}]({name}): {about}")
-    write_report(NATURAL_REPORT, INDEX_TEMPLATE, f"{stamp}\n\n" + "\n".join(index))
+    write_pages(NATURAL_DIR, "Natural world", INDEX_TEMPLATE, stamp, PAGES, sections)

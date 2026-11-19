@@ -1,4 +1,4 @@
-"""EXPERIMENTS_ARENA.md: the arena's report.
+"""docs/arena/: the arena's report, one page per table (README.md is the index and keeps your Notes).
 
 Organised by experiment (results/experiments_arena.json): each one's question, what it found,
 and its runs with their setup and evaluation score. Runs no experiment lists go under
@@ -14,15 +14,23 @@ from chop.envs import arena as arena_env
 from chop.envs import common
 from chop.paths import DOCS_DIR, RESULTS_DIR
 from chop.reports.csvio import EVAL_CSV, TRAIN_CSV, episodes_by_agent, normalize_agent, read_rows
-from chop.reports.markdown import END, START, mean_ci, table, write_report
+from chop.reports.markdown import END, START, mean_ci, table, write_pages
 
-REPORT = DOCS_DIR / "EXPERIMENTS_ARENA.md"
+ARENA_DIR = DOCS_DIR / "arena"
+REPORT = ARENA_DIR / "README.md"  # the index
 EXPERIMENTS_FILE = RESULTS_DIR / "experiments_arena.json"
+
+# (file, title, what it holds) in index order.
+PAGES = [
+    ("experiments.md", "Experiments", "each experiment's question, what it found, and its runs with their scores"),
+    ("other_runs.md", "Other runs", "runs no experiment lists yet"),
+    ("setup.md", "Setup", "arena, trees, actions, reward, episode length, random baseline"),
+]
 
 TEMPLATE = f"""# CraftGround Experiments: Chop Trees (arena)
 
 Goal: train an agent to chop as many oak logs as possible in one episode. Natural-world results
-are in [natural/](natural/README.md); the summary of findings is [FINDINGS.md](FINDINGS.md).
+are in [natural/](../natural/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 {START}
 {END}
@@ -192,9 +200,10 @@ def setup_section(runs: Runs) -> str:
 
 
 def update(stamp: str | None = None) -> None:
-    """Rebuild EXPERIMENTS_ARENA.md's generated part from the arena CSVs and results/experiments_arena.json."""
+    """Rebuild docs/arena/ from the arena CSVs and results/experiments_arena.json."""
     stamp = stamp or f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
     runs = Runs()
     experiments, listed = experiments_section(runs)
-    parts = [stamp, setup_section(runs), experiments, other_section(runs, listed)]
-    write_report(REPORT, TEMPLATE, "\n\n".join(p for p in parts if p))
+    sections = {"experiments.md": experiments, "other_runs.md": other_section(runs, listed),
+                "setup.md": setup_section(runs)}
+    write_pages(ARENA_DIR, "Arena", TEMPLATE, stamp, PAGES, sections)
