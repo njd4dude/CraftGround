@@ -14,12 +14,14 @@ _Last updated 2026-11-18._
 **How to read the numbers.** Scores are logs chopped per 1000-tick episode. Natural-world
 scores are over the same 100 fixed forest spots for every model, so models can be compared
 spot by spot: "+4.2 ± 3.0" is the average difference per spot with its 95% range, and a range
-that doesn't include 0 counts as a real difference. Arena scores are over 50 episodes, out of 32.
+that doesn't include 0 counts as a real difference. Use 100 spots to compare models: 50 gives about
+the same mean but a ~1.6× wider range, since one episode on the same spot can differ by ~14
+logs between runs (Line 4c: 40.5 over 50 vs 41.2 over 100). Arena scores are over 50 episodes, out of 32.
 
 ## Best agent so far
 
-**Line 4**, multi actions, 1M steps: **26.6 logs** per episode on the fixed forest spots,
-23× random actions (1.1). [Natural results](EXPERIMENTS_NATURAL.md#results)
+**Line 4c**, multi actions, 3M steps (Line 4 resumed twice for 1M more): **41.2 logs** per
+episode on the fixed forest spots, 36× random actions (1.1). [Natural results](EXPERIMENTS_NATURAL.md#results)
 
 ## What works
 
@@ -28,22 +30,27 @@ that doesn't include 0 counts as a real difference. Arena scores are over 50 epi
    same recipe with one action per step: +4.2 ± 3.0 logs spot by spot (better at 57 spots,
    worse at 36). It learned slower at first and kept improving after single actions levelled
    off. [Line 4](EXPERIMENTS_NATURAL.md#line-4) vs [Line 3](EXPERIMENTS_NATURAL.md#line-3)
-2. **Jump is needed on natural terrain.** Adding jump and forward_jump nearly doubled the
+2. **Multi-action agents keep improving with more training.** Resuming Line 4 for 1M more
+   steps (linear LR restarted at 1e-4) went 26.6 → 35.7 at 2M (+9.1 ± 3.6 spot by spot), and
+   another 1M went to 41.2 at 3M (+5.5 ± 4.5). Gains are shrinking but not yet zero. Single
+   actions never did this (see below). [Line 4b](EXPERIMENTS_NATURAL.md#line-4b),
+   [Line 4c](EXPERIMENTS_NATURAL.md#line-4c)
+3. **Jump is needed on natural terrain.** Adding jump and forward_jump nearly doubled the
    score at ~500k steps: 18.0 vs 9.7 (random spawns). [Line 1](EXPERIMENTS_NATURAL.md#line-1),
    [Line 2](EXPERIMENTS_NATURAL.md#line-2)
-3. **A learning rate that decays to 0 keeps the gains.** From the same 600k model, a linear
+4. **A learning rate that decays to 0 keeps the gains.** From the same 600k model, a linear
    decay rose to 24.7 while a constant rate fell to 15.0: +9.8 ± 3.5 spot by spot.
    [Line 2b](EXPERIMENTS_NATURAL.md#line-2b)
-4. **Agents generalise to a world they never trained in.** On a held-out world, scores match
-   the training world: Line 2b +0.7, Line 3 −0.5 logs. They learned to chop trees, not to
+5. **Agents generalise to a world they never trained in.** On a held-out world, scores match
+   the training world: Line 2b +0.7, Line 3 −0.5, Line 4b +3.9 logs (ranges overlap). They learned to chop trees, not to
    memorise one map. [Held-out world](EXPERIMENTS_NATURAL.md#held-out-world)
-5. **1 game tick per decision is best.** It beats 4 ticks for both action sets on the fixed
+6. **1 game tick per decision is best.** It beats 4 ticks for both action sets on the fixed
    arena (single 30.5 vs 24.0, multi 31.3 vs 27.8), whether runs are matched on decisions,
    game time or wall time. [Arena experiment 4](EXPERIMENTS_ARENA.md#arena-exp-4)
-6. **The arena is easy.** At 1 tick per step, PPO reaches 30–32 of 32 logs in 200k steps
+7. **The arena is easy.** At 1 tick per step, PPO reaches 30–32 of 32 logs in 200k steps
    (~7 minutes) with either action set. Good for quick checks, too easy to rank good setups.
    [Arena experiment 1](EXPERIMENTS_ARENA.md#arena-exp-1), [experiment 3](EXPERIMENTS_ARENA.md#arena-exp-3)
-7. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
+8. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
    moves by ±3–4 logs from spawn luck alone; every model now plays the same 100 spots.
    [Results](EXPERIMENTS_NATURAL.md#results)
 
@@ -73,8 +80,8 @@ that doesn't include 0 counts as a real difference. Arena scores are over 50 epi
 3. **Why 4 ticks is worse.** Likely coarser control (it can only correct every 4 ticks) and
    wasted ticks (a 1-tick axe swing held for 4). Untested; a 2-tick run or the 4-tick videos
    would tell.
-4. **Whether Line 4 generalises** (held-out world not run yet) **and keeps improving past 1M**
-   (it was still improving at the end).
+4. **How far multi actions keep improving.** +9.1 from 1M to 2M, +5.5 from 2M to 3M; Line 4c
+   hasn't had a held-out run yet.
 
 ## Facts about the environment
 
