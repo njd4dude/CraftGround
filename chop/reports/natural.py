@@ -142,18 +142,21 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
         if agent in forest:
             f_mean, f_ci = mean_ci(forest[agent])
             f_cell, gap = f"{f_mean:.2f} ± {f_ci:.2f}", f"{mean - f_mean:+.2f}"
+            f_zeros = sum(x == 0 for x in forest[agent])
         else:
-            f_cell, gap = "–", "–"
+            f_cell, gap, f_zeros = "–", "–", "–"
         rows.append([label_with_folder(agent, runs), line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
-                     sum(x == 0 for x in eps), f_cell, gap])
+                     f_cell, gap, sum(x == 0 for x in eps), f_zeros])
     return (
         "## Wooded spots\n\n"
         "100 fixed spots in any biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
         "`make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, "
-        "same training world. **Forest spots** is the same agent's score on the Results table's oak/birch "
-        "spots; the **gap** is how much it loses outside them. Run with "
+        "same training world. **Forest mean** is the same agent's score on the Results table's oak/birch "
+        "spots; the **gap** is how much it loses outside them. **0-log episodes** count the episodes "
+        "that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with "
         "`evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.\n\n"
-        + table(["Model", "Line", "Episodes", "Wooded mean", "0-log episodes", "Forest spots", "Gap"], rows)
+        + table(["Model", "Line", "Episodes", "Wooded mean", "Forest mean", "Gap", "0-log episodes (wooded)",
+                 "0-log episodes (forest)"], rows)
     )
 
 
