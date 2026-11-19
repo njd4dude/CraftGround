@@ -24,14 +24,26 @@ class WandbOutputFormat(KVWriter):
 class LogsChoppedCallback(BaseCallback):
     """Logs every finished episode's log count to W&B and the console.
     ticks_per_step: the env's action repeat, so chop/game_ticks compares runs with different repeats
-    on game time (set it as the x-axis in W&B)."""
+    on game time (set it as the x-axis in W&B).
+    Every hist_every episodes it also logs chop/logs_per_episode_hist, the distribution of those
+    episodes' log counts (one bin per log); W&B shows it as a histogram that changes over steps."""
 
-    def __init__(self, ticks_per_step: int = 1):
+    def __init__(self, ticks_per_step: int = 1, hist_every: int = 50):
         super().__init__()
         self.ticks_per_step = ticks_per_step
+        self.hist_every = hist_every
         self.recent: list[int] = []
+        self.window: list[int] = []
         self.episodes = 0
         self.best = 0
+
+    def _log_histogram(self) -> None:
+        counts, edges = np.histogram(self.window, bins=np.arange(0, max(self.window) + 2))
+        wandb.log({
+            "global_step": self.num_timesteps,
+            "chop/logs_per_episode_hist": wandb.Histogram(np_histogram=(counts, edges)),
+        })
+        self.window = []
 
     def _on_step(self) -> bool:
         for info, done in zip(self.locals["infos"], self.locals["dones"]):
@@ -49,6 +61,9 @@ class LogsChoppedCallback(BaseCallback):
                         "chop/episode": self.episodes,
                         "chop/game_ticks": self.num_timesteps * self.ticks_per_step,
                     })
+                    self.window.append(logs)
+                    if len(self.window) >= self.hist_every:
+                        self._log_histogram()
                 print(f"[{self.num_timesteps:>8} steps] episode done: {logs:2d} logs (last-20 avg {avg:.1f})")
         return True
 
