@@ -32,7 +32,7 @@
    "id": "3",
    "name": "Single vs multi actions (ground fixed)",
    "tested": "Multi actions choose move, turn and look every step with attack always held, and turn by exact degrees. Do they beat the 11 single actions? 3 runs each, 1 tick, after the ground fix.",
-   "found": "Multi slightly ahead, not proven: 31.3 vs 30.5 average, and multi's worst episodes are better, but the groups overlap (permutation test p = 0.2). Both are near the 32 cap, so the arena can't separate them; in the natural world multi won clearly: 26.6 vs 22.4 for the same recipe (docs/EXPERIMENTS_NATURAL.md, Line 4).",
+   "found": "Multi slightly ahead, not proven: 31.3 vs 30.5 average, and multi's worst episodes are better, but the groups overlap (permutation test p = 0.2). Both are near the 32 cap, so the arena can't separate them; in the natural world multi won clearly: 26.6 vs 22.4 for the same recipe (docs/natural/lines.md, Line 4).",
    "runs": [
     "fixed_single_1tick_r1_20261117_212824",
     "fixed_single_1tick_r2_20261117_215228",

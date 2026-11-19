@@ -1,5 +1,9 @@
-"""EXPERIMENTS_NATURAL.md: the natural world's report."""
+"""docs/natural/: the natural world's report, one page per table.
 
+README.md is the index (and keeps your Notes); every other page is rebuilt from the CSVs. Like any
+report, a page keeps what you write outside its AUTO-GENERATED block."""
+
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -14,14 +18,26 @@ from chop.reports.markdown import END, START, mean_ci, table, write_report
 from chop.reports.sections import evals_section
 from chop.paths import DOCS_DIR
 
-NATURAL_REPORT = DOCS_DIR / "EXPERIMENTS_NATURAL.md"
+NATURAL_DIR = DOCS_DIR / "natural"
+NATURAL_REPORT = NATURAL_DIR / "README.md"  # the index
 
+# (file, title, what it holds) in index order; update() fills each from its section function.
+PAGES = [
+    ("results.md", "Results", "the 100 fixed forest spots, one row per agent: the main comparison"),
+    ("wooded.md", "Wooded spots", "100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), "
+                                  "next to each agent's forest score"),
+    ("held_out.md", "Held-out world", "fixed spots in a world training never sees: does the agent generalise?"),
+    ("lines.md", "Training lines", "every training line: what it tested, what it found, its pieces"),
+    ("evaluation_runs.md", "Evaluation runs", "one row per evaluate.py run, newest first"),
+    ("random_spawns.md", "Earlier random-spawn evaluations", "historical, before the fixed spots (2026-11-16)"),
+    ("setup.md", "Environment setup", "world, spawns, actions, reward, episode length"),
+]
 
-NATURAL_TEMPLATE = f"""# CraftGround Experiments: Chop Trees in a Natural World
+INDEX_TEMPLATE = f"""# CraftGround Experiments: Chop Trees in a Natural World
 
 Goal: chop as many logs as possible in one episode, starting in a real generated
-forest instead of the walled arena (chop/envs/natural.py). Arena results are in [EXPERIMENTS_ARENA.md](EXPERIMENTS_ARENA.md);
-the summary of findings is [FINDINGS.md](FINDINGS.md).
+forest instead of the walled arena (chop/envs/natural.py). Arena results are in
+[EXPERIMENTS_ARENA.md](../EXPERIMENTS_ARENA.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 {START}
 {END}
@@ -32,6 +48,21 @@ Write your observations, ideas and next steps here. This section is never overwr
 """
 
 
+def page_template(title: str) -> str:
+    return f"""# Natural world: {title}
+
+[← Natural world index](README.md)
+
+{START}
+{END}
+"""
+
+
+def body(section: str) -> str:
+    """A section without its own "## Title" line (the page's title replaces it)."""
+    return re.sub(r"\A## [^\n]*\n+", "", section)
+
+
 def natural_setup_section() -> str:
     ne = natural_env
     rows = [
@@ -40,8 +71,7 @@ def natural_setup_section() -> str:
         ["Evaluation", "100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); "
                        "`evaluate.py --random-spots` for random spawns. Held-out world: "
                        "`make_eval_spots.py --held-out` once, then `evaluate.py <model> --env natural "
-                       "--held-out` (its table appears once there are results). Wooded spots: see "
-                       "that section"],
+                       "--held-out`. Wooded spots: see [Wooded spots](wooded.md)"],
         ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
                   f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}. "
                   f"`train.py --spawn wooded` (Line 5, since 2026-11-18): any biome with trees but savanna, "
@@ -87,7 +117,8 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         "Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one "
         "episode each, same starting direction, current setup), so differences come from the agents, "
         "not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose "
-        "ranges overlap a lot may not really differ. Older random-spawn scores are near the bottom.\n\n"
+        "ranges overlap a lot may not really differ. Older random-spawn scores are in "
+        "[Earlier random-spawn evaluations](random_spawns.md).\n\n"
         + table(["Model", "Line", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
                  "vs random"], rows)
     )
@@ -151,7 +182,7 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
         "## Wooded spots\n\n"
         "100 fixed spots in any biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
         "`make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, "
-        "same training world. **Forest mean** is the same agent's score on the Results table's oak/birch "
+        "same training world. **Forest mean** is the same agent's score on the [Results](results.md) page's oak/birch "
         "spots; the **gap** is how much it loses outside them. **0-log episodes** count the episodes "
         "that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with "
         "`evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.\n\n"
@@ -229,15 +260,16 @@ def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], run
         "## Earlier random-spawn evaluations\n\n"
         "Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random "
         "forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an "
-        "older setup (render distance 6, no damage). Use the Results table above to compare agents. "
-        "**Arena mean** is the same agent's score in the walled arena (EXPERIMENTS_ARENA.md).\n\n"
+        "older setup (render distance 6, no damage). Use [Results](results.md) to compare agents. "
+        "**Arena mean** is the same agent's score in the walled arena "
+        "([EXPERIMENTS_ARENA.md](../EXPERIMENTS_ARENA.md)).\n\n"
         + table(["Model", "Line", "Arena mean", "Episodes", "Mean logs", "Min", "Max", "vs random"],
                 rows)
     )
 
 
 def update(stamp: str | None = None) -> None:
-    """Rebuild EXPERIMENTS_NATURAL.md's tables from the natural-world CSVs."""
+    """Rebuild docs/natural/ from the natural-world CSVs: the index, then one page per table."""
     stamp = stamp or f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
     evals, runs = read_rows(NATURAL_EVAL_CSV), read_rows(NATURAL_TRAIN_CSV)
     held_out = [r for r in evals if is_held_out(r)]
@@ -245,15 +277,19 @@ def update(stamp: str | None = None) -> None:
     wooded = [r for r in training_world if is_wooded(r)]
     fixed = [r for r in training_world if is_fixed(r) and not is_wooded(r)]  # the forest spots
     random_spawns = [r for r in training_world if not is_fixed(r)]
-    sections = [
-        stamp,
-        fixed_spots_section(fixed, runs),
-        wooded_section(wooded, fixed, runs),
-        held_out_section(held_out, fixed, runs),
-        lines_section(fixed, random_spawns, runs),  # replaces the per-run Agents and Training runs tables
-        evals_section(evals),
-        natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),
-        natural_setup_section(),
-    ]
-    generated = "\n\n".join(s for s in sections if s)  # empty sections (no data yet) are left out
-    write_report(NATURAL_REPORT, NATURAL_TEMPLATE, generated)
+    sections = {
+        "results.md": fixed_spots_section(fixed, runs),
+        "wooded.md": wooded_section(wooded, fixed, runs),
+        "held_out.md": held_out_section(held_out, fixed, runs),
+        "lines.md": lines_section(fixed, random_spawns, runs),
+        "evaluation_runs.md": evals_section(evals),
+        "random_spawns.md": natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),
+        "setup.md": natural_setup_section(),
+    }
+    NATURAL_DIR.mkdir(parents=True, exist_ok=True)
+    index = []
+    for name, title, about in PAGES:
+        text = body(sections[name]) or "_No results yet._"
+        write_report(NATURAL_DIR / name, page_template(title), f"{stamp}\n\n{text}")
+        index.append(f"- [{title}]({name}): {about}")
+    write_report(NATURAL_REPORT, INDEX_TEMPLATE, f"{stamp}\n\n" + "\n".join(index))

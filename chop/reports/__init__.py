@@ -5,7 +5,7 @@
     agents    which model is which: labels, steps, natural-world training lines
     sections  sections both reports use (evaluation runs, training runs)
     arena     docs/EXPERIMENTS_ARENA.md
-    natural   docs/EXPERIMENTS_NATURAL.md
+    natural   docs/natural/ (README.md index + one page per table)
 
 train.py and evaluate.py append a row, then call update_report(env).
 """

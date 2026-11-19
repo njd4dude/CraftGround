@@ -1,10 +1,10 @@
 # CraftGround Experiments: Chop Trees (arena)
 
 Goal: train an agent to chop as many oak logs as possible in one episode. Natural-world results
-are in [EXPERIMENTS_NATURAL.md](EXPERIMENTS_NATURAL.md); the summary of findings is [FINDINGS.md](FINDINGS.md).
+are in [natural/](natural/README.md); the summary of findings is [FINDINGS.md](FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 11:43._
+_Tables last updated 2026-11-19 11:50._
 
 ## Setup
 
@@ -73,7 +73,7 @@ _Tables last updated 2026-11-19 11:43._
 
 **Question:** Multi actions choose move, turn and look every step with attack always held, and turn by exact degrees. Do they beat the 11 single actions? 3 runs each, 1 tick, after the ground fix.
 
-**Found:** Multi slightly ahead, not proven: 31.3 vs 30.5 average, and multi's worst episodes are better, but the groups overlap (permutation test p = 0.2). Both are near the 32 cap, so the arena can't separate them; in the natural world multi won clearly: 26.6 vs 22.4 for the same recipe (docs/EXPERIMENTS_NATURAL.md, Line 4).
+**Found:** Multi slightly ahead, not proven: 31.3 vs 30.5 average, and multi's worst episodes are better, but the groups overlap (permutation test p = 0.2). Both are near the 32 cap, so the arena can't separate them; in the natural world multi won clearly: 26.6 vs 22.4 for the same recipe (docs/natural/lines.md, Line 4).
 
 | Run | Actions | Ticks/step | Ground fixed | Steps | Train min | Eval mean ± 95% (episodes) | Min | Max | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

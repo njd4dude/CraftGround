@@ -18,7 +18,7 @@ there (jump is turned off automatically to match); --no-jump forces the 11 actio
 Without jump the two worlds share the same actions, so --resume works across them. Natural runs get their
 own folders (runs/natural/<line>/<time>/, grouped by training line: --resume continues the
 model's line, --line names a new one), CSV (results/training_runs_natural.csv) and
-report (docs/EXPERIMENTS_NATURAL.md). The natural world is slower (about a third of
+report (docs/natural/). The natural world is slower (about a third of
 the arena's steps/s in evaluation) and needs more memory per instance, so it
 defaults to 3 instances (see N_ENVS_NATURAL).
 
@@ -62,7 +62,7 @@ Every run gets one folder with everything in it:
 
 Press Ctrl+C at any time: the current model is saved before exiting.
 Each run is added to results/training_runs.csv and docs/EXPERIMENTS_ARENA.md (list it under an
-experiment in results/experiments_arena.json), or to docs/EXPERIMENTS_NATURAL.md's training lines.
+experiment in results/experiments_arena.json), or to docs/natural/lines.md.
 """
 
 from chop.training.cli import main

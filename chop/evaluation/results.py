@@ -9,7 +9,7 @@ from chop.reports import update_report
 from chop.reports.csvio import EVAL_CSV, NATURAL_EVAL_CSV, append_row
 
 # Natural-world scores aren't comparable with the arena, so they get their own CSV
-# and their own report (docs/EXPERIMENTS_NATURAL.md).
+# and their own report (docs/natural/).
 FIELDS = ["timestamp", "agent", "episodes", "episode_steps", "mean_logs", "min_logs", "max_logs", "per_episode",
           "n_envs", "minutes", "launch_minutes", "steps_per_s", "reset_share", "spots", "spot_per_episode",
           "world_seed"]

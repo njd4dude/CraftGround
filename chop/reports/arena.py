@@ -22,7 +22,7 @@ EXPERIMENTS_FILE = RESULTS_DIR / "experiments_arena.json"
 TEMPLATE = f"""# CraftGround Experiments: Chop Trees (arena)
 
 Goal: train an agent to chop as many oak logs as possible in one episode. Natural-world results
-are in [EXPERIMENTS_NATURAL.md](EXPERIMENTS_NATURAL.md); the summary of findings is [FINDINGS.md](FINDINGS.md).
+are in [natural/](natural/README.md); the summary of findings is [FINDINGS.md](FINDINGS.md).
 
 {START}
 {END}

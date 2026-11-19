@@ -4,7 +4,7 @@ What we've learned so far, as plain statements. Each one gives the key numbers a
 the table that supports it. The tables are in the reports, which rebuild themselves after
 every run:
 
-- [EXPERIMENTS_NATURAL.md](EXPERIMENTS_NATURAL.md): the natural world (training lines, fixed-spot results)
+- [natural/](natural/README.md): the natural world (training lines, fixed-spot results)
 - [EXPERIMENTS_ARENA.md](EXPERIMENTS_ARENA.md): the walled arena (experiments)
 - [BENCHMARK.md](BENCHMARK.md): environment speed; [PARALLEL_LAUNCH.md](PARALLEL_LAUNCH.md): running several instances
 
@@ -21,7 +21,7 @@ logs between runs (Line 4c: 40.5 over 50 vs 41.2 over 100). Arena scores are ove
 ## Best agent so far
 
 **Line 4c**, multi actions, 3M steps (Line 4 resumed twice for 1M more): **41.2 logs** per
-episode on the fixed forest spots, 36× random actions (1.1). [Natural results](EXPERIMENTS_NATURAL.md#results)
+episode on the fixed forest spots, 36× random actions (1.1). [Natural results](natural/results.md)
 
 ## What works
 
@@ -29,21 +29,21 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
    degrees), look and jump every step with attack held scored 26.6, against 22.4 for the
    same recipe with one action per step: +4.2 ± 3.0 logs spot by spot (better at 57 spots,
    worse at 36). It learned slower at first and kept improving after single actions levelled
-   off. [Line 4](EXPERIMENTS_NATURAL.md#line-4) vs [Line 3](EXPERIMENTS_NATURAL.md#line-3)
+   off. [Line 4](natural/lines.md#line-4) vs [Line 3](natural/lines.md#line-3)
 2. **Multi-action agents keep improving with more training.** Resuming Line 4 for 1M more
    steps (linear LR restarted at 1e-4) went 26.6 → 35.7 at 2M (+9.1 ± 3.6 spot by spot), and
    another 1M went to 41.2 at 3M (+5.5 ± 4.5). Gains are shrinking but not yet zero. Single
-   actions never did this (see below). [Line 4b](EXPERIMENTS_NATURAL.md#line-4b),
-   [Line 4c](EXPERIMENTS_NATURAL.md#line-4c)
+   actions never did this (see below). [Line 4b](natural/lines.md#line-4b),
+   [Line 4c](natural/lines.md#line-4c)
 3. **Jump is needed on natural terrain.** Adding jump and forward_jump nearly doubled the
-   score at ~500k steps: 18.0 vs 9.7 (random spawns). [Line 1](EXPERIMENTS_NATURAL.md#line-1),
-   [Line 2](EXPERIMENTS_NATURAL.md#line-2)
+   score at ~500k steps: 18.0 vs 9.7 (random spawns). [Line 1](natural/lines.md#line-1),
+   [Line 2](natural/lines.md#line-2)
 4. **A learning rate that decays to 0 keeps the gains.** From the same 600k model, a linear
    decay rose to 24.7 while a constant rate fell to 15.0: +9.8 ± 3.5 spot by spot.
-   [Line 2b](EXPERIMENTS_NATURAL.md#line-2b)
+   [Line 2b](natural/lines.md#line-2b)
 5. **Agents generalise to a world they never trained in.** On a held-out world, scores match
    the training world: Line 2b +0.7, Line 3 −0.5, Line 4b +3.9 logs (ranges overlap). They learned to chop trees, not to
-   memorise one map. [Held-out world](EXPERIMENTS_NATURAL.md#held-out-world)
+   memorise one map. [Held-out world](natural/held_out.md)
 6. **1 game tick per decision is best.** It beats 4 ticks for both action sets on the fixed
    arena (single 30.5 vs 24.0, multi 31.3 vs 27.8), whether runs are matched on decisions,
    game time or wall time. [Arena experiment 4](EXPERIMENTS_ARENA.md#arena-exp-4)
@@ -52,7 +52,7 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
    [Arena experiment 1](EXPERIMENTS_ARENA.md#arena-exp-1), [experiment 3](EXPERIMENTS_ARENA.md#arena-exp-3)
 8. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
    moves by ±3–4 logs from spawn luck alone; every model now plays the same 100 spots.
-   [Results](EXPERIMENTS_NATURAL.md#results)
+   [Results](natural/results.md)
 
 ## What doesn't work
 
@@ -61,15 +61,15 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
    long to train, since each decision simulates 4 ticks.
    [Arena experiment 4](EXPERIMENTS_ARENA.md#arena-exp-4)
 2. **A constant learning rate past ~600k.** Line 2 peaked at 18.1 and slid to 15.0 by 1M
-   (−3.1 ± 2.6 spot by spot). [Line 2](EXPERIMENTS_NATURAL.md#line-2)
+   (−3.1 ± 2.6 spot by spot). [Line 2](natural/lines.md#line-2)
 3. **Training single-action agents longer.** Every single-action recipe ends at ~22–25 logs:
    500k more steps changed nothing (−0.5 ± 3.1), and one 3M schedule tied a 1M one
    (23.9 vs 22.4, +1.5 ± 3.4). The limit was the setup, which multi actions then passed.
-   [Line 3b](EXPERIMENTS_NATURAL.md#line-3b), [Line 3c](EXPERIMENTS_NATURAL.md#line-3c)
+   [Line 3b](natural/lines.md#line-3b), [Line 3c](natural/lines.md#line-3c)
 4. **Using arena-trained agents in the natural world.** Agents scoring 26–32 in the arena get
    ~5 logs in forests (random actions: 1.8; random spawns, older setup). The arena doesn't
    teach enough to transfer.
-   [Earlier random-spawn evaluations](EXPERIMENTS_NATURAL.md#earlier-random-spawn-evaluations)
+   [Earlier random-spawn evaluations](natural/random_spawns.md)
 
 ## Not proven yet
 

@@ -9,7 +9,7 @@
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --env natural --held-out  # a world never trained in
 
 Runs 100 episodes by default so the mean is stable. Every run counts toward the
-agent's score in docs/EXPERIMENTS_ARENA.md (docs/EXPERIMENTS_NATURAL.md for --env natural), so to just grab a couple of videos use a small
+agent's score in docs/EXPERIMENTS_ARENA.md (docs/natural/ for --env natural), so to just grab a couple of videos use a small
 --episodes, e.g. --episodes 2.
 
 Episodes are spread over --n-envs Minecraft instances running side by side
