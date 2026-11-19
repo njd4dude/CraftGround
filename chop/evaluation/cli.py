@@ -1,6 +1,7 @@
 """evaluate.py's command line and play loop (see evaluate.py for usage)."""
 
 import argparse
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -92,11 +93,15 @@ def fixed_spots(args, n_envs: int) -> tuple[list[list[dict] | None], str]:
 
 
 def video_folder(stamp: str, spot_label: str) -> str:
-    """Each evaluation run's videos get their own folder: its start time plus the spots it played,
-    e.g. 20261119_013033_eval_spots_natural_wooded, 20261119_014237_random-spots, or just the time in the arena."""
+    """Each evaluation run's videos get their own folder: its start time plus the spawns it played,
+    named like the report pages: 20261119_014237_fixed_forest_spawns, ..._fixed_wooded_spawns,
+    ..._fixed_forest_spawns_seed20261117 (held-out world), ..._random_spawns, or just the time in the arena."""
     if spot_label.startswith("fixed:"):
-        return f"{stamp}_{Path(spot_label.removeprefix('fixed:')).stem}"
-    return f"{stamp}_{spot_label}-spots" if spot_label else stamp
+        stem = Path(spot_label.removeprefix("fixed:")).stem  # eval_spots_natural[_seed<seed>][_wooded]
+        kind = "wooded" if stem.endswith("_wooded") else "forest"
+        seed = re.search(r"_seed(\d+)", stem)
+        return f"{stamp}_fixed_{kind}_spawns" + (f"_seed{seed.group(1)}" if seed else "")
+    return f"{stamp}_{spot_label}_spawns" if spot_label else stamp
 
 
 def main():
