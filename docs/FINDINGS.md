@@ -23,7 +23,7 @@ logs between runs (Line 4c: 40.5 over 50 vs 41.2 over 100). Arena scores are ove
 **Line 5**, multi actions, 4M steps (Line 4c + 1M with wooded spawns): **40.0 logs** per
 episode on the fixed forest spots (tied with Line 4c's 41.2 and Line 4d's 41.3) and **31.6** on
 the wooded spots, where it beats the forest-trained Line 4d by +6.0 ± 4.8. Fewest 0-log
-episodes of any agent. [Forest spots](natural/forest_spots.md), [Wooded spots](natural/wooded_spots.md)
+episodes of any agent. [Fixed forest spawns](natural/fixed_forest_spawns.md), [Fixed wooded spawns](natural/fixed_wooded_spawns.md)
 
 ## What works
 
@@ -44,7 +44,7 @@ episodes of any agent. [Forest spots](natural/forest_spots.md), [Wooded spots](n
    spots and tied it on forests (−1.3 ± 5.0). It halved the 0-log episodes, 13 vs 26 over both
    sets (p = 0.007): it gets stuck or lost much less. More forest-only training made the agent
    *worse* outside forests (wooded 30.5 → 25.7). [Line 5](natural/lines.md#line-5),
-   [Wooded spots](natural/wooded_spots.md)
+   [Fixed wooded spawns](natural/fixed_wooded_spawns.md)
 4. **Jump is needed on natural terrain.** Adding jump and forward_jump nearly doubled the
    score at ~500k steps: 18.0 vs 9.7 (random spawns). [Line 1](natural/lines.md#line-1),
    [Line 2](natural/lines.md#line-2)
@@ -62,7 +62,7 @@ episodes of any agent. [Forest spots](natural/forest_spots.md), [Wooded spots](n
    [Arena experiment 1](arena/experiments.md#arena-exp-1), [experiment 3](arena/experiments.md#arena-exp-3)
 9. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
    moves by ±3–4 logs from spawn luck alone; every model now plays the same 100 spots.
-   [Results](natural/forest_spots.md)
+   [Results](natural/fixed_forest_spawns.md)
 
 ## What doesn't work
 

@@ -22,8 +22,8 @@ NATURAL_REPORT = NATURAL_DIR / "README.md"  # the index
 
 # (file, title, what it holds) in index order; update() fills each from its section function.
 PAGES = [
-    ("forest_spots.md", "Forest spots", "100 fixed spots in oak/birch forests, one row per agent: the main comparison"),
-    ("wooded_spots.md", "Wooded spots", "100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), "
+    ("fixed_forest_spawns.md", "Fixed forest spawns", "100 fixed spots in oak/birch forests, one row per agent: the main comparison"),
+    ("fixed_wooded_spawns.md", "Fixed wooded spawns", "100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), "
                                   "next to each agent's forest score"),
     ("lines.md", "Training lines", "every training line: what it tested, what it found, its pieces"),
     ("evaluation_runs.md", "Evaluation runs", "one row per evaluate.py run, newest first"),
@@ -54,7 +54,7 @@ def natural_setup_section() -> str:
         ["Evaluation", "100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); "
                        "`evaluate.py --random-spots` for random spawns. Held-out world (archived: "
                        "[archive/held_out.md](archive/held_out.md)): `evaluate.py <model> --env natural "
-                       "--held-out`. Wooded spots: see [Wooded spots](wooded_spots.md)"],
+                       "--held-out`. Wooded spawns: see [Fixed wooded spawns](fixed_wooded_spawns.md)"],
         ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
                   f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}. "
                   f"`train.py --spawn wooded` (Line 5, since 2026-11-18): any biome with trees but savanna, "
@@ -131,7 +131,7 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
         "## Wooded spots\n\n"
         "100 fixed spots in any biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
         "`make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, "
-        "same training world. **Forest mean** is the same agent's score on the [Forest spots](forest_spots.md) page's oak/birch "
+        "same training world. **Forest mean** is the same agent's score on the [Fixed forest spawns](fixed_forest_spawns.md) page's oak/birch "
         "spots; the **gap** is how much it loses outside them. **0-log episodes** count the episodes "
         "that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with "
         "`evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.\n\n"
@@ -209,7 +209,7 @@ def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], run
         "## Earlier random-spawn evaluations\n\n"
         "Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random "
         "forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an "
-        "older setup (render distance 6, no damage). Use [Forest spots](forest_spots.md) to compare agents. "
+        "older setup (render distance 6, no damage). Use [Fixed forest spawns](fixed_forest_spawns.md) to compare agents. "
         "**Arena mean** is the same agent's score in the walled arena "
         "([arena/](../arena/README.md)).\n\n"
         + table(["Model", "Line", "Arena mean", "Episodes", "Mean logs", "Min", "Max", "vs random"],
@@ -226,8 +226,8 @@ def update(stamp: str | None = None) -> None:
     fixed = [r for r in training_world if is_fixed(r) and not is_wooded(r)]  # the forest spots
     random_spawns = [r for r in training_world if not is_fixed(r)]
     sections = {
-        "forest_spots.md": fixed_spots_section(fixed, runs),
-        "wooded_spots.md": wooded_section(wooded, fixed, runs),
+        "fixed_forest_spawns.md": fixed_spots_section(fixed, runs),
+        "fixed_wooded_spawns.md": wooded_section(wooded, fixed, runs),
         "lines.md": lines_section(fixed, random_spawns, runs),
         "evaluation_runs.md": evals_section(evals),
         "random_spawns.md": natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),

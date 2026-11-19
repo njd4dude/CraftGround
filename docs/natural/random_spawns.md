@@ -3,9 +3,9 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 13:52._
+_Tables last updated 2026-11-19 13:54._
 
-Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an older setup (render distance 6, no damage). Use [Forest spots](forest_spots.md) to compare agents. **Arena mean** is the same agent's score in the walled arena ([arena/](../arena/README.md)).
+Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an older setup (render distance 6, no damage). Use [Fixed forest spawns](fixed_forest_spawns.md) to compare agents. **Arena mean** is the same agent's score in the walled arena ([arena/](../arena/README.md)).
 
 | Model | Line | Arena mean | Episodes | Mean logs | Min | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
