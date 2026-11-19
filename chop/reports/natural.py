@@ -25,7 +25,6 @@ PAGES = [
     ("forest_spots.md", "Forest spots", "100 fixed spots in oak/birch forests, one row per agent: the main comparison"),
     ("wooded_spots.md", "Wooded spots", "100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), "
                                   "next to each agent's forest score"),
-    ("held_out.md", "Held-out world", "fixed spots in a world training never sees: does the agent generalise?"),
     ("lines.md", "Training lines", "every training line: what it tested, what it found, its pieces"),
     ("evaluation_runs.md", "Evaluation runs", "one row per evaluate.py run, newest first"),
     ("random_spawns.md", "Earlier random-spawn evaluations", "historical, before the fixed spots (2026-11-16)"),
@@ -53,8 +52,8 @@ def natural_setup_section() -> str:
         ["World", f"Normal generated world, fixed seed {ne.SEED} (held-out evaluation world: "
                   f"seed {ne.HELD_OUT_SEED}, never trained in)"],
         ["Evaluation", "100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); "
-                       "`evaluate.py --random-spots` for random spawns. Held-out world: "
-                       "`make_eval_spots.py --held-out` once, then `evaluate.py <model> --env natural "
+                       "`evaluate.py --random-spots` for random spawns. Held-out world (archived: "
+                       "[archive/held_out.md](archive/held_out.md)): `evaluate.py <model> --env natural "
                        "--held-out`. Wooded spots: see [Wooded spots](wooded_spots.md)"],
         ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
                   f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}. "
@@ -105,40 +104,6 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         "[Earlier random-spawn evaluations](random_spawns.md).\n\n"
         + table(["Model", "Line", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
                  "vs random"], rows)
-    )
-
-
-def held_out_section(held_out: list[dict], training_fixed: list[dict], runs: list[dict] | None = None) -> str:
-    """Fixed-spot scores in the held-out world next to the same agent's fixed-spot score in the
-    training world: the gap is how much of the score depends on having trained in that world."""
-    runs = runs or []
-    by_agent = episodes_by_agent([r for r in held_out if is_fixed(r)])
-    if not by_agent:
-        return ""  # shown once there are results; how to get some is in Environment setup
-    train = episodes_by_agent(training_fixed)
-    random_eps = by_agent.get("random")
-    random_mean = sum(random_eps) / len(random_eps) if random_eps else None
-    rows = []
-    for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", -sum(kv[1]) / len(kv[1]))):
-        mean, ci = mean_ci(eps)
-        if agent in train:
-            t_mean, t_ci = mean_ci(train[agent])
-            t_cell, gap = f"{t_mean:.2f} ± {t_ci:.2f}", f"{mean - t_mean:+.2f}"
-        else:
-            t_cell, gap = "–", "–"
-        vs = ("baseline" if agent == "random"
-              else f"**{mean / random_mean:.1f}×**" if random_mean else "no baseline yet")
-        rows.append([label_with_folder(agent, runs), line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
-                     t_cell, gap, vs])
-    return (
-        "## Held-out world\n\n"
-        f"Fixed spots in a world training never uses (seed {natural_env.HELD_OUT_SEED}, "
-        f"`results/{natural_env.eval_spots_path(natural_env.HELD_OUT_SEED).name}`). **Training world** is "
-        "the same agent's fixed-spot score in the world it trained in. A **gap** near 0 means the agent "
-        "learned to chop trees in general; a clearly negative gap (larger than the ± ranges) means part "
-        "of its score comes from knowing the training world. vs random uses the random baseline in this "
-        "world.\n\n"
-        + table(["Model", "Line", "Episodes", "Held-out mean", "Training world", "Gap", "vs random"], rows)
     )
 
 
@@ -256,7 +221,6 @@ def update(stamp: str | None = None) -> None:
     """Rebuild docs/natural/ from the natural-world CSVs: the index, then one page per table."""
     stamp = stamp or f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
     evals, runs = read_rows(NATURAL_EVAL_CSV), read_rows(NATURAL_TRAIN_CSV)
-    held_out = [r for r in evals if is_held_out(r)]
     training_world = [r for r in evals if not is_held_out(r)]
     wooded = [r for r in training_world if is_wooded(r)]
     fixed = [r for r in training_world if is_fixed(r) and not is_wooded(r)]  # the forest spots
@@ -264,7 +228,6 @@ def update(stamp: str | None = None) -> None:
     sections = {
         "forest_spots.md": fixed_spots_section(fixed, runs),
         "wooded_spots.md": wooded_section(wooded, fixed, runs),
-        "held_out.md": held_out_section(held_out, fixed, runs),
         "lines.md": lines_section(fixed, random_spawns, runs),
         "evaluation_runs.md": evals_section(evals),
         "random_spawns.md": natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),

@@ -20,8 +20,10 @@ logs between runs (Line 4c: 40.5 over 50 vs 41.2 over 100). Arena scores are ove
 
 ## Best agent so far
 
-**Line 4c**, multi actions, 3M steps (Line 4 resumed twice for 1M more): **41.2 logs** per
-episode on the fixed forest spots, 36× random actions (1.1). [Natural results](natural/forest_spots.md)
+**Line 5**, multi actions, 4M steps (Line 4c + 1M with wooded spawns): **40.0 logs** per
+episode on the fixed forest spots (tied with Line 4c's 41.2 and Line 4d's 41.3) and **31.6** on
+the wooded spots, where it beats the forest-trained Line 4d by +6.0 ± 4.8. Fewest 0-log
+episodes of any agent. [Forest spots](natural/forest_spots.md), [Wooded spots](natural/wooded_spots.md)
 
 ## What works
 
@@ -32,25 +34,33 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
    off. [Line 4](natural/lines.md#line-4) vs [Line 3](natural/lines.md#line-3)
 2. **Multi-action agents keep improving with more training.** Resuming Line 4 for 1M more
    steps (linear LR restarted at 1e-4) went 26.6 → 35.7 at 2M (+9.1 ± 3.6 spot by spot), and
-   another 1M went to 41.2 at 3M (+5.5 ± 4.5). Gains are shrinking but not yet zero. Single
-   actions never did this (see below). [Line 4b](natural/lines.md#line-4b),
-   [Line 4c](natural/lines.md#line-4c)
-3. **Jump is needed on natural terrain.** Adding jump and forward_jump nearly doubled the
+   another 1M went to 41.2 at 3M (+5.5 ± 4.5), and a third 1M (Line 4d) to 41.3 (+0.1 ± 4.5):
+   it levels off at ~41 by 3M. Single actions levelled off much earlier, at ~22–25 (see below).
+   [Line 4b](natural/lines.md#line-4b), [Line 4c](natural/lines.md#line-4c),
+   [Line 4d](natural/lines.md#line-4d)
+3. **Training in every wooded biome, not just oak/birch forests.** With spawns in any biome with
+   trees (snowy taiga, taiga, jungle, swamp, dark forest...; `train.py --spawn wooded`), Line 5
+   beat its control (Line 4d, same 1M steps on forest spawns) by +6.0 ± 4.8 logs on the wooded
+   spots and tied it on forests (−1.3 ± 5.0). It halved the 0-log episodes, 13 vs 26 over both
+   sets (p = 0.007): it gets stuck or lost much less. More forest-only training made the agent
+   *worse* outside forests (wooded 30.5 → 25.7). [Line 5](natural/lines.md#line-5),
+   [Wooded spots](natural/wooded_spots.md)
+4. **Jump is needed on natural terrain.** Adding jump and forward_jump nearly doubled the
    score at ~500k steps: 18.0 vs 9.7 (random spawns). [Line 1](natural/lines.md#line-1),
    [Line 2](natural/lines.md#line-2)
-4. **A learning rate that decays to 0 keeps the gains.** From the same 600k model, a linear
+5. **A learning rate that decays to 0 keeps the gains.** From the same 600k model, a linear
    decay rose to 24.7 while a constant rate fell to 15.0: +9.8 ± 3.5 spot by spot.
    [Line 2b](natural/lines.md#line-2b)
-5. **Agents generalise to a world they never trained in.** On a held-out world, scores match
+6. **Agents generalise to a world they never trained in.** On a held-out world, scores match
    the training world: Line 2b +0.7, Line 3 −0.5, Line 4b +3.9 logs (ranges overlap). They learned to chop trees, not to
-   memorise one map. [Held-out world](natural/held_out.md)
-6. **1 game tick per decision is best.** It beats 4 ticks for both action sets on the fixed
+   memorise one map. [Held-out world (archived)](natural/archive/held_out.md)
+7. **1 game tick per decision is best.** It beats 4 ticks for both action sets on the fixed
    arena (single 30.5 vs 24.0, multi 31.3 vs 27.8), whether runs are matched on decisions,
    game time or wall time. [Arena experiment 4](arena/experiments.md#arena-exp-4)
-7. **The arena is easy.** At 1 tick per step, PPO reaches 30–32 of 32 logs in 200k steps
+8. **The arena is easy.** At 1 tick per step, PPO reaches 30–32 of 32 logs in 200k steps
    (~7 minutes) with either action set. Good for quick checks, too easy to rank good setups.
    [Arena experiment 1](arena/experiments.md#arena-exp-1), [experiment 3](arena/experiments.md#arena-exp-3)
-8. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
+9. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
    moves by ±3–4 logs from spawn luck alone; every model now plays the same 100 spots.
    [Results](natural/forest_spots.md)
 
@@ -80,8 +90,6 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
 3. **Why 4 ticks is worse.** Likely coarser control (it can only correct every 4 ticks) and
    wasted ticks (a 1-tick axe swing held for 4). Untested; a 2-tick run or the 4-tick videos
    would tell.
-4. **How far multi actions keep improving.** +9.1 from 1M to 2M, +5.5 from 2M to 3M; Line 4c
-   hasn't had a held-out run yet.
 
 ## Facts about the environment
 
