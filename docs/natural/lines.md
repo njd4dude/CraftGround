@@ -3,7 +3,7 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 13:54._
+_Tables last updated 2026-11-19 14:34._
 
 Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are the run folders inside, split by crashes, memory kills or deliberate stops, in order. `train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.
 
@@ -174,13 +174,15 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 <a id="line-6"></a>
 
-### Line 6 · wooded scratch (describe it in results/lines_natural.json)
+### Line 6 · wooded spawns from scratch, Line 4's recipe (multi actions, linear LR from 2.5e-4, 1M)
 
 `runs/natural/line6_wooded-scratch/`
 
-**Found:** _not yet (add `found` in `results/lines_natural.json`)_
+**Question:** Line 5 showed wooded spawns help on top of a forest-trained agent. Does training on them from step 0 work as well, compared with Line 4 @ 1M (same recipe, forest spawns)?
+
+**Found:** Stopped by hand at ~490k (not evaluated): its training average was behind Line 4's at the same point (about 10 vs 13-16 logs per episode around 400k episodes in), though wooded episodes are harder, so the two averages don't compare directly. Last checkpoint 480k.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `20261119_133211` | from scratch | 0 → ~180k | 3 | linear | – | no record (killed or hung) | – |  | – |
+| `20261119_133211` | from scratch | 0 → ~480k | 3 | linear | – | no record (killed or hung) | – | stopped by hand at ~491k: no clear difference from Line 4 so far; last checkpoint ppo_chop_479952_steps.zip | – |
 <!-- AUTO-GENERATED:END -->
