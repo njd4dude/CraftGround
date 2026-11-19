@@ -38,7 +38,9 @@ Each video is ~5 MB at real speed. The videos show what the agent sees,
 enlarged 4x, with the step, logs chopped and current action written on each frame.
 They open in any video player and go in the model's run folder under
 videos/arena/ or videos/natural/, depending on --env (random agent:
-runs/baselines/random/videos/<env>/).
+runs/baselines/random/videos/<env>/), in a folder of their own per evaluation run named
+after its start time and the spots it played, e.g.
+videos/natural/20261119_013033_eval_spots_natural_wooded/.
 
 Videos play at real speed by default. The agent acts every tick, so that looks frantic;
 --video-fps adds slower copies: --video-fps 20 5 also saves a quarter-speed copy

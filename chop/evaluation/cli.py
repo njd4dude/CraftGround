@@ -91,6 +91,14 @@ def fixed_spots(args, n_envs: int) -> tuple[list[list[dict] | None], str]:
     return [all_spots[:args.episodes][i::n_envs] for i in range(n_envs)], f"fixed:{args.spots.name}"
 
 
+def video_folder(stamp: str, spot_label: str) -> str:
+    """Each evaluation run's videos get their own folder: its start time plus the spots it played,
+    e.g. 20261119_013033_eval_spots_natural_wooded, 20261119_014237_random-spots, or just the time in the arena."""
+    if spot_label.startswith("fixed:"):
+        return f"{stamp}_{Path(spot_label.removeprefix('fixed:')).stem}"
+    return f"{stamp}_{spot_label}-spots" if spot_label else stamp
+
+
 def main():
     args = parse_args()
     # Load the model first: its number of actions says which action set the env must offer
@@ -135,8 +143,9 @@ def main():
     env = launch_vec_env(factories, ports, args.shared_folder)
     random_name = "random" + ("-multi" if multi else "") + (f"-repeat{action_repeat}" if action_repeat > 1 else "")
     agent = random_name if args.random else normalize_agent(args.model)
-    video_dir = (Path("runs/baselines") / random_name if args.random else Path(args.model).parent) / "videos" / args.env
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    video_dir = ((Path("runs/baselines") / random_name if args.random else Path(args.model).parent)
+                 / "videos" / args.env / video_folder(stamp, spot_label))
     recorder = EpisodeRecorder(video_dir, stamp, list(dict.fromkeys(args.video_fps)), label, max_logs, n_envs,
                                step_ticks=action_repeat,
                                enabled=args.record > 0)
