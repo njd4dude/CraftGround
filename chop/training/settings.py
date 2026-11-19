@@ -24,23 +24,25 @@ PPO_SETTINGS = dict(
 
 
 def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False, jump: bool = False,
-                multi: bool = False, action_repeat: int = 1):
+                multi: bool = False, action_repeat: int = 1, spawn: str = "forest"):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker.
     jump: use the 13 actions with jump instead of 11 (natural world default; arena with --jump).
     multi: (move, turn, look) every step with attack held (common.MULTI_SETTINGS); jump adds a
     jump choice.
-    action_repeat: arena only, game ticks per agent step (arena.ChopTreesEnv)."""
+    action_repeat: arena only, game ticks per agent step (arena.ChopTreesEnv).
+    spawn: natural only, where resets drop the player (natural.SPAWN_CHECKS)."""
     def _make():
         make_env = ENVS[env_name].make_env
         actions = "multi" if multi else "single"
-        kwargs = ({"jump": jump, "actions": actions} if env_name == "natural"
+        kwargs = ({"jump": jump, "actions": actions, "spawn": spawn} if env_name == "natural"
                   else {"actions": actions, "action_repeat": action_repeat, "jump": jump})
         return Monitor(make_env(port=port, env_path=game_folder(port, shared_folder), **kwargs), filename=monitor_file,
                        info_keywords=("logs_chopped",))
     return _make
 
 
-def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_repeat: int = 1) -> dict:
+def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_repeat: int = 1,
+                 spawn: str = "forest") -> dict:
     """The environment's settings, saved in config.json (docs/EXPERIMENTS_NATURAL.md flags changes between runs)."""
     shared = {
         "world": env_name,
@@ -54,7 +56,10 @@ def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_
             **shared,
             "reward": natural_env.REWARD,
             "seed": natural_env.SEED,
-            "forest_check": natural_env.FOREST_CHECK,
+            # Forest runs save what every run before 2026-11-18 did; other spawns name their rule.
+            **({"forest_check": natural_env.FOREST_CHECK} if spawn == "forest"
+               else {"spawn": spawn, "spawn_checks": natural_env.SPAWN_CHECKS[spawn],
+                     "max_hop_episodes": natural_env.MAX_HOP_EPISODES[spawn]}),
             "hop_range": natural_env.HOP_RANGE,
             "far_range": natural_env.FAR_RANGE,
             "render_distance": natural_env.RENDER_DISTANCE,

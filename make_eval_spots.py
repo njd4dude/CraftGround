@@ -4,6 +4,8 @@
     python make_eval_spots.py --count 200 --n-envs 2
     python make_eval_spots.py --held-out       # spots in the held-out world (natural_env.HELD_OUT_SEED)
                                                # -> results/eval_spots_natural_seed<seed>.json
+    python make_eval_spots.py --spawn wooded   # any biome with trees, snowy ones included
+                                               # -> results/eval_spots_natural_wooded.json
 
 Why: a random-spawn evaluation tests every model on 100 different forests, and some
 forests are much better than others, so two 100-episode means differ by +/-3-4 logs
@@ -45,16 +47,22 @@ def main() -> None:
                         help=f"world seed (default: the training world, {natural_env.SEED})")
     parser.add_argument("--held-out", action="store_true",
                         help=f"use the held-out world, seed {natural_env.HELD_OUT_SEED} (same as --seed)")
+    parser.add_argument("--spawn", choices=natural_env.SPAWNS, default="forest",
+                        help="which spawn rule spots must pass (natural_env.SPAWN_CHECKS); "
+                             "non-forest rules get their own file")
     args = parser.parse_args()
     if args.held_out:
         args.seed = natural_env.HELD_OUT_SEED
 
     out = natural_env.eval_spots_path(args.seed)
+    if args.spawn != "forest":
+        out = out.with_name(f"{out.stem}_{args.spawn}.json")
     if out.exists() and not args.force:
         parser.error(f"{out} exists; scores on a new set aren't comparable with the old one (use --force)")
 
     ports = instance_ports(args.port, args.n_envs)
-    env = launch_vec_env([lambda p=p: natural_env.make_env(port=p, env_path=game_folder(p), seed=args.seed)
+    env = launch_vec_env([lambda p=p: natural_env.make_env(port=p, env_path=game_folder(p), seed=args.seed,
+                                                       spawn=args.spawn)
                           for p in ports], ports)
     rng = random.Random(YAW_SEED)
     spots: list[dict] = []
@@ -79,7 +87,8 @@ def main() -> None:
     out.write_text(json.dumps({
         "created": datetime.now().isoformat(timespec="seconds"),
         "world_seed": args.seed,
-        "forest_check": natural_env.FOREST_CHECK,
+        **({"forest_check": natural_env.FOREST_CHECK} if args.spawn == "forest"
+           else {"spawn": args.spawn, "spawn_checks": natural_env.SPAWN_CHECKS[args.spawn]}),
         "min_spacing": MIN_SPACING,
         "yaw_seed": YAW_SEED,
         "tries": tries,

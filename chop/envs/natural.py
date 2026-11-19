@@ -14,7 +14,8 @@ new spot. On each reset the env drops the player at random points (first within
 HOP_RANGE blocks of the last good spot, since forests are contiguous; later
 anywhere within FAR_RANGE) and keeps the first landing that is
   - in an oak/birch forest biome (FOREST_CHECK), and
-  - on dirt/grass, i.e. under the trees rather than on top of the canopy.
+  - on dirt/grass, i.e. under the trees rather than on top of the canopy
+(or, with spawn="wooded", in any biome with trees and not on leaves or logs; see SPAWN_CHECKS).
 
 How: CraftGround runs a reset's extra_commands in no reliable order, so the
 search instead sends one command per step (env.add_command) and waits for that
@@ -55,12 +56,34 @@ HELD_OUT_SEED = "20261117"
 # Oak and birch forests: minecraft:is_forest minus dark forest and (snowy, spruce) grove.
 FOREST_CHECK = ("if biome ~ ~ ~ #minecraft:is_forest "
                 "unless biome ~ ~ ~ minecraft:dark_forest unless biome ~ ~ ~ minecraft:grove")
+# Spawn rules (make_env(spawn=...)): where a reset may drop the player. Each is a list of
+# `execute` conditions; a landing passes if ANY of them passes (all are sent in the same step,
+# and only a pass replies, so the list costs one timeout like a single check).
+#   forest: oak/birch forest, standing on dirt/grass (everything before 2026-11-18).
+#   wooded: any biome with trees, snowy ones included (taiga, snowy taiga, grove, dark forest,
+#     jungle, swamps, cherry grove, windswept forest), standing on anything but leaves or logs
+#     (snow and stone are fine; leaves would mean the canopy). Not savanna: its acacias are
+#     sparse, and with it 4 of 5 world-wide finds were savanna (tools/check_natural.py, 2026-11-18).
+NOT_CANOPY = "unless block ~ ~-1 ~ #minecraft:leaves unless block ~ ~-1 ~ #minecraft:logs"
+WOODED_BIOMES = ["#minecraft:is_forest", "#minecraft:is_taiga", "#minecraft:is_jungle",
+                 "minecraft:windswept_forest", "minecraft:swamp", "minecraft:mangrove_swamp",
+                 "minecraft:cherry_grove"]
+SPAWN_CHECKS = {
+    "forest": [f"if block ~ ~-1 ~ #minecraft:dirt {FOREST_CHECK}"],
+    "wooded": [f"if biome ~ ~ ~ {b} {NOT_CANOPY}" for b in WOODED_BIOMES],
+}
+SPAWNS = tuple(SPAWN_CHECKS)
 LOG_KEYS = ["oak_log", "birch_log", "spruce_log", "dark_oak_log",
             "jungle_log", "acacia_log", "mangrove_log", "cherry_log"]
 REWARD = "+1 per log chopped (any wood type)"
 
 HOP_RANGE = 150       # first landings: within this many blocks of the last good spot
 HOP_TRIES = 12        # landings near the last spot before searching the whole world
+# Wooded spawns pass the first hop almost every time, so without a limit an instance stays in one
+# region (12 resets in a row in one savanna, tools/check_natural.py, 2026-11-18). After this many
+# episodes near one far-found spot, the next reset searches the whole world. Forest spawns keep
+# hopping without a limit (unchanged, so runs before 2026-11-18 stay comparable).
+MAX_HOP_EPISODES = {"forest": None, "wooded": 4}
 FAR_RANGE = 25_000    # then: anywhere in this square around 0, 0
 MAX_TRIES = 60
 REPLY_TIMEOUT_S = 60.0  # wall-clock wait for one command's reply (new terrain is slow)
@@ -139,7 +162,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
                  jump: bool = True, render_distance: int = RENDER_DISTANCE,
                  jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
-                 seed: str = SEED, actions: str = "single"):
+                 seed: str = SEED, actions: str = "single", spawn: str = "forest"):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15).
@@ -147,9 +170,13 @@ class NaturalChopTreesEnv(gym.Wrapper):
         every step with attack held, or (move, turn, look) with jump=False.
         spots: play these spots ({x, y, z, yaw}) in order, one per reset, instead of searching
         (evaluate.py's fixed evaluation set); once they run out, resets search as usual.
-        seed: the world to generate. Training always uses SEED; HELD_OUT_SEED is for evaluation."""
+        seed: the world to generate. Training always uses SEED; HELD_OUT_SEED is for evaluation.
+        spawn: where resets search for a spot, "forest" (default) or "wooded" (see SPAWN_CHECKS)."""
         if actions not in ("single", "multi"):
             raise ValueError(f"actions must be 'single' or 'multi', not {actions!r}")
+        if spawn not in SPAWN_CHECKS:
+            raise ValueError(f"spawn must be one of {SPAWNS}, not {spawn!r}")
+        self.spawn = spawn
         self.world_seed = seed
         self.multi = actions == "multi"
         self.action_names = ACTION_NAMES_JUMP if jump else ACTION_NAMES
@@ -182,6 +209,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         )
         self._rng = random.Random()
         self._anchor: Optional[tuple[int, int]] = None  # last good spot
+        self._hop_episodes = 0  # episodes since the last world-wide search found a spot
         self._steps = 0
         self._logs_at_start = 0
         self._logs_chopped = 0
@@ -192,11 +220,11 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
     # --- running commands one at a time ---------------------------------------
 
-    def _command(self, command: str, replies: tuple[str, ...], timeout: float = REPLY_TIMEOUT_S,
+    def _command(self, command: str | list[str], replies: tuple[str, ...], timeout: float = REPLY_TIMEOUT_S,
                  quiet: bool = False):
-        """Send one command and idle until a chat line containing one of `replies` arrives.
-        Returns (obs, matching chat line or None on timeout)."""
-        self.env.unwrapped.add_command(command)
+        """Send one command (or several in the same step) and idle until a chat line containing
+        one of `replies` arrives. Returns (obs, matching chat line or None on timeout)."""
+        self.env.unwrapped.add_commands([command] if isinstance(command, str) else command)
         deadline = time.monotonic() + timeout
         while True:
             obs, _, _, _, _ = self.env.step(self._noop)
@@ -209,13 +237,13 @@ class NaturalChopTreesEnv(gym.Wrapper):
                 return obs, None
 
     def _try_spot(self, x: int, z: int, r: int):
-        """Drop the player somewhere within r blocks of (x, z); return (obs, is_forest)."""
+        """Drop the player somewhere within r blocks of (x, z); return (obs, passes the spawn rule)."""
         obs, reply = self._command(f"spreadplayers {x} {z} 0 {r} false @p",
                                    ("Spread", "Could not spread", "Unable", "Invalid", "rror"))
         if reply is None or "Spread" not in reply:
             return obs, False
         obs, reply = self._command(
-            f"execute as @p at @s if block ~ ~-1 ~ #minecraft:dirt {FOREST_CHECK}",
+            [f"execute as @p at @s {check}" for check in SPAWN_CHECKS[self.spawn]],
             ("Test passed",), timeout=CHECK_TIMEOUT_S, quiet=True)
         return obs, reply is not None and "Test passed" in reply
 
@@ -269,6 +297,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
         near_tries = far_tries = 0
         self.spot_index = None
         fixed = self._spots.pop(0) if self._spots else None
+        max_hops = MAX_HOP_EPISODES[self.spawn]
+        if max_hops is not None and self._hop_episodes >= max_hops:
+            self._anchor = None  # time for a new region
         if fixed is not None:
             # A fixed evaluation spot: teleport there (same seed, so same terrain) and skip the search.
             self.spot_index = fixed.get("index")
@@ -304,6 +335,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self.spot = (full.x, full.y, full.z)
         if self.found and fixed is None:
             self._anchor = (int(full.x), int(full.z))
+            self._hop_episodes = 0 if far_tries else self._hop_episodes + 1
         self._steps = 0
         # Minecraft stats never reset, so count logs relative to the episode start.
         self._logs_at_start = self._logs_mined_total(obs)
@@ -340,15 +372,16 @@ class NaturalChopTreesEnv(gym.Wrapper):
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
              jump: bool = True, render_distance: int = RENDER_DISTANCE,
              jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
-             seed: str = SEED, actions: str = "single") -> NaturalChopTreesEnv:
+             seed: str = SEED, actions: str = "single", spawn: str = "forest") -> NaturalChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
     actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
-    seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation)."""
+    seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation).
+    spawn: "forest" (default) or "wooded" (see SPAWN_CHECKS)."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
-                               seed=seed, actions=actions)
+                               seed=seed, actions=actions, spawn=spawn)
 
 
 def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:
