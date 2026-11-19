@@ -21,7 +21,7 @@ logs between runs (Line 4c: 40.5 over 50 vs 41.2 over 100). Arena scores are ove
 ## Best agent so far
 
 **Line 4c**, multi actions, 3M steps (Line 4 resumed twice for 1M more): **41.2 logs** per
-episode on the fixed forest spots, 36× random actions (1.1). [Natural results](natural/results.md)
+episode on the fixed forest spots, 36× random actions (1.1). [Natural results](natural/forest_spots.md)
 
 ## What works
 
@@ -52,7 +52,7 @@ episode on the fixed forest spots, 36× random actions (1.1). [Natural results](
    [Arena experiment 1](arena/experiments.md#arena-exp-1), [experiment 3](arena/experiments.md#arena-exp-3)
 8. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
    moves by ±3–4 logs from spawn luck alone; every model now plays the same 100 spots.
-   [Results](natural/results.md)
+   [Results](natural/forest_spots.md)
 
 ## What doesn't work
 

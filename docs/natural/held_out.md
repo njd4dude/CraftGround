@@ -3,7 +3,7 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 13:23._
+_Tables last updated 2026-11-19 13:46._
 
 Fixed spots in a world training never uses (seed 20261117, `results/eval_spots_natural_seed20261117.json`). **Training world** is the same agent's fixed-spot score in the world it trained in. A **gap** near 0 means the agent learned to chop trees in general; a clearly negative gap (larger than the ± ranges) means part of its score comes from knowing the training world. vs random uses the random baseline in this world.
 

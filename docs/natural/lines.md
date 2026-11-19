@@ -3,7 +3,7 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 13:23._
+_Tables last updated 2026-11-19 13:46._
 
 Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are the run folders inside, split by crashes, memory kills or deliberate stops, in order. `train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.
 
@@ -171,4 +171,16 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261119_112830` | branch from Line 4c | 3.0M → 4.0M | 3 | linear | 90.5 | completed | **41.3** @ 4.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/m7mtph3f) |
+
+<a id="line-6"></a>
+
+### Line 6 · wooded scratch (describe it in results/lines_natural.json)
+
+`runs/natural/line6_wooded-scratch/`
+
+**Found:** _not yet (add `found` in `results/lines_natural.json`)_
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261119_133211` | from scratch | 0 → ~120k | 3 | linear | – | no record (killed or hung) | – |  | – |
 <!-- AUTO-GENERATED:END -->

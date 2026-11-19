@@ -5,10 +5,10 @@ forest instead of the walled arena (chop/envs/natural.py). Arena results are in
 [arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 13:23._
+_Tables last updated 2026-11-19 13:46._
 
-- [Results](results.md): the 100 fixed forest spots, one row per agent: the main comparison
-- [Wooded spots](wooded.md): 100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), next to each agent's forest score
+- [Forest spots](forest_spots.md): 100 fixed spots in oak/birch forests, one row per agent: the main comparison
+- [Wooded spots](wooded_spots.md): 100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), next to each agent's forest score
 - [Held-out world](held_out.md): fixed spots in a world training never sees: does the agent generalise?
 - [Training lines](lines.md): every training line: what it tested, what it found, its pieces
 - [Evaluation runs](evaluation_runs.md): one row per evaluate.py run, newest first
