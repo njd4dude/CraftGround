@@ -182,5 +182,5 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `20261119_133211` | from scratch | 0 → ~120k | 3 | linear | – | no record (killed or hung) | – |  | – |
+| `20261119_133211` | from scratch | 0 → ~140k | 3 | linear | – | no record (killed or hung) | – |  | – |
 <!-- AUTO-GENERATED:END -->
