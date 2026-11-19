@@ -5,7 +5,7 @@ forest instead of the walled arena (chop/envs/natural.py). Arena results are in 
 the summary of findings is [FINDINGS.md](FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-18 20:32._
+_Tables last updated 2026-11-19 11:43._
 
 ## Results
 
@@ -15,6 +15,7 @@ Every agent here played the same 100 forest spots (`results/eval_spots_natural.j
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | random actions | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
 | Line 4c @ 3.0M<br>`20261118_183414` | resume Line 4b @ 2.0M for 1M more, linear LR from 1e-4 | 100 | **41.18** ± 4.90 | 41 | 7 | 94 | **36.1×** |
+| Line 5 @ 4.0M<br>`20261119_005447` | wooded spawns, from Line 4c @ 3.0M, 1M more, linear LR from 1e-4 | 100 | **39.99** ± 4.50 | 40 | 4 | 89 | **35.1×** |
 | Line 4b @ 2.0M<br>`20261118_162138` | resume Line 4 @ 1.0M for 1M more, linear LR from 1e-4 | 100 | **35.73** ± 4.68 | 37 | 10 | 97 | **31.3×** |
 | Line 4 @ 1.0M<br>`20261118_124345` | multi actions (move x turn x look x jump, attack held), linear LR, from scratch | 100 | **26.60** ± 3.42 | 28 | 9 | 67 | **23.3×** |
 | Line 2b @ 1.0M<br>`20261115_231007` | linear LR from Line 2's 601k checkpoint | 100 | **24.74** ± 3.73 | 23 | 13 | 69 | **21.7×** |
@@ -25,6 +26,15 @@ Every agent here played the same 100 forest spots (`results/eval_spots_natural.j
 | Line 3c @ 1.0M<br>`20261116_173633` @ 996,932 steps | 3M linear LR schedule, from Line 3 @ 257k | 100 | **16.15** ± 2.12 | 15 | 10 | 47 | **14.2×** |
 | Line 2 @ 1.0M<br>`20261115_192015` | jump, constant LR · render distance 6 | 100 | **14.98** ± 2.09 | 14 | 11 | 43 | **13.1×** |
 | Line 3 @ 257k<br>`20261115_235545` | jump, linear LR, from scratch | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | **10.8×** |
+
+## Wooded spots
+
+100 fixed spots in any biome with trees except savanna (`results/eval_spots_natural_wooded.json`, `make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, same training world. **Forest spots** is the same agent's score on the Results table's oak/birch spots; the **gap** is how much it loses outside them. Run with `evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.
+
+| Model | Line | Episodes | Wooded mean | 0-log episodes | Forest spots | Gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| Line 5 @ 4.0M<br>`20261119_005447` | wooded spawns, from Line 4c @ 3.0M, 1M more, linear LR from 1e-4 | 100 | **31.64** ± 4.76 | 9 | 39.99 ± 4.50 | -8.35 |
+| Line 4c @ 3.0M<br>`20261118_183414` | resume Line 4b @ 2.0M for 1M more, linear LR from 1e-4 | 100 | **30.50** ± 5.22 | 16 | 41.18 ± 4.90 | -10.68 |
 
 ## Held-out world
 
@@ -176,12 +186,45 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261118_183414` | branch from Line 4b | 2.0M → 3.0M | 3 | linear | 98.2 | completed | **41.2** @ 3.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/ms2j7prx) |
 
+<a id="line-5"></a>
+
+### Line 5 · wooded spawns, from Line 4c @ 3.0M, 1M more, linear LR from 1e-4
+
+`runs/natural/line5_wooded-spawns/`
+
+**Question:** Line 4 does badly in snow and gets stuck. Do spawns in any biome with trees (snowy taiga, taiga, jungle, swamp, dark forest...; not savanna) and a new region every 5 episodes make the agent better in unfamiliar biomes, without losing forest skill? Same recipe as 4c's last 1M; Line 4d is the control (forest spawns).
+
+**Found:** Not on average: wooded spots 31.6 vs Line 4c's 30.5 (+1.1 +/- 4.5 spot by spot), forest spots 40.0 vs 41.2 (-1.2 +/- 4.7), both ties. But fewer 0-log spots on both sets (wooded 16 -> 9, forest 7 -> 4): it gets stuck or lost less. Line 5 also had 1M more steps than 4c; Line 4d separates the two.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261118_210945` | branch from Line 4c | 3.0M → ~3.1M | 3 | linear | – | no record (killed or hung) | – | killed by Claude Code for low system memory at ~3.09M; resumed from the 3.08M checkpoint | – |
+| `20261118_213914` | continued | 3.1M → ~3.8M | 3 | linear | – | no record (killed or hung) | – | resumed with --learning-rate 9.19e-5 so the schedule matches one 1M run; hung at 3.79M (cause unknown, logs overwritten) and stopped by hand | – |
+| `20261119_005447` | continued | 3.8M → 4.0M | 3 | linear | 23.2 | completed | **40.0** @ 4.0M | resumed from the 3.78M checkpoint with --learning-rate 2.186e-5 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/1v3paa89) |
+
+<a id="line-4d"></a>
+
+### Line 4d · resume Line 4c @ 3.0M for 1M more, forest spawns, linear LR from 1e-4
+
+`runs/natural/line4d_resume-3M/`
+
+**Question:** Control for Line 5: the same 1M steps and recipe with forest spawns only, so Line 5's effect can be told apart from simply training longer.
+
+**Found:** _not yet (add `found` in `results/lines_natural.json`)_
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261119_112830` | branch from Line 4c | 3.0M → ~3.2M | 3 | linear | – | no record (killed or hung) | – |  | – |
+
 ## Evaluation runs
 
-One row per `evaluate.py` run, newest first. **Minutes** includes launching Minecraft; **Steps/s** is env steps per second over all instances while playing (runs from before timing was added show –). **Spots**: fixed = the saved evaluation spots, random = random spawns (all runs before 2026-11-16). **World**: training = the world agents train in, held-out = one they never see (`--held-out`).
+One row per `evaluate.py` run, newest first. **Minutes** includes launching Minecraft; **Steps/s** is env steps per second over all instances while playing (runs from before timing was added show –). **Spots**: fixed = the saved forest spots, wooded = the saved wooded spots (any biome with trees), random = random spawns (all runs before 2026-11-16). **World**: training = the world agents train in, held-out = one they never see (`--held-out`).
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s | Per episode |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-19T01:52:24 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | fixed | training | 100 | 39.99 | 0 | 89 | 3 | 10.1 | 203 | 23 46 64 24 14 30 38 42 16 52 32 0 40 54 64 73 24 0 59 52 62 82 89 38 60 80 45 64 22 57 28 15 50 14 30 19 33 55 78 4 42 70 2 40 40 3 4 34 10 61 72 43 87 20 73 34 23 29 0 12 49 32 8 74 46 51 0 45 36 16 36 47 34 12 24 46 76 46 53 49 31 36 33 48 14 21 82 40 18 71 47 72 53 30 23 73 61 21 13 61 |
+| 2026-11-19T01:41:52 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | wooded | training | 100 | 31.64 | 0 | 101 | 3 | 11.6 | 171 | 40 50 47 14 26 0 48 31 38 0 58 25 98 16 54 23 24 43 33 48 14 25 29 95 39 50 35 0 34 58 49 29 21 83 20 1 39 8 42 2 14 52 37 101 7 4 21 34 7 6 6 7 49 52 0 34 3 63 30 34 39 34 32 36 0 28 61 88 50 9 45 31 13 61 18 7 43 37 26 0 15 65 4 8 25 24 7 11 67 0 4 30 12 44 84 0 37 68 51 0 |
+| 2026-11-19T01:29:47 | `runs/natural/line4c_resume-2M/20261118_183414/model.zip` | wooded | training | 100 | 30.50 | 0 | 88 | 3 | 11.0 | 183 | 50 68 37 19 3 0 0 26 19 2 0 2 14 74 18 56 14 6 33 52 27 85 52 59 34 28 63 43 0 30 20 3 33 0 77 0 0 44 12 80 0 37 16 12 83 1 0 81 0 5 4 0 34 64 0 40 6 47 26 25 36 23 46 28 24 20 69 0 45 12 48 77 7 21 15 5 7 54 44 8 26 74 0 23 48 47 39 11 88 0 50 87 28 22 74 21 0 86 62 11 |
 | 2026-11-18T20:22:22 | `runs/natural/line4c_resume-2M/20261118_183414/model.zip` | fixed | training | 100 | 41.18 | 0 | 94 | 3 | 9.3 | 222 | 25 82 57 12 41 29 30 72 33 9 30 0 47 82 70 31 68 3 61 45 58 91 61 31 77 67 66 81 60 37 67 22 44 59 31 61 34 41 53 0 46 72 3 49 0 0 17 26 0 59 67 16 66 12 35 21 29 49 0 63 40 35 10 43 49 30 1 27 94 53 33 51 31 88 7 27 10 24 56 72 16 43 56 31 35 53 49 3 54 87 44 66 28 37 23 39 70 16 0 89 |
 | 2026-11-18T18:14:57 | `runs/natural/line4b_resume-1M/20261118_162138/model.zip` | fixed | held-out | 100 | 39.58 | 0 | 95 | 3 | 9.7 | 205 | 17 57 31 4 2 0 46 25 46 88 56 63 78 41 77 13 0 25 57 38 46 0 11 41 66 75 78 0 43 74 26 67 71 62 64 42 53 8 57 5 46 26 95 34 42 28 26 19 6 53 48 56 68 40 38 33 63 28 70 21 12 0 69 34 5 84 40 53 41 43 23 68 64 41 26 56 10 5 22 33 30 5 45 44 33 53 17 25 29 71 51 19 0 49 50 79 39 0 39 58 |
 | 2026-11-18T17:53:52 | `runs/natural/line4b_resume-1M/20261118_162138/model.zip` | fixed | training | 100 | 35.73 | 0 | 97 | 3 | 9.1 | 227 | 44 73 66 33 20 28 31 81 20 38 28 0 24 68 53 64 37 0 37 31 48 84 53 43 3 97 42 17 38 38 31 0 51 41 38 13 6 54 22 0 47 32 5 13 0 0 0 14 0 67 55 5 64 15 63 59 49 40 0 20 27 41 3 84 39 3 0 36 73 33 36 53 35 6 53 30 23 17 37 60 21 28 41 51 15 53 7 14 62 64 42 49 38 41 5 78 70 60 29 73 |
@@ -227,8 +270,8 @@ Historical: every natural-world evaluation before the fixed spots (2026-11-16) s
 | Setting | Value |
 | --- | --- |
 | World | Normal generated world, fixed seed 20261114 (held-out evaluation world: seed 20261117, never trained in) |
-| Evaluation | 100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); `evaluate.py --random-spots` for random spawns. Held-out world: `make_eval_spots.py --held-out` once, then `evaluate.py <model> --env natural --held-out` (its table appears once there are results) |
-| Spawn | A new spot every episode, on the ground in an oak/birch forest: first within 150 blocks of the last spot, else anywhere within ±25,000 |
+| Evaluation | 100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); `evaluate.py --random-spots` for random spawns. Held-out world: `make_eval_spots.py --held-out` once, then `evaluate.py <model> --env natural --held-out` (its table appears once there are results). Wooded spots: see that section |
+| Spawn | A new spot every episode, on the ground in an oak/birch forest: first within 150 blocks of the last spot, else anywhere within ±25,000. `train.py --spawn wooded` (Line 5, since 2026-11-18): any biome with trees but savanna, and a world-wide search after 4 episodes near one spot |
 | Rebuilt each episode | no: chopped trees stay chopped, so every episode moves to fresh forest |
 | Boundaries | none; terrain loads as the agent walks |
 | Render distance | 4 chunks, Minecraft heap 2G (since 2026-11-15, to fit 4 instances in memory; earlier runs: 6 chunks, 3G) |

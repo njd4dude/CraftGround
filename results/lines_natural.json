@@ -63,6 +63,19 @@
    "name": "resume Line 4b @ 2.0M for 1M more, linear LR from 1e-4",
    "tested": "Line 4b was still rising at 2M. Does a third 1M (same recipe) keep improving it?",
    "found": "Yes, by less: 41.2 on fixed spots at 3M, +5.5 +/- 4.5 logs vs Line 4b @ 2.0M spot by spot (better at 54, worse at 38); 0-log spots 10 -> 7. Best model so far. A second 50-episode evaluation of the same model scored 40.5 (results/eval_results_natural_50ep_check.csv, kept out of the main table)."
+  },
+  {
+   "folder": "line5_wooded-spawns",
+   "id": "5",
+   "name": "wooded spawns, from Line 4c @ 3.0M, 1M more, linear LR from 1e-4",
+   "tested": "Line 4 does badly in snow and gets stuck. Do spawns in any biome with trees (snowy taiga, taiga, jungle, swamp, dark forest...; not savanna) and a new region every 5 episodes make the agent better in unfamiliar biomes, without losing forest skill? Same recipe as 4c's last 1M; Line 4d is the control (forest spawns).",
+   "found": "Not on average: wooded spots 31.6 vs Line 4c's 30.5 (+1.1 +/- 4.5 spot by spot), forest spots 40.0 vs 41.2 (-1.2 +/- 4.7), both ties. But fewer 0-log spots on both sets (wooded 16 -> 9, forest 7 -> 4): it gets stuck or lost less. Line 5 also had 1M more steps than 4c; Line 4d separates the two."
+  },
+  {
+   "folder": "line4d_resume-3M",
+   "id": "4d",
+   "name": "resume Line 4c @ 3.0M for 1M more, forest spawns, linear LR from 1e-4",
+   "tested": "Control for Line 5: the same 1M steps and recipe with forest spawns only, so Line 5's effect can be told apart from simply training longer."
   }
  ],
  "piece_notes": {
@@ -71,6 +84,9 @@
   "20261115_185527": "killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b",
   "20261115_235545": "stopped on purpose (Ctrl+C) to free the machine for fixed spots",
   "20261116_123155": "resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on",
-  "20261118_121806": "killed for low memory at ~8k steps, before any checkpoint; restarted from scratch"
+  "20261118_121806": "killed for low memory at ~8k steps, before any checkpoint; restarted from scratch",
+  "20261118_210945": "killed by Claude Code for low system memory at ~3.09M; resumed from the 3.08M checkpoint",
+  "20261118_213914": "resumed with --learning-rate 9.19e-5 so the schedule matches one 1M run; hung at 3.79M (cause unknown, logs overwritten) and stopped by hand",
+  "20261119_005447": "resumed from the 3.78M checkpoint with --learning-rate 2.186e-5"
  }
 }

@@ -8,8 +8,8 @@ from chop.envs import natural as natural_env
 from chop.reports.agents import (label_with_folder, line_folders, line_meta, line_note,
                                  load_lines, model_label, pieces, run_config, run_dir_of, run_end, short_steps,
                                  start_of)
-from chop.reports.csvio import (EVAL_CSV, NATURAL_EVAL_CSV, NATURAL_TRAIN_CSV, episodes_by_agent, is_fixed, is_held_out, normalize_agent,
-                                read_rows)
+from chop.reports.csvio import (EVAL_CSV, NATURAL_EVAL_CSV, NATURAL_TRAIN_CSV, episodes_by_agent, is_fixed, is_held_out,
+                                is_wooded, normalize_agent, read_rows)
 from chop.reports.markdown import END, START, mean_ci, table, write_report
 from chop.reports.sections import evals_section
 from chop.paths import DOCS_DIR
@@ -40,9 +40,12 @@ def natural_setup_section() -> str:
         ["Evaluation", "100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); "
                        "`evaluate.py --random-spots` for random spawns. Held-out world: "
                        "`make_eval_spots.py --held-out` once, then `evaluate.py <model> --env natural "
-                       "--held-out` (its table appears once there are results)"],
+                       "--held-out` (its table appears once there are results). Wooded spots: see "
+                       "that section"],
         ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
-                  f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}"],
+                  f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}. "
+                  f"`train.py --spawn wooded` (Line 5, since 2026-11-18): any biome with trees but savanna, "
+                  f"and a world-wide search after {ne.MAX_HOP_EPISODES['wooded']} episodes near one spot"],
         ["Rebuilt each episode", "no: chopped trees stay chopped, so every episode moves to fresh forest"],
         ["Boundaries", "none; terrain loads as the agent walks"],
         ["Render distance", f"{ne.RENDER_DISTANCE} chunks, Minecraft heap {ne.JVM_MAX_MEMORY} "
@@ -121,6 +124,36 @@ def held_out_section(held_out: list[dict], training_fixed: list[dict], runs: lis
         "of its score comes from knowing the training world. vs random uses the random baseline in this "
         "world.\n\n"
         + table(["Model", "Line", "Episodes", "Held-out mean", "Training world", "Gap", "vs random"], rows)
+    )
+
+
+def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict] | None = None) -> str:
+    """Fixed-spot scores on the wooded spot set (any biome with trees: snowy taiga, taiga, jungle,
+    swamp...) next to the same agent's forest-spot score: the gap is how much it loses outside
+    oak/birch forests."""
+    runs = runs or []
+    by_agent = episodes_by_agent(wooded)
+    if not by_agent:
+        return ""
+    forest = episodes_by_agent(forest_fixed)
+    rows = []
+    for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", -sum(kv[1]) / len(kv[1]))):
+        mean, ci = mean_ci(eps)
+        if agent in forest:
+            f_mean, f_ci = mean_ci(forest[agent])
+            f_cell, gap = f"{f_mean:.2f} ± {f_ci:.2f}", f"{mean - f_mean:+.2f}"
+        else:
+            f_cell, gap = "–", "–"
+        rows.append([label_with_folder(agent, runs), line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
+                     sum(x == 0 for x in eps), f_cell, gap])
+    return (
+        "## Wooded spots\n\n"
+        "100 fixed spots in any biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
+        "`make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, "
+        "same training world. **Forest spots** is the same agent's score on the Results table's oak/birch "
+        "spots; the **gap** is how much it loses outside them. Run with "
+        "`evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.\n\n"
+        + table(["Model", "Line", "Episodes", "Wooded mean", "0-log episodes", "Forest spots", "Gap"], rows)
     )
 
 
@@ -206,11 +239,13 @@ def update(stamp: str | None = None) -> None:
     evals, runs = read_rows(NATURAL_EVAL_CSV), read_rows(NATURAL_TRAIN_CSV)
     held_out = [r for r in evals if is_held_out(r)]
     training_world = [r for r in evals if not is_held_out(r)]
-    fixed = [r for r in training_world if is_fixed(r)]
+    wooded = [r for r in training_world if is_wooded(r)]
+    fixed = [r for r in training_world if is_fixed(r) and not is_wooded(r)]  # the forest spots
     random_spawns = [r for r in training_world if not is_fixed(r)]
     sections = [
         stamp,
         fixed_spots_section(fixed, runs),
+        wooded_section(wooded, fixed, runs),
         held_out_section(held_out, fixed, runs),
         lines_section(fixed, random_spawns, runs),  # replaces the per-run Agents and Training runs tables
         evals_section(evals),

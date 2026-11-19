@@ -1,6 +1,6 @@
 """Report sections both worlds use: one row per evaluation run, one row per training run."""
 
-from chop.reports.csvio import is_fixed, is_held_out
+from chop.reports.csvio import is_fixed, is_held_out, is_wooded
 from chop.reports.markdown import table
 
 
@@ -10,7 +10,7 @@ def evals_section(evals: list[dict]) -> str:
     with_spots = any(r.get("spots") for r in evals)  # natural world: fixed or random spawns
     with_world = any(is_held_out(r) for r in evals)  # natural world: training or held-out world
     rows = [[r["timestamp"], f"`{r['agent']}`",
-             *([("fixed" if is_fixed(r) else "random")] if with_spots else []),
+             *([("wooded" if is_wooded(r) else "fixed" if is_fixed(r) else "random")] if with_spots else []),
              *([("held-out" if is_held_out(r) else "training")] if with_world else []),
              r["episodes"], r["mean_logs"], r["min_logs"],
              r["max_logs"], r.get("n_envs") or "–", r.get("minutes") or "–", r.get("steps_per_s") or "–",
@@ -18,8 +18,8 @@ def evals_section(evals: list[dict]) -> str:
     return ("## Evaluation runs\n\nOne row per `evaluate.py` run, newest first. **Minutes** includes "
             "launching Minecraft; **Steps/s** is env steps per second over all instances while playing "
             "(runs from before timing was added show –)."
-            + (" **Spots**: fixed = the saved evaluation spots, random = random spawns (all runs before "
-               "2026-11-16)." if with_spots else "")
+            + (" **Spots**: fixed = the saved forest spots, wooded = the saved wooded spots (any biome with "
+               "trees), random = random spawns (all runs before 2026-11-16)." if with_spots else "")
             + (" **World**: training = the world agents train in, held-out = one they never see "
                "(`--held-out`)." if with_world else "") + "\n\n"
             + table(["When", "Agent", *(["Spots"] if with_spots else []), *(["World"] if with_world else []),
