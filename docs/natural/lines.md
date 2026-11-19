@@ -180,7 +180,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 
 **Question:** Line 5 showed wooded spawns help on top of a forest-trained agent. Does training on them from step 0 work as well, compared with Line 4 @ 1M (same recipe, forest spawns)?
 
-**Found:** Stopped by hand at ~490k (not evaluated): its training average was behind Line 4's at the same point (about 10 vs 13-16 logs per episode around 400k episodes in), though wooded episodes are harder, so the two averages don't compare directly. Last checkpoint 480k.
+**Found:** Stopped by hand at ~490k (not evaluated): its training average was behind Line 4's at the same point (about 10 vs 13-16 logs per episode around 400 episodes, ~400k steps, in), though wooded episodes are harder, so the two averages don't compare directly. Last checkpoint 480k.
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
