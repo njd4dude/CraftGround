@@ -164,7 +164,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
                  jump: bool = True, render_distance: int = RENDER_DISTANCE,
                  jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
                  seed: str = SEED, actions: str = "single", spawn: str = "forest",
-                 axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS):
+                 axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS, log_cap: Optional[int] = None):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15).
@@ -178,7 +178,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
         with the turn split over them, so MineRL-trained models run unchanged (jump is ignored: its
         move choice has forward+jump).
         axe: the item the player holds (default: the one-hit AXE, or an iron axe with actions="minerl").
-        episode_ticks: game ticks per episode (MineRL's own evaluation ran 4000)."""
+        episode_ticks: game ticks per episode (MineRL's own evaluation ran 4000).
+        log_cap: end the episode once this many logs are chopped (MineRL's: 64). Default: no cap."""
         if actions not in ("single", "multi", "minerl"):
             raise ValueError(f"actions must be 'single', 'multi' or 'minerl', not {actions!r}")
         if spawn not in SPAWN_CHECKS:
@@ -190,6 +191,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self.action_names = ACTION_NAMES_JUMP if jump else ACTION_NAMES
         self.ticks_per_step = minerl.FRAME_SKIP if self.minerl else 1
         self.episode_ticks = episode_ticks
+        self.log_cap = log_cap
         self.axe = axe or (minerl.IRON_AXE if self.minerl else AXE)
         # Multi / MineRL actions turn by exact degrees, which needs CraftGround's V2 action format.
         self.v2 = self.multi or self.minerl
@@ -394,10 +396,11 @@ class NaturalChopTreesEnv(gym.Wrapper):
             reward += float(logs_now - self._logs_chopped)
             self._logs_chopped = logs_now
             terminated = bool(obs["full"].is_dead)
-            if terminated or self._ticks >= self.episode_ticks:
+            capped = self.log_cap is not None and self._logs_chopped >= self.log_cap
+            if terminated or capped or self._ticks >= self.episode_ticks:
                 break
 
-        truncated = self._ticks >= self.episode_ticks
+        truncated = self._ticks >= self.episode_ticks or capped
         info: dict[str, Any] = {"logs_chopped": self._logs_chopped}
         return self._image(obs), reward, terminated, truncated, info
 
@@ -406,17 +409,19 @@ def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = 
              jump: bool = True, render_distance: int = RENDER_DISTANCE,
              jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
              seed: str = SEED, actions: str = "single", spawn: str = "forest",
-             axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS) -> NaturalChopTreesEnv:
+             axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS,
+             log_cap: Optional[int] = None) -> NaturalChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
     actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation).
     spawn: "forest" (default) or "wooded" (see SPAWN_CHECKS).
-    actions="minerl", axe, episode_ticks: see NaturalChopTreesEnv."""
+    actions="minerl", axe, episode_ticks, log_cap: see NaturalChopTreesEnv."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
-                               seed=seed, actions=actions, spawn=spawn, axe=axe, episode_ticks=episode_ticks)
+                               seed=seed, actions=actions, spawn=spawn, axe=axe, episode_ticks=episode_ticks,
+                               log_cap=log_cap)
 
 
 def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:

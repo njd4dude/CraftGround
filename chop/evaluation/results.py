@@ -16,7 +16,7 @@ FIELDS = ["timestamp", "agent", "episodes", "episode_steps", "mean_logs", "min_l
 # MineRL-mode evaluations (evaluate.py --actions minerl, or a MineRL-trained model) go to their own CSV:
 # the same model is scored with different axes and episode lengths, which the reports (one row per
 # agent path) would otherwise average together.
-MINERL_FIELDS = FIELDS + ["env", "axe", "episode_ticks"]
+MINERL_FIELDS = FIELDS + ["env", "axe", "episode_ticks", "log_cap"]
 
 
 def save_results(agent: str, results: list[int], timestamp: str | None = None, env: str = "arena",
@@ -43,8 +43,7 @@ def save_results(agent: str, results: list[int], timestamp: str | None = None, e
         "per_episode": " ".join(map(str, results)),
     })
     print(f"Saved to {csv_path}")
-    if not minerl:
-        update_report(env)
+    update_report("minerl" if minerl else env)
 
 
 def timing_summary(n_envs: int, launch_s: float, play_s: float, total_s: float,

@@ -32,9 +32,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--axe", choices=["default", "iron", "instant"], default="default",
                         help="the axe the player holds: iron (several hits per log, MineRL's) or instant (one hit, "
                              "this project's). Default: iron in MineRL mode, instant otherwise")
+    parser.add_argument("--log-cap", type=int, default=None,
+                        help="natural world, MineRL mode: end an episode at this many logs (MineRL's evaluation: 64). "
+                             "Default: no cap")
     parser.add_argument("--episode-ticks", type=int, default=EPISODE_STEPS,
                         help=f"game ticks per episode (default {EPISODE_STEPS}; MineRL's own evaluation used 4000). "
-                             "MineRL mode only")
+                             "Works for our models too; non-default --axe / --episode-ticks / --log-cap rows go to "
+                             "results/eval_results_minerl.csv")
     parser.add_argument("--action-repeat", type=int, default=None,
                         help="arena: game ticks per agent step (default: the model's own from its run's "
                              "config.json; 1 for --random)")
@@ -131,8 +135,8 @@ def main():
     use_minerl = args.actions == "minerl" if model is None else minerl.is_minerl_model(model)
     multi = (args.actions == "multi" if model is None
              else not use_minerl and isinstance(model.action_space, gym.spaces.MultiDiscrete))
-    if not use_minerl and (args.axe != "default" or args.episode_ticks != EPISODE_STEPS):
-        args.error("--axe / --episode-ticks are for MineRL mode only for now")
+    if args.log_cap and args.env != "natural":
+        args.error("--log-cap is for the natural world (the arena ends at its 32 logs)")
     if use_minerl:
         n_actions, label, jump = None, minerl.label, False
     elif multi:
@@ -155,13 +159,20 @@ def main():
     env_kwargs = ({"jump": jump, "seed": args.seed, "actions": actions, "spawn": args.spawn}
                   if args.env == "natural" else
                   {"actions": actions, "action_repeat": 1 if use_minerl else action_repeat, "jump": jump})
+    # MineRL mode, or MineRL-style scoring of one of our models (another axe, episode length or log cap):
+    # these rows go to the MineRL CSV, so they're never averaged with the reports' standard evaluations.
     minerl_info = None
-    if use_minerl:
-        axe = {"default": minerl.IRON_AXE, "iron": minerl.IRON_AXE, "instant": None}[args.axe]
-        env_kwargs.update(axe=axe or AXE, episode_ticks=args.episode_ticks)
-        minerl_info = {"axe": "iron" if axe else "instant", "episode_ticks": args.episode_ticks}
-        print(f"MineRL mode: 64x64 view, MultiDiscrete([3, 11, 9]), {minerl.FRAME_SKIP} ticks per step, "
-              f"{minerl_info['axe']} axe, {args.episode_ticks}-tick episodes")
+    variant = args.axe != "default" or args.episode_ticks != EPISODE_STEPS or args.log_cap
+    if use_minerl or variant:
+        iron = args.axe == "iron" or (args.axe == "default" and use_minerl)
+        env_kwargs.update(axe=minerl.IRON_AXE if iron else AXE, episode_ticks=args.episode_ticks,
+                          **({"log_cap": args.log_cap} if args.log_cap else {}))
+        minerl_info = {"axe": "iron" if iron else "instant", "episode_ticks": args.episode_ticks,
+                       "log_cap": args.log_cap or ""}
+        mode = (f"MineRL mode: 64x64 view, MultiDiscrete([3, 11, 9]), {minerl.FRAME_SKIP} ticks per step, "
+                if use_minerl else "Our own view and actions, ")
+        print(mode + f"{minerl_info['axe']} axe, {args.episode_ticks}-tick episodes"
+              + (f", ending at {args.log_cap} logs" if args.log_cap else ""))
     if action_repeat > 1:
         print(f"{action_repeat} game ticks per step")
     make_env = ENVS[args.env].make_env

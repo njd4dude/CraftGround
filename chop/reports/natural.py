@@ -11,7 +11,7 @@ from chop.envs import natural as natural_env
 from chop.reports.agents import (label_with_folder, line_folders, line_meta, line_note,
                                  load_lines, model_label, pieces, run_config, run_dir_of, run_end, short_steps,
                                  start_of)
-from chop.reports.csvio import (EVAL_CSV, NATURAL_EVAL_CSV, NATURAL_TRAIN_CSV, episodes_by_agent, is_fixed, is_held_out,
+from chop.reports.csvio import (EVAL_CSV, MINERL_EVAL_CSV, NATURAL_EVAL_CSV, is_standard_natural, NATURAL_TRAIN_CSV, episodes_by_agent, is_fixed, is_held_out,
                                 is_wooded, normalize_agent, read_rows)
 from chop.reports.markdown import END, START, mean_ci, table, write_pages
 from chop.reports.sections import evals_section
@@ -237,9 +237,13 @@ def update(stamp: str | None = None) -> None:
     """Rebuild docs/natural/ from the natural-world CSVs: the index, then one page per table."""
     stamp = stamp or f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
     evals, runs = read_rows(NATURAL_EVAL_CSV), read_rows(NATURAL_TRAIN_CSV)
+    # MineRL models evaluated under exactly these rules (fixed spots, 1000 ticks, no cap, one-hit axe)
+    # join the fixed-spot tables; everything else of theirs stays in docs/minerl/.
+    minerl_rows = [r for r in read_rows(MINERL_EVAL_CSV)
+                   if is_standard_natural(r) and is_fixed(r) and not is_held_out(r)]
     training_world = [r for r in evals if not is_held_out(r)]
-    wooded = [r for r in training_world if is_wooded(r)]
-    fixed = [r for r in training_world if is_fixed(r) and not is_wooded(r)]  # the forest spots
+    wooded = [r for r in training_world + minerl_rows if is_wooded(r)]
+    fixed = [r for r in training_world + minerl_rows if is_fixed(r) and not is_wooded(r)]  # the forest spots
     random_spawns = [r for r in training_world if not is_fixed(r) and r.get("spots") != "random_wooded"]  # forest
     random_wooded = [r for r in training_world if r.get("spots") == "random_wooded"]
     sections = {

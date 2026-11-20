@@ -297,5 +297,4 @@ def main():
             "model": model_path.as_posix(),
             "wandb_url": wandb_url,
         })
-        if not use_minerl:
-            update_report(args.env)
+        update_report("minerl" if use_minerl else args.env)

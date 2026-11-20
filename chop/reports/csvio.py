@@ -64,6 +64,13 @@ def episodes_by_agent(rows: list[dict]) -> dict[str, list[int]]:
     return out
 
 
+def is_standard_natural(row: dict) -> bool:
+    """A MineRL-CSV row evaluated exactly like the natural report's own rows: natural world,
+    1000-tick episodes, no log cap, our one-hit axe. Those belong in the natural tables too."""
+    return (row.get("env") == "natural" and str(row.get("episode_ticks")) == "1000"
+            and not row.get("log_cap") and row.get("axe") == "instant")
+
+
 def is_fixed(row: dict) -> bool:
     return (row.get("spots") or "").startswith("fixed")
 

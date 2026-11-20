@@ -16,6 +16,20 @@ from chop.reports.csvio import normalize_agent
 
 
 LINES_FILE = RESULTS_DIR / "lines_natural.json"
+MINERL_MODELS_FILE = RESULTS_DIR / "minerl_models.json"
+
+
+def minerl_model(agent: str) -> dict | None:
+    """{label, minerl_score, about} for a model copied from the MineRL project (runs/minerl/<run>/),
+    else None. Unlisted MineRL models get their folder name."""
+    if not agent.startswith("runs/minerl/"):
+        return None
+    folder = run_dir_of(agent).name
+    try:
+        models = json.loads(MINERL_MODELS_FILE.read_text(encoding="utf-8")).get("models", {})
+    except (OSError, ValueError):
+        models = {}
+    return models.get(folder) or {"label": f"MineRL model `{folder}`", "about": "MineRL model"}
 
 
 def run_dir_of(agent: str) -> Path:
@@ -148,6 +162,9 @@ def model_label(agent: str, runs: list[dict]) -> str:
     """"Line 2b @ 1.0M" for a natural-world model, else the folder label."""
     if agent == "random":
         return "Random actions (baseline)"
+    mrl = minerl_model(agent)
+    if mrl is not None:
+        return mrl["label"]
     line = line_of_agent(agent)
     if line is None:
         return agent_label(agent)
@@ -159,6 +176,9 @@ def line_note(agent: str) -> str:
     """The line's name, plus the render distance when it isn't today's."""
     if agent == "random":
         return "random actions"
+    mrl = minerl_model(agent)
+    if mrl is not None:
+        return f"**MineRL mode** (64×64 view, 4 ticks per decision; see [MineRL](../minerl/README.md)): {mrl['about']}"
     line = line_of_agent(agent)
     if line is None:
         return describe(agent, [])

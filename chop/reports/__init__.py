@@ -6,13 +6,14 @@
     sections  sections both reports use (evaluation runs, training runs)
     arena     docs/arena/ (README.md index + one page per table)
     natural   docs/natural/ (README.md index + one page per table)
+    minerl    docs/minerl/ (MineRL models in CraftGround, MineRL-style scoring)
 
 train.py and evaluate.py append a row, then call update_report(env).
 """
 
-from chop.reports import arena, natural
+from chop.reports import arena, minerl, natural
 
 
 def update_report(env: str = "arena") -> None:
-    """Rebuild the tables of one environment's report: "arena" or "natural"."""
-    {"arena": arena.update, "natural": natural.update}[env]()
+    """Rebuild the tables of one report: "arena", "natural" or "minerl"."""
+    {"arena": arena.update, "natural": natural.update, "minerl": minerl.update}[env]()

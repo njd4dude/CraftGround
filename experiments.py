@@ -1,4 +1,4 @@
-"""Rebuild docs/arena/ (arena, one page per table) and docs/natural/ (natural world, one page per table) from results/.
+"""Rebuild docs/arena/ (arena, one page per table) docs/natural/ (natural world, one page per table) and docs/minerl/ (MineRL models) from results/.
 
     python experiments.py
 
@@ -13,3 +13,4 @@ from chop.reports import update_report
 if __name__ == "__main__":
     update_report("arena")
     update_report("natural")
+    update_report("minerl")
