@@ -48,6 +48,9 @@ def parse_args() -> argparse.Namespace:
                              f"{VIDEO_FPS} = real speed, 5 = quarter speed, e.g. --video-fps {VIDEO_FPS} 5 for both")
     parser.add_argument("--random-spots", action="store_true",
                         help="natural world: random spawns instead of the fixed evaluation spots")
+    parser.add_argument("--spawn", choices=natural_env.SPAWNS, default="forest",
+                        help="natural world, with --random-spots: the spawn rule random spawns must pass "
+                             "(forest = oak/birch, wooded = any biome with trees; see natural.SPAWN_CHECKS)")
     parser.add_argument("--spots", type=Path, default=None,
                         help="natural world: fixed spot file (default: the world's own, "
                              "results/eval_spots_natural.json for the training world)")
@@ -61,6 +64,9 @@ def parse_args() -> argparse.Namespace:
         args.seed = natural_env.HELD_OUT_SEED
     if args.env != "natural" and (args.held_out or args.seed != natural_env.SEED):
         parser.error("--seed / --held-out only apply to --env natural")
+    if args.spawn != "forest" and not args.random_spots:
+        parser.error("--spawn only applies to --random-spots; for fixed wooded spawns use "
+                     "--spots results/eval_spots_natural_wooded.json")
     if args.spots is None:
         args.spots = natural_env.eval_spots_path(args.seed)
     if args.n_envs is None:
@@ -78,7 +84,8 @@ def fixed_spots(args, n_envs: int) -> tuple[list[list[dict] | None], str]:
     if args.env != "natural":
         return [None] * n_envs, ""
     if args.random_spots:
-        return [None] * n_envs, "random"
+        # "random" = random forest spawns (every random evaluation before 2026-11-19), else "random_<spawn>".
+        return [None] * n_envs, "random" if args.spawn == "forest" else f"random_{args.spawn}"
     if not args.spots.exists():
         make = "make_eval_spots.py" + ("" if args.seed == natural_env.SEED else f" --seed {args.seed}")
         args.error(f"{args.spots} not found: run {make} first, or use --random-spots")
@@ -95,12 +102,15 @@ def fixed_spots(args, n_envs: int) -> tuple[list[list[dict] | None], str]:
 def video_folder(stamp: str, spot_label: str) -> str:
     """Each evaluation run's videos get their own folder: its start time plus the spawns it played,
     named like the report pages: 20261119_014237_fixed_forest_spawns, ..._fixed_wooded_spawns,
-    ..._fixed_forest_spawns_seed20261117 (held-out world), ..._random_spawns, or just the time in the arena."""
+    ..._fixed_forest_spawns_seed20261117 (held-out world), ..._random_forest_spawns,
+    ..._random_wooded_spawns, or just the time in the arena."""
     if spot_label.startswith("fixed:"):
         stem = Path(spot_label.removeprefix("fixed:")).stem  # eval_spots_natural[_seed<seed>][_wooded]
         kind = "wooded" if stem.endswith("_wooded") else "forest"
         seed = re.search(r"_seed(\d+)", stem)
         return f"{stamp}_fixed_{kind}_spawns" + (f"_seed{seed.group(1)}" if seed else "")
+    if spot_label == "random":
+        return f"{stamp}_random_forest_spawns"
     return f"{stamp}_{spot_label}_spawns" if spot_label else stamp
 
 
@@ -126,7 +136,7 @@ def main():
     if action_repeat > 1 and args.env != "arena":
         args.error("--action-repeat / repeat-trained models are arena only for now")
     actions = "multi" if multi else "single"
-    env_kwargs = ({"jump": jump, "seed": args.seed, "actions": actions}
+    env_kwargs = ({"jump": jump, "seed": args.seed, "actions": actions, "spawn": args.spawn}
                   if args.env == "natural" else {"actions": actions, "action_repeat": action_repeat, "jump": jump})
     if action_repeat > 1:
         print(f"{action_repeat} game ticks per step")

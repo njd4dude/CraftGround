@@ -10,7 +10,8 @@ def evals_section(evals: list[dict]) -> str:
     with_spots = any(r.get("spots") for r in evals)  # natural world: fixed or random spawns
     with_world = any(is_held_out(r) for r in evals)  # natural world: training or held-out world
     rows = [[r["timestamp"], f"`{r['agent']}`",
-             *([("wooded" if is_wooded(r) else "fixed" if is_fixed(r) else "random")] if with_spots else []),
+             *([("wooded" if is_wooded(r) else "fixed" if is_fixed(r)
+               else "random wooded" if r.get("spots") == "random_wooded" else "random")] if with_spots else []),
              *([("held-out" if is_held_out(r) else "training")] if with_world else []),
              r["episodes"], r["mean_logs"], r["min_logs"],
              r["max_logs"], r.get("n_envs") or "–", r.get("minutes") or "–", r.get("steps_per_s") or "–"]

@@ -81,7 +81,7 @@ episodes of any agent. [Fixed forest spawns](natural/fixed_forest_spawns.md), [F
 4. **Using arena-trained agents in the natural world.** Agents scoring 26–32 in the arena get
    ~5 logs in forests (random actions: 1.8; random spawns, older setup). The arena doesn't
    teach enough to transfer.
-   [Earlier random-spawn evaluations](natural/random_spawns.md)
+   [Random spawns](natural/random_spawns.md)
 
 ## Not proven yet
 

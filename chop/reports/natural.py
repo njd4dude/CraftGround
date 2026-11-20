@@ -27,7 +27,7 @@ PAGES = [
                                   "next to each agent's forest score"),
     ("lines.md", "Training lines", "every training line: what it tested, what it found, its pieces"),
     ("evaluation_runs.md", "Evaluation runs", "one row per evaluate.py run, newest first"),
-    ("random_spawns.md", "Earlier random-spawn evaluations", "historical, before the fixed spots (2026-11-16)"),
+    ("random_spawns.md", "Random spawns", "a new random spot every episode, forest and wooded: checks the fixed-spawn scores hold"),
     ("setup.md", "Environment setup", "world, spawns, actions, reward, episode length"),
 ]
 
@@ -101,7 +101,7 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         "episode each, same starting direction, current setup), so differences come from the agents, "
         "not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose "
         "ranges overlap a lot may not really differ. Older random-spawn scores are in "
-        "[Earlier random-spawn evaluations](random_spawns.md).\n\n"
+        "[Random spawns](random_spawns.md).\n\n"
         + table(["Model", "Line", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
                  "vs random"], rows)
     )
@@ -189,32 +189,48 @@ def lines_section(fixed: list[dict], random_spawns: list[dict], runs: list[dict]
             + "\n\n".join(blocks))
 
 
-def natural_random_spawn_section(evals: list[dict], arena_evals: list[dict], runs: list[dict]) -> str:
-    """Random-spawn evaluations: all natural-world evaluations before fixed spots (2026-11-16)."""
-    by_agent, arena = episodes_by_agent(evals), episodes_by_agent(arena_evals)
-    if not by_agent:
+def natural_random_spawn_section(forest: list[dict], wooded: list[dict], arena_evals: list[dict],
+                                 runs: list[dict]) -> str:
+    """Random-spawn evaluations (evaluate.py --random-spots [--spawn wooded]): every episode a new spot
+    found by the training spawn search, so no two agents play the same spots. One table per spawn rule."""
+    if not forest and not wooded:
         return ""
-    random_eps = by_agent.get("random", [])
-    random_mean = sum(random_eps) / len(random_eps) if random_eps else None
-    rows = []
-    for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", kv[0])):  # baseline first
-        is_random = agent == "random"
-        name = model_label(agent, runs)
-        arena_mean = f"{sum(arena[agent]) / len(arena[agent]):.2f}" if agent in arena else "–"
-        mean = sum(eps) / len(eps)
-        vs = ("baseline" if is_random
-              else f"{mean / random_mean:.1f}×" if random_mean else "no baseline yet")
-        rows.append([name, line_note(agent), arena_mean, len(eps), f"{mean:.2f}", min(eps), max(eps), vs])
-    return (
-        "## Earlier random-spawn evaluations\n\n"
-        "Historical: every natural-world evaluation before the fixed spots (2026-11-16) spawned in random "
-        "forests, so these means also move by ±3-4 logs from spawn luck, and most were made under an "
-        "older setup (render distance 6, no damage). Use [Fixed forest spawns](fixed_forest_spawns.md) to compare agents. "
-        "**Arena mean** is the same agent's score in the walled arena "
-        "([arena/](../arena/README.md)).\n\n"
-        + table(["Model", "Line", "Arena mean", "Episodes", "Mean logs", "Min", "Max", "vs random"],
-                rows)
-    )
+    arena = episodes_by_agent(arena_evals)
+
+    def rows_for(evals: list[dict], with_baseline: bool) -> list[list]:
+        by_agent = episodes_by_agent(evals)
+        random_eps = by_agent.get("random", []) if with_baseline else []
+        random_mean = sum(random_eps) / len(random_eps) if random_eps else None
+        rows = []
+        for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", -sum(kv[1]) / len(kv[1]))):
+            mean, ci = mean_ci(eps)
+            row = [model_label(agent, runs), line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
+                   sum(x == 0 for x in eps), max(eps)]
+            if with_baseline:
+                row += [f"{sum(arena[agent]) / len(arena[agent]):.2f}" if agent in arena else "–",
+                        "baseline" if agent == "random"
+                        else f"{mean / random_mean:.1f}×" if random_mean else "–"]
+            rows.append(row)
+        return rows
+
+    head = ["Model", "Line", "Episodes", "Mean logs", "0-log episodes", "Max"]
+    parts = [
+        "Every episode starts at a new spot found by the same search training uses, so agents play "
+        "different spots and each mean also moves by ±3-4 logs from spawn luck: compare agents on the "
+        "fixed spawns first ([Fixed forest spawns](fixed_forest_spawns.md), "
+        "[Fixed wooded spawns](fixed_wooded_spawns.md)). This checks that a fixed-spawn score holds on "
+        "spots no fixed set contains. Run with `evaluate.py <model> --env natural --random-spots "
+        "[--spawn wooded]`."]
+    if forest:
+        parts.append("### Random forest spawns\n\nOak/birch forests. Rows from before 2026-11-16 were "
+                     "made under an older setup (render distance 6, no damage). **Arena mean** is the same "
+                     "agent's score in the walled arena ([arena/](../arena/README.md)).\n\n"
+                     + table(head + ["Arena mean", "vs random"], rows_for(forest, True)))
+    if wooded:
+        parts.append("### Random wooded spawns\n\nAny biome with trees but savanna, a new region every "
+                     f"{natural_env.MAX_HOP_EPISODES['wooded'] + 1} episodes (as in wooded training).\n\n"
+                     + table(head, rows_for(wooded, False)))
+    return "## Random spawns\n\n" + "\n\n".join(parts)
 
 
 def update(stamp: str | None = None) -> None:
@@ -224,13 +240,14 @@ def update(stamp: str | None = None) -> None:
     training_world = [r for r in evals if not is_held_out(r)]
     wooded = [r for r in training_world if is_wooded(r)]
     fixed = [r for r in training_world if is_fixed(r) and not is_wooded(r)]  # the forest spots
-    random_spawns = [r for r in training_world if not is_fixed(r)]
+    random_spawns = [r for r in training_world if not is_fixed(r) and r.get("spots") != "random_wooded"]  # forest
+    random_wooded = [r for r in training_world if r.get("spots") == "random_wooded"]
     sections = {
         "fixed_forest_spawns.md": fixed_spots_section(fixed, runs),
         "fixed_wooded_spawns.md": wooded_section(wooded, fixed, runs),
         "lines.md": lines_section(fixed, random_spawns, runs),
         "evaluation_runs.md": evals_section(evals),
-        "random_spawns.md": natural_random_spawn_section(random_spawns, read_rows(EVAL_CSV), runs),
+        "random_spawns.md": natural_random_spawn_section(random_spawns, random_wooded, read_rows(EVAL_CSV), runs),
         "setup.md": natural_setup_section(),
     }
     write_pages(NATURAL_DIR, "Natural world", INDEX_TEMPLATE, stamp, PAGES, sections)
