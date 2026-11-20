@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 
 import _bootstrap  # noqa: F401  (makes the chop package importable from tools/)
-from chop.envs.arena import make_env
+from chop.envs.arena import GROUND_Y, make_env
 from chop.envs.minerl import PITCH_DEGREES, YAW_DEGREES
 
 OUT = Path("check_frames")
@@ -26,9 +26,12 @@ def main():
     # Keep the raw observation message around so we can read yaw/pitch.
     inner_step, inner_reset = env.env.step, env.env.reset
 
+    tick_heights: list[float] = []  # the player's y after every game tick (for the jump check)
+
     def step(a):
         out = inner_step(a)
         env._last_full = out[0]["full"]
+        tick_heights.append(env._last_full.y)
         return out
 
     def reset(**kw):
@@ -84,6 +87,24 @@ def main():
     ok &= good
     print(f"walk into tree: {info['logs_chopped']} logs  {'ok' if good else 'NO LOG CHOPPED'}")
     Image.fromarray(env.last_pov).save(OUT / "minerl_full_after_walk.png")
+
+    # Move choices 1 (forward) and 2 (forward+jump) in open ground: x=-9.5 facing south (yaw 0 = +z)
+    # has no tree ahead for ~12 blocks. Forward should walk on the ground; forward+jump should also
+    # leave it (a jump is ~1.25 blocks high). Height is recorded every tick, not just per decision.
+    for move, name, should_jump in [(1, "forward", False), (2, "forward+jump", True)]:
+        env.unwrapped.add_commands(["tp @p -9.5 -60 0.5 0 0"])
+        for _ in range(3):
+            env.step(noop)
+        z0 = env._last_full.z
+        tick_heights.clear()
+        for _ in range(4):  # 4 decisions = 16 ticks, about one jump
+            env.step([move, NO_YAW, NO_PITCH])
+        rise = max(tick_heights) - GROUND_Y
+        walked = env._last_full.z - z0
+        good = walked > 0.5 and (rise > 0.5 if should_jump else rise < 0.1)
+        ok &= good
+        print(f"{name:13s}: walked {walked:+.2f} blocks, highest {rise:.2f} above ground  "
+              f"{'ok' if good else 'MISMATCH'}")
     env.close()
     print("ALL CHECKS OK" if ok else "CHECKS FAILED")
 
