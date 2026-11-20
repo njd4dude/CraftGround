@@ -1,9 +1,10 @@
-"""Sanity checks for minerl_compat_env.py.
+"""Sanity checks for the arena's MineRL mode (chop/envs/minerl.py, make_env(actions="minerl")).
 
-    python check_minerl_compat.py
+    run.bat tools/check_minerl_compat.py
 
-Saves the full 320x180 frame and the 64x64 network input to check_frames/, and
-checks that each camera action turns the view by the right amount and direction.
+Saves the full 320x180 frame and the 64x64 network input to check_frames/, checks that
+each camera action turns the view by the right amount and direction, and that walking
+into a tree with attack held chops it with the iron axe.
 """
 
 from pathlib import Path
@@ -11,7 +12,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from minerl_compat_env import PITCH_DEGREES, YAW_DEGREES, MineRLCompatEnv
+import _bootstrap  # noqa: F401  (makes the chop package importable from tools/)
+from chop.envs.arena import make_env
+from chop.envs.minerl import PITCH_DEGREES, YAW_DEGREES
 
 OUT = Path("check_frames")
 STAND, NO_YAW, NO_PITCH = 0, YAW_DEGREES.index(0), PITCH_DEGREES.index(0)
@@ -19,7 +22,7 @@ STAND, NO_YAW, NO_PITCH = 0, YAW_DEGREES.index(0), PITCH_DEGREES.index(0)
 
 def main():
     OUT.mkdir(exist_ok=True)
-    env = MineRLCompatEnv(port=8123)
+    env = make_env(port=8123, actions="minerl")
     # Keep the raw observation message around so we can read yaw/pitch.
     inner_step, inner_reset = env.env.step, env.env.reset
 
@@ -72,7 +75,7 @@ def main():
     env.reset()
     for _ in range(3):
         env.step(noop)
-    env.env.add_command("tp @p 0.5 -60 0.5 -90 0")
+    env.unwrapped.add_commands(["tp @p 0.5 -60 0.5 -90 0"])
     total = 0.0
     for t in range(10):
         _, r, term, trunc, info = env.step([1, NO_YAW, NO_PITCH])

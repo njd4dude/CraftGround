@@ -10,9 +10,9 @@ import gymnasium as gym
 import numpy as np
 from stable_baselines3 import PPO
 
-from chop.envs import ENVS
+from chop.envs import ENVS, minerl
 from chop.envs import natural as natural_env
-from chop.envs.common import ACTION_NAMES, MULTI_NVEC_JUMP, action_names, multi_label
+from chop.envs.common import ACTION_NAMES, AXE, EPISODE_STEPS, MULTI_NVEC_JUMP, action_names, multi_label
 from chop.evaluation.results import episode_shares, save_results, timing_summary
 from chop.evaluation.video import RECORD_PER_GROUP, VIDEO_FPS, EpisodeRecorder
 from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, game_folder, instance_ports, launch_vec_env
@@ -24,10 +24,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("model", nargs="?", help="path to a saved model .zip")
     parser.add_argument("--random", action="store_true", help="use random actions instead of a model")
-    parser.add_argument("--actions", choices=["single", "multi"], default="single",
+    parser.add_argument("--actions", choices=["single", "multi", "minerl"], default="single",
                         help="--random only: the action set to play randomly in (a model uses its own). "
                              "multi = move + turn + look (+ jump in the natural world) every step, attack held. "
-                             "Models trained with jump can run in either world")
+                             "minerl = the MineRL project's view and actions (chop/envs/minerl.py; MineRL-trained "
+                             "models get it automatically). Models trained with jump can run in either world")
+    parser.add_argument("--axe", choices=["default", "iron", "instant"], default="default",
+                        help="the axe the player holds: iron (several hits per log, MineRL's) or instant (one hit, "
+                             "this project's). Default: iron in MineRL mode, instant otherwise")
+    parser.add_argument("--episode-ticks", type=int, default=EPISODE_STEPS,
+                        help=f"game ticks per episode (default {EPISODE_STEPS}; MineRL's own evaluation used 4000). "
+                             "MineRL mode only")
     parser.add_argument("--action-repeat", type=int, default=None,
                         help="arena: game ticks per agent step (default: the model's own from its run's "
                              "config.json; 1 for --random)")
@@ -119,10 +126,16 @@ def main():
     # Load the model first: its number of actions says which action set the env must offer
     # (natural world: 13 with jump, or the arena's 11 for models trained before jump was added).
     # The random baseline keeps the 11 actions so it stays comparable with earlier runs.
+    minerl.register_networks()  # MineRL models with the ImpalaCNN need it to load
     model = None if args.random else PPO.load(args.model, device="cpu")
+    use_minerl = args.actions == "minerl" if model is None else minerl.is_minerl_model(model)
     multi = (args.actions == "multi" if model is None
-             else isinstance(model.action_space, gym.spaces.MultiDiscrete))
-    if multi:
+             else not use_minerl and isinstance(model.action_space, gym.spaces.MultiDiscrete))
+    if not use_minerl and (args.axe != "default" or args.episode_ticks != EPISODE_STEPS):
+        args.error("--axe / --episode-ticks are for MineRL mode only for now")
+    if use_minerl:
+        n_actions, label, jump = None, minerl.label, False
+    elif multi:
         n_actions, label = None, multi_label
         # A multi model's jump choice is its 4th dimension; --random multi plays with jump in the natural world.
         jump = (args.env == "natural" if model is None
@@ -132,12 +145,23 @@ def main():
         names = action_names(n_actions)
         jump = n_actions != len(ACTION_NAMES)
         label = lambda action: names[int(action)]  # noqa: E731
-    action_repeat = args.action_repeat or (1 if model is None else run_action_repeat(args.model))
-    if action_repeat > 1 and args.env != "arena":
+    if use_minerl:
+        action_repeat = minerl.FRAME_SKIP  # built into the env's MineRL mode, not an env setting
+    else:
+        action_repeat = args.action_repeat or (1 if model is None else run_action_repeat(args.model))
+    if action_repeat > 1 and args.env != "arena" and not use_minerl:
         args.error("--action-repeat / repeat-trained models are arena only for now")
-    actions = "multi" if multi else "single"
+    actions = "minerl" if use_minerl else "multi" if multi else "single"
     env_kwargs = ({"jump": jump, "seed": args.seed, "actions": actions, "spawn": args.spawn}
-                  if args.env == "natural" else {"actions": actions, "action_repeat": action_repeat, "jump": jump})
+                  if args.env == "natural" else
+                  {"actions": actions, "action_repeat": 1 if use_minerl else action_repeat, "jump": jump})
+    minerl_info = None
+    if use_minerl:
+        axe = {"default": minerl.IRON_AXE, "iron": minerl.IRON_AXE, "instant": None}[args.axe]
+        env_kwargs.update(axe=axe or AXE, episode_ticks=args.episode_ticks)
+        minerl_info = {"axe": "iron" if axe else "instant", "episode_ticks": args.episode_ticks}
+        print(f"MineRL mode: 64x64 view, MultiDiscrete([3, 11, 9]), {minerl.FRAME_SKIP} ticks per step, "
+              f"{minerl_info['axe']} axe, {args.episode_ticks}-tick episodes")
     if action_repeat > 1:
         print(f"{action_repeat} game ticks per step")
     make_env = ENVS[args.env].make_env
@@ -156,7 +180,8 @@ def main():
                   make_env(port=port, env_path=game_folder(port, args.shared_folder), **env_kwargs, **extra))
                  for i, port in enumerate(ports)]
     env = launch_vec_env(factories, ports, args.shared_folder)
-    random_name = "random" + ("-multi" if multi else "") + (f"-repeat{action_repeat}" if action_repeat > 1 else "")
+    random_name = ("random-minerl" if use_minerl else
+                   "random" + ("-multi" if multi else "") + (f"-repeat{action_repeat}" if action_repeat > 1 else ""))
     agent = random_name if args.random else normalize_agent(args.model)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     video_dir = ((Path("runs/baselines") / random_name if args.random else Path(args.model).parent)
@@ -229,7 +254,7 @@ def main():
     timing = timing_summary(n_envs, launch_s=t_play - t_launch, play_s=t_end - t_play,
                             total_s=t_end - t_launch, env_steps=env_steps, resets=resets, reset_s=reset_s)
     save_results(agent, scores, env=args.env, timing=timing, spots=spot_label, spot_per_episode=spots_played,
-                 world_seed=args.seed if args.env == "natural" else "")
+                 world_seed=args.seed if args.env == "natural" else "", minerl=minerl_info)
     print(f"\n{agent} [{args.env}]: {np.mean(scores):.1f} logs per episode on average "
           f"(min {min(scores)}, max {max(scores)}, {len(scores)} episodes)")
     recorder.encode(results, args.record)

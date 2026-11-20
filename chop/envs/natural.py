@@ -43,6 +43,7 @@ from craftground import InitialEnvironmentConfig
 from craftground.environment.action_space import ActionSpaceVersion, no_op_v2
 from craftground.initial_environment_config import Difficulty, GameMode, WorldType
 
+from chop.envs import minerl
 from chop.envs.common import (ACTION_NAMES, ACTION_NAMES_JUMP, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH,
                               multi_nvec, to_craftground_action, to_craftground_multi)
 from chop.paths import ROOT
@@ -162,7 +163,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
                  jump: bool = True, render_distance: int = RENDER_DISTANCE,
                  jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
-                 seed: str = SEED, actions: str = "single", spawn: str = "forest"):
+                 seed: str = SEED, actions: str = "single", spawn: str = "forest",
+                 axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15).
@@ -171,46 +173,64 @@ class NaturalChopTreesEnv(gym.Wrapper):
         spots: play these spots ({x, y, z, yaw}) in order, one per reset, instead of searching
         (evaluate.py's fixed evaluation set); once they run out, resets search as usual.
         seed: the world to generate. Training always uses SEED; HELD_OUT_SEED is for evaluation.
-        spawn: where resets search for a spot, "forest" (default) or "wooded" (see SPAWN_CHECKS)."""
-        if actions not in ("single", "multi"):
-            raise ValueError(f"actions must be 'single' or 'multi', not {actions!r}")
+        spawn: where resets search for a spot, "forest" (default) or "wooded" (see SPAWN_CHECKS).
+        actions="minerl": the MineRL project's view and actions (chop/envs/minerl.py), 4 ticks per step
+        with the turn split over them, so MineRL-trained models run unchanged (jump is ignored: its
+        move choice has forward+jump).
+        axe: the item the player holds (default: the one-hit AXE, or an iron axe with actions="minerl").
+        episode_ticks: game ticks per episode (MineRL's own evaluation ran 4000)."""
+        if actions not in ("single", "multi", "minerl"):
+            raise ValueError(f"actions must be 'single', 'multi' or 'minerl', not {actions!r}")
         if spawn not in SPAWN_CHECKS:
             raise ValueError(f"spawn must be one of {SPAWNS}, not {spawn!r}")
         self.spawn = spawn
         self.world_seed = seed
         self.multi = actions == "multi"
+        self.minerl = actions == "minerl"
         self.action_names = ACTION_NAMES_JUMP if jump else ACTION_NAMES
-        # Multi actions turn by exact degrees, which needs CraftGround's V2 action format.
-        self._noop = NOOP_V2 if self.multi else NOOP
+        self.ticks_per_step = minerl.FRAME_SKIP if self.minerl else 1
+        self.episode_ticks = episode_ticks
+        self.axe = axe or (minerl.IRON_AXE if self.minerl else AXE)
+        # Multi / MineRL actions turn by exact degrees, which needs CraftGround's V2 action format.
+        self.v2 = self.multi or self.minerl
+        self._noop = NOOP_V2 if self.v2 else NOOP
         # CraftGround's build.gradle reads this when it launches Minecraft (-Xmx).
         os.environ["CRAFTGROUND_JVM_MAX_MEMORY"] = jvm_max_memory
+        width, height = minerl.RENDER_RES if self.minerl else (IMAGE_WIDTH, IMAGE_HEIGHT)
         config = InitialEnvironmentConfig(
-            image_width=IMAGE_WIDTH,
-            image_height=IMAGE_HEIGHT,
+            image_width=width,
+            image_height=height,
             world_type=WorldType.DEFAULT,
             seed=seed,
             gamemode=GameMode.SURVIVAL,
             difficulty=Difficulty.PEACEFUL,
             generate_structures=False,
-            hud_hidden=True,
+            hud_hidden=not self.minerl,  # MineRL shows the hand; process_pov crops the hotbar off
             render_distance=render_distance,
             simulation_distance=render_distance,
             mined_stat_keys=LOG_KEYS,
             initial_extra_commands=_setup_commands(),
         )
-        version = ActionSpaceVersion.V2_MINERL_HUMAN if self.multi else ActionSpaceVersion.V1_MINEDOJO
+        version = ActionSpaceVersion.V2_MINERL_HUMAN if self.v2 else ActionSpaceVersion.V1_MINEDOJO
         super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path,
                                           action_space_version=version))
 
-        self.action_space = (gym.spaces.MultiDiscrete(multi_nvec(jump)) if self.multi
-                             else gym.spaces.Discrete(len(self.action_names)))
+        if self.minerl:
+            self.action_space = gym.spaces.MultiDiscrete(minerl.NVEC)
+        elif self.multi:
+            self.action_space = gym.spaces.MultiDiscrete(multi_nvec(jump))
+        else:
+            self.action_space = gym.spaces.Discrete(len(self.action_names))
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.uint8
+            low=0, high=255, shape=minerl.OBS_SHAPE if self.minerl else (IMAGE_HEIGHT, IMAGE_WIDTH, 3),
+            dtype=np.uint8
         )
+        self.last_pov: Optional[np.ndarray] = None  # the full frame Minecraft drew last
+        self._recipes_unlocked = False
         self._rng = random.Random()
         self._anchor: Optional[tuple[int, int]] = None  # last good spot
         self._hop_episodes = 0  # episodes since the last world-wide search found a spot
-        self._steps = 0
+        self._ticks = 0
         self._logs_at_start = 0
         self._logs_chopped = 0
         self.spot: tuple[float, float, float] = (0.0, 0.0, 0.0)
@@ -282,9 +302,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
         stats = obs["full"].mined_statistics
         return sum(stats.get(key, 0) for key in LOG_KEYS)
 
-    @staticmethod
-    def _image(obs) -> np.ndarray:
-        return np.ascontiguousarray(obs["pov"])
+    def _image(self, obs) -> np.ndarray:
+        self.last_pov = np.asarray(obs["pov"])
+        return minerl.process_pov(self.last_pov) if self.minerl else np.ascontiguousarray(self.last_pov)
 
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
         start = time.perf_counter()
@@ -326,7 +346,10 @@ class NaturalChopTreesEnv(gym.Wrapper):
         yaw = fixed["yaw"] if fixed is not None else self._rng.choice(range(-180, 180, 15))
         obs, _ = self._command(f"execute as @p at @s run tp @s ~ ~ ~ {yaw} 0", ("Teleported",))
         obs, _ = self._command("clear @p", ("Removed", "No items"))
-        obs, _ = self._command(f"item replace entity @p weapon.mainhand with {AXE}", ("Replaced",))
+        obs, _ = self._command(f"item replace entity @p weapon.mainhand with {self.axe}", ("Replaced",))
+        if self.minerl and not self._recipes_unlocked:
+            obs = minerl.unlock_all_recipes(self.env.unwrapped, self._noop)  # no toasts (MineRL had none)
+            self._recipes_unlocked = True
         t_setup = time.perf_counter()
         obs = self._wait_for_render(obs)
         t_render = time.perf_counter()
@@ -336,7 +359,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         if self.found and fixed is None:
             self._anchor = (int(full.x), int(full.z))
             self._hop_episodes = 0 if far_tries else self._hop_episodes + 1
-        self._steps = 0
+        self._ticks = 0
         # Minecraft stats never reset, so count logs relative to the episode start.
         self._logs_at_start = self._logs_mined_total(obs)
         self._logs_chopped = 0
@@ -354,17 +377,27 @@ class NaturalChopTreesEnv(gym.Wrapper):
         }
         return self._image(obs), {"logs_chopped": 0, **timing}
 
+    def _game_action(self, action):
+        if self.minerl:
+            return minerl.tick_action(action, self.ticks_per_step)
+        return to_craftground_multi(action) if self.multi else to_craftground_action(int(action))
+
     def step(self, action):
-        obs, _, _, _, _ = self.env.step(to_craftground_multi(action) if self.multi
-                                        else to_craftground_action(int(action)))
-        self._steps += 1
+        # One tick per step, except MineRL actions: FRAME_SKIP ticks, logs added up over them.
+        reward = 0.0
+        terminated = False
+        act = self._game_action(action)
+        for _ in range(self.ticks_per_step):
+            obs, _, _, _, _ = self.env.step(dict(act) if self.v2 else list(act))
+            self._ticks += 1
+            logs_now = self._logs_mined_total(obs) - self._logs_at_start
+            reward += float(logs_now - self._logs_chopped)
+            self._logs_chopped = logs_now
+            terminated = bool(obs["full"].is_dead)
+            if terminated or self._ticks >= self.episode_ticks:
+                break
 
-        logs_now = self._logs_mined_total(obs) - self._logs_at_start
-        reward = float(logs_now - self._logs_chopped)
-        self._logs_chopped = logs_now
-
-        terminated = bool(obs["full"].is_dead)
-        truncated = self._steps >= EPISODE_STEPS
+        truncated = self._ticks >= self.episode_ticks
         info: dict[str, Any] = {"logs_chopped": self._logs_chopped}
         return self._image(obs), reward, terminated, truncated, info
 
@@ -372,16 +405,18 @@ class NaturalChopTreesEnv(gym.Wrapper):
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
              jump: bool = True, render_distance: int = RENDER_DISTANCE,
              jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
-             seed: str = SEED, actions: str = "single", spawn: str = "forest") -> NaturalChopTreesEnv:
+             seed: str = SEED, actions: str = "single", spawn: str = "forest",
+             axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS) -> NaturalChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
     actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation).
-    spawn: "forest" (default) or "wooded" (see SPAWN_CHECKS)."""
+    spawn: "forest" (default) or "wooded" (see SPAWN_CHECKS).
+    actions="minerl", axe, episode_ticks: see NaturalChopTreesEnv."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
-                               seed=seed, actions=actions, spawn=spawn)
+                               seed=seed, actions=actions, spawn=spawn, axe=axe, episode_ticks=episode_ticks)
 
 
 def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:

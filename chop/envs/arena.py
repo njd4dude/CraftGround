@@ -34,6 +34,7 @@ from craftground.initial_environment_config import (
 
 from craftground.environment.action_space import ActionSpaceVersion, no_op, no_op_v2
 
+from chop.envs import minerl
 from chop.envs.common import (ACTION_NAMES, ACTION_NAMES_JUMP, AXE, EPISODE_STEPS, IMAGE_HEIGHT, IMAGE_WIDTH,
                               multi_nvec, to_craftground_action, to_craftground_multi)
 
@@ -56,8 +57,8 @@ REWARD = "+1 per log chopped"
 LOG_KEYS = ["oak_log"]
 
 
-def arena_commands() -> list[str]:
-    """Commands that (re)build the arena. CraftGround runs these on every reset."""
+def arena_commands(axe: str = AXE) -> list[str]:
+    """Commands that (re)build the arena, giving the player `axe`. CraftGround runs these on every reset."""
     y0 = GROUND_Y
     r = ARENA_RADIUS
     top = y0 + WALL_HEIGHT - 1
@@ -95,7 +96,7 @@ def arena_commands() -> list[str]:
     cmds += [
         f"tp @p 0.5 {y0} 0.5 0 0",
         "clear @p",
-        f"item replace entity @p weapon.mainhand with {AXE}",
+        f"item replace entity @p weapon.mainhand with {axe}",
     ]
     return cmds
 
@@ -115,46 +116,68 @@ class ChopTreesEnv(gym.Wrapper):
     a turn / look is applied once, on the first tick, so it still turns by the amount chosen.
     Rewards are summed and the agent sees the last tick's frame. CraftGround shows an action's
     effects 1-3 ticks late (tools/check_timing.py), so 4 lets each step show its own action.
-    An episode is still EPISODE_STEPS ticks, so it's EPISODE_STEPS // action_repeat agent steps."""
+    An episode is still episode_ticks ticks, so it's episode_ticks // action_repeat agent steps.
+    actions="minerl": the MineRL project's view and actions (chop/envs/minerl.py), 4 ticks per step
+    with the turn split over them, so MineRL-trained models run unchanged; jump and action_repeat
+    don't apply (its move choice has forward+jump).
+    axe: the item the player holds (default: the one-hit AXE, or an iron axe with actions="minerl").
+    episode_ticks: game ticks per episode (MineRL's own evaluation ran 4000)."""
 
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
-                 actions: str = "single", action_repeat: int = 1, jump: bool = False):
-        if actions not in ("single", "multi"):
-            raise ValueError(f"actions must be 'single' or 'multi', not {actions!r}")
+                 actions: str = "single", action_repeat: int = 1, jump: bool = False,
+                 axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS):
+        if actions not in ("single", "multi", "minerl"):
+            raise ValueError(f"actions must be 'single', 'multi' or 'minerl', not {actions!r}")
         if action_repeat < 1:
             raise ValueError(f"action_repeat must be at least 1, not {action_repeat}")
+        self.minerl = actions == "minerl"
+        if self.minerl and (jump or action_repeat != 1):
+            raise ValueError("actions='minerl' has its own jump and frame skip; leave jump / action_repeat unset")
         self.multi = actions == "multi"
         self.jump = jump
-        self.action_repeat = action_repeat
-        self.max_steps = EPISODE_STEPS // action_repeat
+        self.action_repeat = minerl.FRAME_SKIP if self.minerl else action_repeat
+        self.max_steps = episode_ticks // self.action_repeat
+        self.axe = axe or (minerl.IRON_AXE if self.minerl else AXE)
+        width, height = minerl.RENDER_RES if self.minerl else (IMAGE_WIDTH, IMAGE_HEIGHT)
         config = InitialEnvironmentConfig(
-            image_width=IMAGE_WIDTH,
-            image_height=IMAGE_HEIGHT,
+            image_width=width,
+            image_height=height,
             world_type=WorldType.SUPERFLAT,
             gamemode=GameMode.SURVIVAL,
             difficulty=Difficulty.PEACEFUL,
             generate_structures=False,
-            hud_hidden=True,
+            hud_hidden=not self.minerl,  # MineRL shows the hand; process_pov crops the hotbar off
             mined_stat_keys=LOG_KEYS,
-            initial_extra_commands=arena_commands(),
+            initial_extra_commands=arena_commands(self.axe),
         )
         config.set_daylight_cycle_mode(DaylightMode.ALWAYS_DAY)
-        # Multi actions turn by exact degrees, which needs CraftGround's V2 action format.
-        version = ActionSpaceVersion.V2_MINERL_HUMAN if self.multi else ActionSpaceVersion.V1_MINEDOJO
+        # Multi / MineRL actions turn by exact degrees, which needs CraftGround's V2 action format.
+        self.v2 = self.multi or self.minerl
+        version = ActionSpaceVersion.V2_MINERL_HUMAN if self.v2 else ActionSpaceVersion.V1_MINEDOJO
         super().__init__(craftground.make(initial_env_config=config, port=port, verbose=verbose, env_path=env_path,
                                           action_space_version=version))
 
-        self.action_space = (gym.spaces.MultiDiscrete(multi_nvec(jump)) if self.multi
-                             else gym.spaces.Discrete(len(ACTION_NAMES_JUMP if jump else ACTION_NAMES)))
+        if self.minerl:
+            self.action_space = gym.spaces.MultiDiscrete(minerl.NVEC)
+        elif self.multi:
+            self.action_space = gym.spaces.MultiDiscrete(multi_nvec(jump))
+        else:
+            self.action_space = gym.spaces.Discrete(len(ACTION_NAMES_JUMP if jump else ACTION_NAMES))
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.uint8
+            low=0, high=255, shape=minerl.OBS_SHAPE if self.minerl else (IMAGE_HEIGHT, IMAGE_WIDTH, 3),
+            dtype=np.uint8
         )
+        self.last_pov: Optional[np.ndarray] = None  # the full frame Minecraft drew last
+        self._recipes_unlocked = False
         self._steps = 0
         self._logs_at_start = 0
         self._logs_chopped = 0
 
     def _game_action(self, action, camera: bool):
-        """CraftGround's action for one tick; camera=False drops the turn / look (repeat ticks)."""
+        """CraftGround's action for one tick; camera=False drops the turn / look (repeat ticks).
+        MineRL actions split the turn over the frame skip instead, so they ignore camera."""
+        if self.minerl:
+            return minerl.tick_action(action, self.action_repeat)
         if self.multi:
             act = to_craftground_multi(action)
             if not camera:
@@ -170,9 +193,9 @@ class ChopTreesEnv(gym.Wrapper):
         stats = obs["full"].mined_statistics
         return sum(stats.get(key, 0) for key in LOG_KEYS)
 
-    @staticmethod
-    def _image(obs) -> np.ndarray:
-        return np.ascontiguousarray(obs["pov"])
+    def _image(self, obs) -> np.ndarray:
+        self.last_pov = np.asarray(obs["pov"])
+        return minerl.process_pov(self.last_pov) if self.minerl else np.ascontiguousarray(self.last_pov)
 
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
         """options={"extra_commands": [...]}: commands run after the random spawn (tools/ use it to
@@ -189,7 +212,10 @@ class ChopTreesEnv(gym.Wrapper):
         # press when attack goes from off to on, and Minecraft lets go of held buttons during a
         # reset, so an attack still held from the last episode would never press again: in multi
         # mode (attack always held) the agent couldn't chop after its first episode.
-        obs, _, _, _, _ = self.env.step(no_op_v2() if self.multi else no_op())
+        obs, _, _, _, _ = self.env.step(no_op_v2() if self.v2 else no_op())
+        if self.minerl and not self._recipes_unlocked:
+            obs = minerl.unlock_all_recipes(self.env.unwrapped, no_op_v2())  # no toasts (MineRL had none)
+            self._recipes_unlocked = True
         self._steps = 0
         # Minecraft stats never reset, so count logs relative to the episode start.
         self._logs_at_start = self._logs_mined_total(obs)
@@ -215,9 +241,10 @@ class ChopTreesEnv(gym.Wrapper):
 
 
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
-             actions: str = "single", action_repeat: int = 1, jump: bool = False) -> ChopTreesEnv:
+             actions: str = "single", action_repeat: int = 1, jump: bool = False,
+             axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS) -> ChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
-    actions: "single" or "multi"; action_repeat: game ticks per agent step; jump: offer the natural
-    world's jump actions (see ChopTreesEnv)."""
+    actions: "single", "multi" or "minerl"; action_repeat: game ticks per agent step; jump: offer the
+    natural world's jump actions; axe, episode_ticks: see ChopTreesEnv."""
     return ChopTreesEnv(port=port, verbose=verbose, env_path=env_path, actions=actions,
-                        action_repeat=action_repeat, jump=jump)
+                        action_repeat=action_repeat, jump=jump, axe=axe, episode_ticks=episode_ticks)
