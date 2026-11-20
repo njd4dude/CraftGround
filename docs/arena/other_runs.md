@@ -3,7 +3,7 @@
 [← Arena index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 17:04._
+_Tables last updated 2026-11-19 18:03._
 
 _No results yet._
 <!-- AUTO-GENERATED:END -->

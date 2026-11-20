@@ -3,12 +3,18 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 17:04._
+_Tables last updated 2026-11-19 18:03._
 
 One row per `evaluate.py` run, newest first. **Minutes** includes launching Minecraft; **Steps/s** is env steps per second over all instances while playing (runs from before timing was added show –). **Spots**: fixed = the saved forest spots, wooded = the saved wooded spots (any biome with trees), random = random spawns (all runs before 2026-11-16). **World**: training = the world agents train in, held-out = one they never see (`--held-out`).
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-19T18:02:55 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | random wooded | training | 100 | 37.72 | 0 | 186 | 3 | 10.2 | 202 |
+| 2026-11-19T17:52:17 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | random wooded | training | 100 | 42.77 | 0 | 139 | 3 | 10.4 | 192 |
+| 2026-11-19T17:41:29 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | random wooded | training | 100 | 35.01 | 0 | 182 | 3 | 10.0 | 225 |
+| 2026-11-19T17:30:36 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | random | training | 100 | 44.78 | 0 | 107 | 3 | 9.3 | 227 |
+| 2026-11-19T17:20:51 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | random | training | 100 | 45.32 | 0 | 102 | 3 | 8.0 | 288 |
+| 2026-11-19T17:12:20 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | random | training | 100 | 38.76 | 0 | 89 | 3 | 7.6 | 301 |
 | 2026-11-19T16:58:38 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | wooded | training | 100 | 31.33 | 0 | 92 | 3 | 10.8 | 184 |
 | 2026-11-19T16:47:21 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | fixed | training | 100 | 38.64 | 0 | 94 | 3 | 10.3 | 197 |
 | 2026-11-19T13:22:10 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | wooded | training | 100 | 25.66 | 0 | 102 | 3 | 11.3 | 179 |
