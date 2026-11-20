@@ -3,12 +3,15 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 22:06._
+_Tables last updated 2026-11-19 22:33._
 
 One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (MineRL mode, or one of our models with a non-standard axe, episode length or log cap), newest first. **Steps/s** counts decisions (4 ticks each in MineRL mode).
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-19T22:32:21 | Line 5 @ 4.0M | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | natural | fixed forest spots | 4000 | 64 | instant | 50 | 54.64 | 10.5 | 259 |
+| 2026-11-19T22:21:27 | Line 5 @ 4.0M | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | natural | fixed forest spots | 4000 | – | instant | 50 | 118.94 | 11.5 | 345 |
+| 2026-11-19T22:09:47 | MineRL Impala BC | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` | natural | fixed forest spots | 4000 | 64 | iron | 50 | 44.14 | 11.4 | 78 |
 | 2026-11-19T21:58:11 | MineRL NatureCNN PPO | `runs/minerl/model_20261111_163211_ppo_bc_6xx-1762_8xx-1957_plus20_kl05/final.zip` | natural | fixed forest spots | 4000 | 64 | iron | 50 | 48.44 | 10.8 | 83 |
 | 2026-11-19T21:47:19 | MineRL Impala PPO | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` | natural | fixed forest spots | 4000 | 64 | iron | 50 | 54.04 | 11.2 | 75 |
 | 2026-11-19T19:53:08 | MineRL Impala PPO | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 29.41 | 10.3 | 50 |

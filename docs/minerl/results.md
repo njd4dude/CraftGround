@@ -3,7 +3,7 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 22:06._
+_Tables last updated 2026-11-19 22:33._
 
 One table per **evaluation type**: the world and spots, episode length, log cap and axe. Only rows in the same table are comparable. Logs per episode; **±** is the 95% range of the mean. **vs Line 5** is the average difference per fixed spot over the spots both played, with its 95% range (a range that doesn't include 0 is a real difference). Our agents' 1,000-tick rows are their standard evaluations from the natural-world report (MineRL rows of that type are also shown there). **Spots played**: fixed spots are played in file order, so 50 = the first 50 of the 100; means over 50 and 100 spots can differ by which spots they include, so compare those rows with the spot-by-spot column, which only uses shared spots. MineRL mode runs 4 ticks per decision, so a 1,000-tick episode is 250 of its decisions.
 
@@ -15,6 +15,7 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | MineRL Impala PPO | MineRL mode | 50 | **54.0** ± 5.6 | 64 | 3 | 64 | 59.6 |
 | MineRL NatureCNN PPO | MineRL mode | 50 | **48.4** ± 6.6 | 64 | 5 | 64 | 59.8 |
+| MineRL Impala BC | MineRL mode | 50 | **44.1** ± 6.9 | 64 | 5 | 64 | 58.8 |
 
 ### Natural world, fixed forest spots · 1,000-tick episodes, no log cap · one-hit axe (ours)
 
@@ -34,6 +35,18 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 | MineRL NatureCNN PPO | MineRL mode | 100 | **17.5** ± 1.3 | 19 | 6 | 28 |
 | MineRL Impala BC | MineRL mode | 100 | **16.3** ± 1.5 | 17 | 5 | 29 |
 | Random actions | MineRL mode | 100 | **0.6** ± 0.2 | 0 | 63 | 4 |
+
+### Natural world, fixed forest spots · 4,000-tick episodes, no log cap · one-hit axe (ours)
+
+| Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | vs Line 5, spot by spot |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Line 5 @ 4.0M *(reference)* | ours (114×64, 1 tick) | 50 | **118.9** ± 26.0 | 112 | 2 | 517 | – |
+
+### Natural world, fixed forest spots · 4,000-tick episodes, ends at 64 logs · one-hit axe (ours)
+
+| Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | vs Line 5, spot by spot |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Line 5 @ 4.0M *(reference)* | ours (114×64, 1 tick) | 50 | **54.6** ± 5.2 | 64 | 2 | 64 | – |
 
 ### Arena · 1,000-tick episodes, ends at 32 logs (all of them) · one-hit axe (ours)
 

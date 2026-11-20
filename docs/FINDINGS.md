@@ -6,10 +6,11 @@ every run:
 
 - [natural/](natural/README.md): the natural world (training lines, fixed-spot results)
 - [arena/](arena/README.md): the walled arena (experiments)
+- [minerl/](minerl/README.md): models trained in the MineRL project, run here in MineRL mode
 - [BENCHMARK.md](BENCHMARK.md): environment speed; [PARALLEL_LAUNCH.md](PARALLEL_LAUNCH.md): running several instances
 
 This file is written by hand: update it when a result changes a statement.
-_Last updated 2026-11-18._
+_Last updated 2026-11-19._
 
 **How to read the numbers.** Scores are logs chopped per 1000-tick episode. Natural-world
 scores are over the same 100 fixed forest spots for every model, so models can be compared
@@ -82,6 +83,21 @@ episodes of any agent. [Fixed forest spawns](natural/fixed_forest_spawns.md), [F
    ~5 logs in forests (random actions: 1.8; random spawns, older setup). The arena doesn't
    teach enough to transfer.
    [Random spawns](natural/random_spawns.md)
+
+## MineRL models in CraftGround
+
+Models trained in the MineRL project (BC on VPT videos, then PPO) run here unchanged in "MineRL
+mode": their own 64×64 view with the hand, `[move, yaw, pitch]` actions and 4 ticks per decision.
+No fine-tuning yet. Details, every evaluation type and the open questions: [minerl/](minerl/README.md).
+
+1. **They transfer.** Scored as MineRL scored them (4,000 ticks, iron axe, ends at 64 logs; first 50
+   forest spots) they keep 75-91% of their MineRL score: Impala PPO 54.0 (59.6 in MineRL),
+   NatureCNN PPO 48.4 (59.8), Impala BC 44.1 (58.8). [Results](minerl/results.md)
+2. **Our pure-RL agents are still ahead zero-shot.** Under our own rules (forest spots, 1000 ticks,
+   one-hit axe) Impala PPO scores 29.4 to Line 5's 40.0: −10.6 ± 3.8 spot by spot. With MineRL's slower
+   iron axe it scores 19.6; the axe alone is worth ~10 logs. [Fixed forest spawns](natural/fixed_forest_spawns.md)
+3. **Line 5 slows over long episodes.** Over 4,000 ticks it averages 118.9, about 3× its 1000-tick
+   score, as nearby trees run out. [Results](minerl/results.md)
 
 ## Not proven yet
 
