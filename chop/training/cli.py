@@ -66,6 +66,9 @@ def main():
                              "natural world or with --jump) every step with attack always held; minerl: the "
                              "MineRL project's view and actions (chop/envs/minerl.py). A resumed model keeps its own "
                              "(MineRL-trained models are detected), so --resume runs/minerl/<run>/final.zip fine-tunes one")
+    parser.add_argument("--axe", choices=["default", "iron", "instant"], default="default",
+                        help="the axe the player holds: instant (one hit per log, every run before 2026-11-20) or "
+                             "iron (MineRL's). Default: iron in MineRL mode, instant otherwise")
     parser.add_argument("--target-kl", type=float, default=None,
                         help="PPO target_kl: stop an update's epochs early once the policy has moved this far "
                              "(default: none, or the resumed model's own; MineRL fine-tunes used 0.05)")
@@ -97,6 +100,9 @@ def main():
             parser.error(f"--actions {args.actions}: the --resume model "
                          f"{'was' if saved_minerl else 'was not'} trained in MineRL's spaces")
         use_minerl = saved_minerl
+    iron = args.axe == "iron" or (args.axe == "default" and use_minerl)
+    # None for a normal run with the default axe, so its config.json stays as before.
+    axe = (minerl.IRON_AXE if iron else common.AXE) if (use_minerl or args.axe != "default") else None
     if use_minerl and (args.jump or args.no_jump or args.action_repeat):
         parser.error("MineRL mode has its own jump (forward+jump) and 4-tick frame skip")
     if use_minerl and saved and "learning_rate" not in overrides:
@@ -184,7 +190,7 @@ def main():
         "lr_schedule": args.lr_schedule,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
-        "env": env_settings(args.env, jump, multi, action_repeat, args.spawn, use_minerl),
+        "env": env_settings(args.env, jump, multi, action_repeat, args.spawn, use_minerl, axe),
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
@@ -209,7 +215,7 @@ def main():
             "actions": "minerl" if use_minerl else "multi" if multi else "single",
             **ppo_settings,
             **{f"env/{k}": v for k, v in env_settings(args.env, jump, multi, action_repeat, args.spawn,
-                                                      use_minerl).items()},
+                                                      use_minerl, axe).items()},
         },
     )
     # Plot everything against training steps.
@@ -224,7 +230,7 @@ def main():
 
     ports = instance_ports(args.port, args.n_envs)
     factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump, multi,
-                             1 if use_minerl else action_repeat, args.spawn, use_minerl)
+                             1 if use_minerl else action_repeat, args.spawn, use_minerl, axe)
                  for i, port in enumerate(ports)]
     step_timer = StepTimer(launch_vec_env(factories, ports, args.shared_folder))
     env = step_timer
@@ -234,7 +240,8 @@ def main():
              "multi actions: move x turn x look" + (" x jump " if jump else " ")
              + "x".join(map(str, common.multi_nvec(jump))) + ", attack held" if multi
              else f"{env.action_space.n} actions{' (with jump)' if jump else ''}")
-          + (f", {action_repeat} ticks per step" if action_repeat > 1 else ""))
+          + (f", {action_repeat} ticks per step" if action_repeat > 1 else "")
+          + f", {'iron' if iron else 'one-hit'} axe")
 
     if args.resume:
         load_settings = {**overrides, "n_steps": steps_per_env}
