@@ -3,12 +3,14 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 14:34._
+_Tables last updated 2026-11-19 16:59._
 
 One row per `evaluate.py` run, newest first. **Minutes** includes launching Minecraft; **Steps/s** is env steps per second over all instances while playing (runs from before timing was added show –). **Spots**: fixed = the saved forest spots, wooded = the saved wooded spots (any biome with trees), random = random spawns (all runs before 2026-11-16). **World**: training = the world agents train in, held-out = one they never see (`--held-out`).
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-19T16:58:38 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | wooded | training | 100 | 31.33 | 0 | 92 | 3 | 10.8 | 184 |
+| 2026-11-19T16:47:21 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | fixed | training | 100 | 38.64 | 0 | 94 | 3 | 10.3 | 197 |
 | 2026-11-19T13:22:10 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | wooded | training | 100 | 25.66 | 0 | 102 | 3 | 11.3 | 179 |
 | 2026-11-19T13:10:22 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | fixed | training | 100 | 41.27 | 0 | 109 | 3 | 10.2 | 203 |
 | 2026-11-19T01:52:24 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | fixed | training | 100 | 39.99 | 0 | 89 | 3 | 10.1 | 203 |

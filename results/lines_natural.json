@@ -84,6 +84,13 @@
    "name": "wooded spawns from scratch, Line 4's recipe (multi actions, linear LR from 2.5e-4, 1M)",
    "tested": "Line 5 showed wooded spawns help on top of a forest-trained agent. Does training on them from step 0 work as well, compared with Line 4 @ 1M (same recipe, forest spawns)?",
    "found": "Stopped by hand at ~490k (not evaluated): its training average was behind Line 4's at the same point (about 10 vs 13-16 logs per episode around 400 episodes, ~400k steps, in), though wooded episodes are harder, so the two averages don't compare directly. Last checkpoint 480k."
+  },
+  {
+   "folder": "line5b_resume-4M",
+   "id": "5b",
+   "name": "resume Line 5 @ 4.0M for 1M more, wooded spawns, linear LR from 1e-4",
+   "tested": "Line 4d showed forest training levels off by 3M. Wooded spawns give the agent harder places it hasn't mastered (31.6 wooded vs 40.0 forest), so does Line 5 keep improving with 1M more steps?",
+   "found": "No: wooded 31.3 vs Line 5's 31.6 (-0.3 +/- 4.5 spot by spot), forest 38.6 vs 40.0 (-1.4 +/- 4.5), both ties; 0-log spots 9 -> 7 wooded, 4 -> 6 forest. It keeps Line 5's lead over the forest-trained Line 4d on wooded spots (+5.7 +/- 4.7). Wooded training levels off by 4M too, so the remaining wooded-vs-forest gap (~8 logs) needs something other than more steps."
   }
  ],
  "piece_notes": {
@@ -96,6 +103,8 @@
   "20261118_210945": "killed by Claude Code for low system memory at ~3.09M; resumed from the 3.08M checkpoint",
   "20261118_213914": "resumed with --learning-rate 9.19e-5 so the schedule matches one 1M run; hung at 3.79M (cause unknown, logs overwritten) and stopped by hand",
   "20261119_005447": "resumed from the 3.78M checkpoint with --learning-rate 2.186e-5",
-  "20261119_133211": "stopped by hand at ~491k: no clear difference from Line 4 so far; last checkpoint ppo_chop_479952_steps.zip"
+  "20261119_133211": "stopped by hand at ~491k: no clear difference from Line 4 so far; last checkpoint ppo_chop_479952_steps.zip",
+  "20261119_143552": "hung at ~4.82M: instance 8033's Minecraft client crashed mid-reset and deadlocked with its built-in server (thread dump in launch_logs/hang_line5b/); stopped by hand",
+  "20261119_161818": "resumed from the 4.82M checkpoint with --learning-rate 1.80082e-5"
  }
 }

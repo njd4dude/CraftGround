@@ -3,7 +3,7 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 14:34._
+_Tables last updated 2026-11-19 16:59._
 
 Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are the run folders inside, split by crashes, memory kills or deliberate stops, in order. `train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.
 
@@ -185,4 +185,19 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261119_133211` | from scratch | 0 → ~480k | 3 | linear | – | no record (killed or hung) | – | stopped by hand at ~491k: no clear difference from Line 4 so far; last checkpoint ppo_chop_479952_steps.zip | – |
+
+<a id="line-5b"></a>
+
+### Line 5b · resume Line 5 @ 4.0M for 1M more, wooded spawns, linear LR from 1e-4
+
+`runs/natural/line5b_resume-4M/`
+
+**Question:** Line 4d showed forest training levels off by 3M. Wooded spawns give the agent harder places it hasn't mastered (31.6 wooded vs 40.0 forest), so does Line 5 keep improving with 1M more steps?
+
+**Found:** No: wooded 31.3 vs Line 5's 31.6 (-0.3 +/- 4.5 spot by spot), forest 38.6 vs 40.0 (-1.4 +/- 4.5), both ties; 0-log spots 9 -> 7 wooded, 4 -> 6 forest. It keeps Line 5's lead over the forest-trained Line 4d on wooded spots (+5.7 +/- 4.7). Wooded training levels off by 4M too, so the remaining wooded-vs-forest gap (~8 logs) needs something other than more steps.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261119_143552` | branch from Line 5 | 4.0M → ~4.8M | 3 | linear | – | no record (killed or hung) | – | hung at ~4.82M: instance 8033's Minecraft client crashed mid-reset and deadlocked with its built-in server (thread dump in launch_logs/hang_line5b/); stopped by hand | – |
+| `20261119_161818` | continued | 4.8M → 5.0M | 3 | linear | 18.0 | completed | **38.6** @ 5.0M | resumed from the 4.82M checkpoint with --learning-rate 1.80082e-5 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/7ozb4sir) |
 <!-- AUTO-GENERATED:END -->

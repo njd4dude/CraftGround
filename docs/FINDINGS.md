@@ -43,7 +43,9 @@ episodes of any agent. [Fixed forest spawns](natural/fixed_forest_spawns.md), [F
    beat its control (Line 4d, same 1M steps on forest spawns) by +6.0 ± 4.8 logs on the wooded
    spots and tied it on forests (−1.3 ± 5.0). It halved the 0-log episodes, 13 vs 26 over both
    sets (p = 0.007): it gets stuck or lost much less. More forest-only training made the agent
-   *worse* outside forests (wooded 30.5 → 25.7). [Line 5](natural/lines.md#line-5),
+   *worse* outside forests (wooded 30.5 → 25.7). Another 1M wooded steps (Line 5b) changed
+   nothing (wooded −0.3 ± 4.5, forest −1.4 ± 4.5): wooded training levels off by 4M too.
+   [Line 5](natural/lines.md#line-5), [Line 5b](natural/lines.md#line-5b),
    [Fixed wooded spawns](natural/fixed_wooded_spawns.md)
 4. **Jump is needed on natural terrain.** Adding jump and forward_jump nearly doubled the
    score at ~500k steps: 18.0 vs 9.7 (random spawns). [Line 1](natural/lines.md#line-1),
