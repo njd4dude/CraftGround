@@ -9,6 +9,40 @@ from stable_baselines3.common.logger import KVWriter
 from stable_baselines3.common.vec_env import VecEnvWrapper
 
 
+class ValueWarmup(BaseCallback):
+    """For the first `updates` PPO updates, train only the value head and keep the policy frozen
+    (train.py --value-warmup N). A behaviour-cloned model's value head was never trained, so its
+    estimates start out as noise; letting PPO change the policy based on them would undo the cloning.
+    Counted with the model's own update counter, so resuming a run doesn't warm up again.
+    Copied from the MineRL project's train_treechop.py (ValueWarmup)."""
+
+    def __init__(self, updates: int):
+        super().__init__()
+        self.updates = updates
+        self.frozen = None
+
+    def _set_frozen(self, frozen: bool) -> None:
+        if frozen == self.frozen:
+            return
+        for name, param in self.model.policy.named_parameters():
+            if not name.startswith("value_net."):
+                param.requires_grad_(not frozen)
+        self.frozen = frozen
+        print("Value warm-up: policy frozen, training only the value head" if frozen
+              else "Value warm-up done: training the whole network")
+
+    def _on_rollout_end(self) -> None:
+        # Runs right before each PPO update; _n_updates counts epochs, n_epochs per update.
+        done = self.model._n_updates // self.model.n_epochs
+        self._set_frozen(done < self.updates)
+
+    def _on_training_end(self) -> None:
+        self._set_frozen(False)
+
+    def _on_step(self) -> bool:
+        return True
+
+
 class WandbOutputFormat(KVWriter):
     """Sends SB3's training stats (losses, rewards, fps...) to W&B instead of TensorBoard."""
 

@@ -22,7 +22,7 @@ from chop.paths import RUNS_DIR
 from chop.reports import update_report
 from chop.reports.agents import run_action_repeat
 from chop.reports.csvio import MINERL_TRAIN_CSV, NATURAL_TRAIN_CSV, TRAIN_CSV, append_row
-from chop.training.callbacks import LogsChoppedCallback, SpeedCallback, StepTimer, WandbOutputFormat
+from chop.training.callbacks import LogsChoppedCallback, SpeedCallback, StepTimer, ValueWarmup, WandbOutputFormat
 from chop.training.lineage import group_of, history, lineage_tag, tag_runs
 from chop.training.lines import natural_line_dir
 from chop.training.schedule import linear_lr
@@ -69,6 +69,11 @@ def main():
     parser.add_argument("--axe", choices=["default", "iron", "instant"], default="default",
                         help="the axe the player holds: instant (one hit per log, every run before 2026-11-20) or "
                              "iron (MineRL's). Default: iron in MineRL mode, instant otherwise")
+    parser.add_argument("--value-warmup", type=int, default=0, metavar="N",
+                        help="train only the value head for the model's first N PPO updates, policy frozen: for "
+                             "starting PPO from a behaviour-cloned model, whose value head was never trained "
+                             "(the MineRL project used 5). Counted from the model's own update count, so a "
+                             "model that already had N updates skips it")
     parser.add_argument("--target-kl", type=float, default=None,
                         help="PPO target_kl: stop an update's epochs early once the policy has moved this far "
                              "(default: none, or the resumed model's own; MineRL fine-tunes used 0.05)")
@@ -197,6 +202,7 @@ def main():
         "rollout_steps": steps_per_env * args.n_envs,
         "ppo": ppo_settings,
         "lr_schedule": args.lr_schedule,
+        "value_warmup_updates": args.value_warmup,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
         "env": env_settings(args.env, jump, multi, action_repeat, args.spawn, use_minerl, axe),
@@ -269,6 +275,7 @@ def main():
 
     chop_stats = LogsChoppedCallback(action_repeat)
     callbacks = [
+        *([ValueWarmup(args.value_warmup)] if args.value_warmup else []),
         chop_stats,
         SpeedCallback(args.n_envs, step_timer),
         # save_freq counts vec-env steps, each of which is n_envs env steps.
