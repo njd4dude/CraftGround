@@ -5,6 +5,7 @@ import json
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
 import gymnasium as gym
 import numpy as np
@@ -15,17 +16,24 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.logger import HumanOutputFormat, Logger
 from stable_baselines3.common.save_util import load_from_zip_file
 
-from chop.envs import ENVS, common
+from chop.envs import ENVS, common, minerl
 from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, instance_ports, launch_vec_env
 from chop.paths import RUNS_DIR
 from chop.reports import update_report
 from chop.reports.agents import run_action_repeat
-from chop.reports.csvio import NATURAL_TRAIN_CSV, TRAIN_CSV, append_row
+from chop.reports.csvio import MINERL_TRAIN_CSV, NATURAL_TRAIN_CSV, TRAIN_CSV, append_row
 from chop.training.callbacks import LogsChoppedCallback, SpeedCallback, StepTimer, WandbOutputFormat
 from chop.training.lineage import group_of, history, lineage_tag, tag_runs
 from chop.training.lines import natural_line_dir
 from chop.training.schedule import linear_lr
 from chop.training.settings import PPO_SETTINGS, TRAIN_FIELDS, WANDB_PROJECT, env_factory, env_settings
+
+
+def run_dir_name(model: str) -> str:
+    """The run folder name of a model path (model.zip, final.zip or a checkpoint), trimmed of its date."""
+    p = Path(model)
+    run = p.parent.parent if p.parent.name == "checkpoints" else p.parent
+    return run.name.removeprefix("model_")
 
 
 def main():
@@ -53,10 +61,14 @@ def main():
                         help="arena: offer the natural world's jump actions (13 single, or a 4th jump choice in "
                              "multi) so the model can later be --resume'd in the natural world. "
                              "A resumed model keeps its own")
-    parser.add_argument("--actions", choices=["single", "multi"], default=None,
+    parser.add_argument("--actions", choices=["single", "multi", "minerl"], default=None,
                         help="single (default): one action per step; multi: move + turn + look (+ jump in the "
-                             "natural world or with --jump) every step with attack always held. "
-                             "A resumed model keeps its own")
+                             "natural world or with --jump) every step with attack always held; minerl: the "
+                             "MineRL project's view and actions (chop/envs/minerl.py). A resumed model keeps its own "
+                             "(MineRL-trained models are detected), so --resume runs/minerl/<run>/final.zip fine-tunes one")
+    parser.add_argument("--target-kl", type=float, default=None,
+                        help="PPO target_kl: stop an update's epochs early once the policy has moved this far "
+                             "(default: none, or the resumed model's own; MineRL fine-tunes used 0.05)")
     parser.add_argument("--action-repeat", type=int, default=None,
                         help="arena only: game ticks per agent step (default 1; 4 lets each step show its own "
                              "action, see tools/check_timing.py). A resumed model keeps its own unless given")
@@ -75,22 +87,40 @@ def main():
     # Only the flags given on the command line, so a resumed model keeps its own saved settings.
     overrides = {k: getattr(args, k) for k in PPO_SETTINGS if getattr(args, k) is not None}
     ppo_settings = {**PPO_SETTINGS, **overrides}
+    minerl.register_networks()  # MineRL models with the ImpalaCNN need it to load
     saved = load_from_zip_file(args.resume, load_data=True, device="cpu")[0] if args.resume else None
+    use_minerl = args.actions == "minerl"
+    if saved:
+        saved_minerl = (tuple(saved["observation_space"].shape) in ((3, minerl.OBS_H, minerl.OBS_W), minerl.OBS_SHAPE)
+                        and list(getattr(saved["action_space"], "nvec", [])) == minerl.NVEC)
+        if args.actions is not None and use_minerl != saved_minerl:
+            parser.error(f"--actions {args.actions}: the --resume model "
+                         f"{'was' if saved_minerl else 'was not'} trained in MineRL's spaces")
+        use_minerl = saved_minerl
+    if use_minerl and (args.jump or args.no_jump or args.action_repeat):
+        parser.error("MineRL mode has its own jump (forward+jump) and 4-tick frame skip")
+    if use_minerl and saved and "learning_rate" not in overrides:
+        # The linear schedule starts from the model's own rate (MineRL fine-tunes: 1e-4), not ours.
+        ppo_settings["learning_rate"] = float(saved["learning_rate"]) if isinstance(
+            saved["learning_rate"], float) else 1e-4
+    if args.target_kl is not None:
+        overrides["target_kl"] = ppo_settings["target_kl"] = args.target_kl
     if saved and "n_steps" not in overrides:
         # Keep the resumed model's own rollout size (stored per env, so multiply back up).
         ppo_settings["n_steps"] = saved["n_steps"] * saved.get("n_envs", 1)
     # Multi actions: from --actions, or the resumed model's own action space.
     multi = args.actions == "multi"
-    if saved:
+    if saved and not use_minerl:
         saved_multi = isinstance(saved["action_space"], gym.spaces.MultiDiscrete)
         if args.actions is not None and multi != saved_multi:
             parser.error(f"--actions {args.actions}: the --resume model uses "
                          f"{'multi' if saved_multi else 'single'} actions")
         multi = saved_multi
-    action_repeat = args.action_repeat or (run_action_repeat(args.resume) if args.resume else 1)
+    action_repeat = (minerl.FRAME_SKIP if use_minerl
+                     else args.action_repeat or (run_action_repeat(args.resume) if args.resume else 1))
     if action_repeat < 1:
         parser.error("--action-repeat must be at least 1")
-    if action_repeat > 1 and args.env != "arena":
+    if action_repeat > 1 and args.env != "arena" and not use_minerl:
         parser.error("--action-repeat is arena only for now")
     # Jump: on in the natural world unless --no-jump, off in the arena unless --jump. A resumed
     # model keeps the set it was trained with, in either world, so arena models can move to the
@@ -102,7 +132,9 @@ def main():
     if args.spawn != "forest" and args.env != "natural":
         parser.error("--spawn is for the natural world")
     jump = args.jump if args.env == "arena" else not args.no_jump
-    if saved:
+    if use_minerl:
+        jump = False  # its move choice has forward+jump
+    elif saved:
         # A multi model's jump choice is its 4th dimension; a single model's is 13 actions instead of 11.
         jump = (len(saved["action_space"].nvec) == len(common.MULTI_NVEC_JUMP) if multi
                 else saved["action_space"].n == len(common.ACTION_NAMES_JUMP))
@@ -124,7 +156,13 @@ def main():
     print(f"Training on {device}")
 
     started = datetime.now()
-    if args.env == "natural":
+    if use_minerl:
+        # MineRL-mode runs (fine-tunes and from-scratch runs in MineRL's spaces) are kept apart from
+        # the natural lines and the arena runs: different view, actions and frame skip.
+        default = ("ft_" + run_dir_name(args.resume)) if args.resume else "scratch"
+        run_dir = RUNS_DIR / "minerl_mode" / args.env / f"{args.name or default}_{started:%Y%m%d_%H%M%S}"
+        run_name = f"minerl_mode/{args.env}/{run_dir.name}"
+    elif args.env == "natural":
         line_dir = natural_line_dir(args.resume, args.line)
         run_dir = line_dir / f"{started:%Y%m%d_%H%M%S}"
         run_name = f"{line_dir.name}/{run_dir.name}"
@@ -146,7 +184,7 @@ def main():
         "lr_schedule": args.lr_schedule,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
                                   for k, v in overrides.items() if v != PPO_SETTINGS[k]},
-        "env": env_settings(args.env, jump, multi, action_repeat, args.spawn),
+        "env": env_settings(args.env, jump, multi, action_repeat, args.spawn, use_minerl),
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
@@ -159,7 +197,7 @@ def main():
         group=group,
         dir=str(run_dir),
         notes=args.notes or None,
-        tags=[args.env, *([lineage] if lineage else [])],
+        tags=[args.env, *(["minerl-mode"] if use_minerl else []), *([lineage] if lineage else [])],
         mode="disabled" if args.no_wandb else "online",
         config={
             "algorithm": "PPO",
@@ -168,9 +206,10 @@ def main():
             "resumed_from": args.resume,
             "n_envs": args.n_envs,
             "lr_schedule": args.lr_schedule,
-            "actions": "multi" if multi else "single",
+            "actions": "minerl" if use_minerl else "multi" if multi else "single",
             **ppo_settings,
-            **{f"env/{k}": v for k, v in env_settings(args.env, jump, multi, action_repeat, args.spawn).items()},
+            **{f"env/{k}": v for k, v in env_settings(args.env, jump, multi, action_repeat, args.spawn,
+                                                      use_minerl).items()},
         },
     )
     # Plot everything against training steps.
@@ -185,13 +224,14 @@ def main():
 
     ports = instance_ports(args.port, args.n_envs)
     factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump, multi,
-                             action_repeat, args.spawn)
+                             1 if use_minerl else action_repeat, args.spawn, use_minerl)
                  for i, port in enumerate(ports)]
     step_timer = StepTimer(launch_vec_env(factories, ports, args.shared_folder))
     env = step_timer
     print(f"{args.env} world, {args.n_envs} Minecraft instance(s), {steps_per_env} steps each per update "
           f"({steps_per_env * args.n_envs} total), "
-          + ("multi actions: move x turn x look" + (" x jump " if jump else " ")
+          + ("MineRL actions: move x yaw x pitch 3x11x9, attack held" if use_minerl else
+             "multi actions: move x turn x look" + (" x jump " if jump else " ")
              + "x".join(map(str, common.multi_nvec(jump))) + ", attack held" if multi
              else f"{env.action_space.n} actions{' (with jump)' if jump else ''}")
           + (f", {action_repeat} ticks per step" if action_repeat > 1 else ""))
@@ -244,11 +284,13 @@ def main():
             wandb.run.summary.update(summary)
             wandb.finish(exit_code=0 if status != "crashed" else 1)
 
-        append_row(NATURAL_TRAIN_CSV if args.env == "natural" else TRAIN_CSV, TRAIN_FIELDS, {
+        train_csv = MINERL_TRAIN_CSV if use_minerl else NATURAL_TRAIN_CSV if args.env == "natural" else TRAIN_CSV
+        append_row(train_csv, TRAIN_FIELDS, {
             "started": started.isoformat(timespec="seconds"),
             **{k: ("" if v is None else v) for k, v in summary.items()},
             "resumed_from": args.resume or "",
             "model": model_path.as_posix(),
             "wandb_url": wandb_url,
         })
-        update_report(args.env)
+        if not use_minerl:
+            update_report(args.env)

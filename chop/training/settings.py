@@ -2,7 +2,7 @@
 
 from stable_baselines3.common.monitor import Monitor
 
-from chop.envs import ENVS, common
+from chop.envs import ENVS, common, minerl
 from chop.envs import arena as arena_env
 from chop.envs import natural as natural_env
 from chop.infra.vec import game_folder
@@ -24,25 +24,29 @@ PPO_SETTINGS = dict(
 
 
 def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False, jump: bool = False,
-                multi: bool = False, action_repeat: int = 1, spawn: str = "forest"):
+                multi: bool = False, action_repeat: int = 1, spawn: str = "forest", use_minerl: bool = False):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker.
     jump: use the 13 actions with jump instead of 11 (natural world default; arena with --jump).
     multi: (move, turn, look) every step with attack held (common.MULTI_SETTINGS); jump adds a
     jump choice.
     action_repeat: arena only, game ticks per agent step (arena.ChopTreesEnv).
-    spawn: natural only, where resets drop the player (natural.SPAWN_CHECKS)."""
+    spawn: natural only, where resets drop the player (natural.SPAWN_CHECKS).
+    use_minerl: the MineRL project's view and actions (chop/envs/minerl.py); jump / action_repeat don't apply."""
     def _make():
         make_env = ENVS[env_name].make_env
-        actions = "multi" if multi else "single"
-        kwargs = ({"jump": jump, "actions": actions, "spawn": spawn} if env_name == "natural"
-                  else {"actions": actions, "action_repeat": action_repeat, "jump": jump})
+        actions = "minerl" if use_minerl else "multi" if multi else "single"
+        if use_minerl:
+            kwargs = {"actions": actions, **({"spawn": spawn} if env_name == "natural" else {})}
+        else:
+            kwargs = ({"jump": jump, "actions": actions, "spawn": spawn} if env_name == "natural"
+                      else {"actions": actions, "action_repeat": action_repeat, "jump": jump})
         return Monitor(make_env(port=port, env_path=game_folder(port, shared_folder), **kwargs), filename=monitor_file,
                        info_keywords=("logs_chopped",))
     return _make
 
 
 def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_repeat: int = 1,
-                 spawn: str = "forest") -> dict:
+                 spawn: str = "forest", use_minerl: bool = False) -> dict:
     """The environment's settings, saved in config.json (docs/natural/ flags changes between runs)."""
     shared = {
         "world": env_name,
@@ -51,6 +55,11 @@ def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_
         "actions": ((common.MULTI_SETTINGS_JUMP if jump else common.MULTI_SETTINGS) if multi
                     else common.ACTION_NAMES_JUMP if jump else common.ACTION_NAMES),
     }
+    if use_minerl:
+        # episode_steps stays in game ticks; an agent step is minerl.FRAME_SKIP of them.
+        shared.update(image=f"{minerl.OBS_W}x{minerl.OBS_H} (320x180 with hand, HUD cropped)",
+                      actions=minerl.SETTINGS, mode="minerl", axe=minerl.IRON_AXE)
+        action_repeat = minerl.FRAME_SKIP
     if env_name == "natural":
         return {
             **shared,

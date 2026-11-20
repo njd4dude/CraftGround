@@ -20,6 +20,8 @@ NATURAL_TRAIN_CSV = RESULTS_DIR / "training_runs_natural.csv"
 
 MINERL_EVAL_CSV = RESULTS_DIR / "eval_results_minerl.csv"  # MineRL-mode evaluations, either world
 
+MINERL_TRAIN_CSV = RESULTS_DIR / "training_runs_minerl.csv"  # MineRL-mode training runs, either world
+
 
 def append_row(path: Path, fields: list[str], row: dict) -> None:
     """Append a row. If `fields` has columns the file doesn't, the file is rewritten
