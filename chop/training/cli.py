@@ -241,6 +241,11 @@ def main():
         if args.lr_schedule == "linear":
             load_settings["learning_rate"] = sb3_settings["learning_rate"]
         model = PPO.load(args.resume, env=env, device=device, **load_settings)
+        if use_minerl:
+            # A MineRL model's saved episode stats are from MineRL (4000-tick episodes, up to 64 logs);
+            # without this the first ~100 episodes' ep_rew_mean here would be averaged with them.
+            model.ep_info_buffer.clear()
+            model.ep_success_buffer.clear()
         print(f"Resumed from {args.resume}" + (f" with {overrides}" if overrides else ""))
     else:
         model = PPO("CnnPolicy", env, device=device, verbose=1, **sb3_settings)
