@@ -1,0 +1,2 @@
+started,timesteps_done,episodes,minutes,last20_avg_logs,best_episode_logs,status,resumed_from,model,wandb_url
+2026-11-20T12:45:57,375292,773,94.8,45.55,141,completed,runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_115737/checkpoints/ppo_chop_182874_steps.zip,runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip,https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/xg6dr5d3

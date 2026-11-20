@@ -6,7 +6,7 @@ CraftGround's arena and natural world with MineRL's own view and actions ("MineR
 [arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 22:33._
+_Tables last updated 2026-11-20 14:55._
 
 - [Results](results.md): one table per evaluation type (world, spots, episode length, log cap, axe)
 - [Evaluation runs](evaluation_runs.md): one row per evaluate.py run, newest first, with its settings
@@ -17,14 +17,15 @@ _Tables last updated 2026-11-19 22:33._
 ## Notes
 
 Written by hand; this section is never overwritten. Every number names its evaluation type, the
-heading of its table in [Results](results.md). _Last updated 2026-11-19._
+heading of its table in [Results](results.md). _Last updated 2026-11-20._
 
 ### The questions
 
 1. **How well does a MineRL model do here, with and without fine-tuning, in the arena and in the
-   natural world?** Without fine-tuning: answered below. With: not run yet.
-2. **Can pure RL here match or beat it?** Partly: our best pure-RL agents are ahead of it zero-shot.
-   A fine-tuned MineRL model, and PPO from scratch in MineRL's spaces, aren't run yet.
+   natural world?** Natural world: answered below, both ways. Arena: zero-shot only.
+2. **Can pure RL here match or beat it?** Not so far: fine-tuned for 1M ticks, the MineRL model ties
+   our best pure-RL agents on forest spots and beats them on wooded ones; pure RL needed 3-4M ticks to
+   get there. PPO from scratch in MineRL's own spaces (the fairest version) isn't run yet.
 3. **How much does exactly matching the observations and actions matter?** One test so far (the axe).
    Next: hand hidden, our 114×64 view, 1 tick per decision.
 4. **Does a fine-tuned MineRL model still improve after switching from discrete to continuous
@@ -54,6 +55,26 @@ heading of its table in [Results](results.md). _Last updated 2026-11-19._
    64 cap: 54.6, reaching 64 on 37 of 50 spots. That matches Impala PPO's 54.0, but Impala had the
    slower iron axe, so they're in different tables and this isn't a like-for-like comparison.
 
+### What we found (fine-tuned, 2026-11-20)
+
+The Impala PPO, fine-tuned here: natural world, wooded spawns, one-hit axe, linear LR from 1e-4,
+the model's own PPO settings (batch 64, 10 epochs, ent 0.001, target_kl 0.05), 252k decisions =
+1.0M ticks (run `runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557`,
+continued from the 11:57 run's 60k checkpoint after a low-memory stop; 2 instances).
+All scores: *fixed spots · 1,000-tick, no cap · one-hit axe*, 100 spots.
+
+7. **Fine-tuning works fast.** Forest spots: 29.4 zero-shot → 38.5 at 0.48M ticks → **43.4** at
+   1.0M ticks (+13.9 ± 3.1 over zero-shot), the highest forest mean of any agent so far. Our pure-RL
+   history reached 26.6 at 1M ticks (Line 4), 35.7 at 2M (4b), 41.2 at 3M (4c).
+8. **It ties our best on forests and beats it on wooded spots.** Forest: +3.4 ± 4.0 vs Line 5
+   (+2.1 ± 5.0 vs Line 4d): ahead, but not a significant difference. Wooded: **37.2 vs Line 5's 31.6,
+   +5.6 ± 3.8**, better at 56 spots, worse at 41: a real difference. Fewest 0-log forest episodes of
+   any agent (2; Line 5: 4).
+9. **What it cost.** 1M ticks here, on top of what the MineRL model already had: BC on VPT videos plus
+   120k PPO decisions (~0.5M ticks) in MineRL. Line 5 had 4M ticks of PPO here and nothing else. So in
+   game time simulated here, starting from MineRL needed about a quarter of pure RL's; the
+   demonstrations and the MineRL training are the rest of the price.
+
 ### How the numbers relate
 
 - **Timesteps are decisions.** Our agents decide every tick; MineRL mode decides every 4 ticks. So
@@ -64,8 +85,8 @@ heading of its table in [Results](results.md). _Last updated 2026-11-19._
 
 ### Next
 
-1. Fine-tune Impala PPO in the natural world, one-hit axe, wooded spawns like Line 5, ~1M steps
-   (~3 h: MineRL mode runs ~30 decisions/s per instance). Needs `train.py --axe` first.
+1. Continue the fine-tune (it was still climbing: 38.5 → 43.4 between 0.48M and 1M ticks) to see where
+   it levels off; pure RL levelled off at ~41 by 3M ticks.
 2. The cheap matching tests (zero-shot, ~10 min each): hand hidden, our 114×64 view, 1 tick per decision.
 3. PPO from scratch in MineRL's spaces (question 2, fair version).
-4. A continuous action head (question 4).
+4. A continuous action head (question 4), starting from this fine-tuned model.

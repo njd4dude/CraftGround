@@ -3,12 +3,15 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-19 22:33._
+_Tables last updated 2026-11-20 14:55._
 
 One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (MineRL mode, or one of our models with a non-standard axe, episode length or log cap), newest first. **Steps/s** counts decisions (4 ticks each in MineRL mode).
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-20T14:54:33 | MineRL Impala PPO + fine-tune @ 120k | `runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/checkpoints/ppo_chop_242874_steps.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 38.48 | 9.7 | 53 |
+| 2026-11-20T14:44:44 | MineRL Impala PPO + fine-tune @ 252k | `runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` | natural | fixed wooded spots | 1000 | – | instant | 100 | 37.22 | 12.8 | 38 |
+| 2026-11-20T14:31:46 | MineRL Impala PPO + fine-tune @ 252k | `runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 43.35 | 9.8 | 53 |
 | 2026-11-19T22:32:21 | Line 5 @ 4.0M | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | natural | fixed forest spots | 4000 | 64 | instant | 50 | 54.64 | 10.5 | 259 |
 | 2026-11-19T22:21:27 | Line 5 @ 4.0M | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | natural | fixed forest spots | 4000 | – | instant | 50 | 118.94 | 11.5 | 345 |
 | 2026-11-19T22:09:47 | MineRL Impala BC | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` | natural | fixed forest spots | 4000 | 64 | iron | 50 | 44.14 | 11.4 | 78 |
