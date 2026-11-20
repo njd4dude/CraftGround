@@ -114,6 +114,15 @@ def main():
     if saved and "n_steps" not in overrides:
         # Keep the resumed model's own rollout size (stored per env, so multiply back up).
         ppo_settings["n_steps"] = saved["n_steps"] * saved.get("n_envs", 1)
+    if saved:
+        # A resumed model keeps its own PPO settings unless a flag overrides them, so record those
+        # (config.json / W&B), not our defaults: a MineRL model keeps batch 64, 10 epochs, ent 0.001.
+        # learning_rate is left alone: the linear schedule restarts from ppo_settings' value.
+        for key in ("batch_size", "n_epochs", "gamma", "ent_coef"):
+            if key not in overrides and isinstance(saved.get(key), (int, float)):
+                ppo_settings[key] = saved[key]
+        if "target_kl" not in overrides and saved.get("target_kl") is not None:
+            ppo_settings["target_kl"] = saved["target_kl"]
     # Multi actions: from --actions, or the resumed model's own action space.
     multi = args.actions == "multi"
     if saved and not use_minerl:

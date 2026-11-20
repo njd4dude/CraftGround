@@ -74,9 +74,7 @@ def label(agent: str, models: dict, natural_runs: list[dict]) -> str:
         return "Random actions"
     if agent.startswith("runs/minerl/"):
         return models.get(run_folder(agent), {}).get("label", f"`{run_folder(agent)}`")
-    if agent.startswith("runs/minerl_mode/"):
-        return f"MineRL-mode run `{run_folder(agent)}`"
-    return model_label(agent, natural_runs)
+    return model_label(agent, natural_runs)  # also names MineRL-mode fine-tunes (agents.minerl_finetune)
 
 
 # --- evaluation types ----------------------------------------------------------

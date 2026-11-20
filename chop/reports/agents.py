@@ -32,6 +32,44 @@ def minerl_model(agent: str) -> dict | None:
     return models.get(folder) or {"label": f"MineRL model `{folder}`", "about": "MineRL model"}
 
 
+def minerl_finetune(agent: str) -> dict | None:
+    """{label, about} for a MineRL-mode model trained here (runs/minerl_mode/...): follows resumed_from
+    back to the MineRL model it started from, and counts the steps trained here. None otherwise."""
+    if not agent.startswith("runs/minerl_mode/"):
+        return None
+    from chop.reports.csvio import MINERL_TRAIN_CSV, read_rows  # noqa: PLC0415 (csvio imports nothing from here)
+    path = Path(agent)
+    if path.parent.name == "checkpoints":
+        s = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
+        steps = int(s) if s.isdigit() else None
+    else:
+        row = next((r for r in read_rows(MINERL_TRAIN_CSV) if normalize_agent(r["model"]) == agent), None)
+        steps = int(row["timesteps_done"]) if row and str(row["timesteps_done"]).isdigit() else None
+    first_cfg, base, cur = None, None, agent
+    for _ in range(20):
+        cfg = run_config(run_dir_of(cur)) or {}
+        first_cfg = cfg if cfg else first_cfg
+        src = normalize_agent(cfg.get("resumed_from") or "")
+        if not src:
+            break
+        if src.startswith("runs/minerl/"):
+            base = minerl_model(src)
+            break
+        cur = src
+    env = (first_cfg or {}).get("env", {})
+    where = f"{env.get('world', '?')}, {env.get('spawn', 'forest')} spawns, "             f"{'one-hit' if 'diamond' in str(env.get('axe', '')) else 'iron'} axe"
+    if base is None:
+        label = f"MineRL mode from scratch `{run_dir_of(agent).name}`"
+        trained = steps
+    else:
+        trained = steps - base.get("ppo_steps", 0) if steps is not None else None
+        label = f"{base['label']} + fine-tune" + (f" @ {short_steps(trained)}" if trained else "")
+    about = (f"**MineRL mode**, trained here ({where})"
+             + (f" for {trained:,} decisions = {trained * 4 / 1e6:.2f}M ticks" if trained else "")
+             + (f", from {base['label']}" if base else ", from scratch"))
+    return {"label": label, "about": about}
+
+
 def run_dir_of(agent: str) -> Path:
     """The run folder a model path belongs to (model.zip or checkpoints/ppo_chop_N_steps.zip)."""
     parent = Path(agent).parent
@@ -162,7 +200,7 @@ def model_label(agent: str, runs: list[dict]) -> str:
     """"Line 2b @ 1.0M" for a natural-world model, else the folder label."""
     if agent == "random":
         return "Random actions (baseline)"
-    mrl = minerl_model(agent)
+    mrl = minerl_model(agent) or minerl_finetune(agent)
     if mrl is not None:
         return mrl["label"]
     line = line_of_agent(agent)
@@ -176,6 +214,9 @@ def line_note(agent: str) -> str:
     """The line's name, plus the render distance when it isn't today's."""
     if agent == "random":
         return "random actions"
+    ft = minerl_finetune(agent)
+    if ft is not None:
+        return ft["about"] + " (see [MineRL](../minerl/README.md))"
     mrl = minerl_model(agent)
     if mrl is not None:
         return f"**MineRL mode** (64×64 view, 4 ticks per decision; see [MineRL](../minerl/README.md)): {mrl['about']}"

@@ -1,20 +1,23 @@
 {
-  "about": "The MineRL project's models copied into runs/minerl/ (from ~/mineRL/runs/ in WSL). label: name in the reports; minerl_score: mean logs in the MineRL project's own evaluation (24 worlds, seeds 1-24, 1000 decisions = 4000 ticks, iron axe, ends at 64 logs); about: what it is.",
+  "about": "The MineRL project's models copied into runs/minerl/ (from ~/mineRL/runs/ in WSL). label: name in the reports; minerl_score: mean logs in the MineRL project's own evaluation (24 worlds, seeds 1-24, 1000 decisions = 4000 ticks, iron axe, ends at 64 logs); about: what it is. ppo_steps: PPO steps already in the model (its num_timesteps), so a fine-tune's own steps are counted from it.",
   "models": {
     "model_20261112_130747_ppo_bc_impala_all_kl05": {
       "label": "MineRL Impala PPO",
       "minerl_score": 59.6,
-      "about": "ImpalaCNN BC on all VPT versions, then 120k PPO steps (target_kl 0.05)"
+      "about": "ImpalaCNN BC on all VPT versions, then 120k PPO steps (target_kl 0.05)",
+      "ppo_steps": 122880
     },
     "model_20261111_163211_ppo_bc_6xx-1762_8xx-1957_plus20_kl05": {
       "label": "MineRL NatureCNN PPO",
       "minerl_score": 59.8,
-      "about": "NatureCNN BC on 6.x + 8.x VPT (40 epochs), then 120k PPO steps (target_kl 0.05)"
+      "about": "NatureCNN BC on 6.x + 8.x VPT (40 epochs), then 120k PPO steps (target_kl 0.05)",
+      "ppo_steps": 122880
     },
     "model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont": {
       "label": "MineRL Impala BC",
       "minerl_score": 58.8,
-      "about": "ImpalaCNN behavioural cloning on all VPT versions, no RL (the Impala PPO's starting point)"
+      "about": "ImpalaCNN behavioural cloning on all VPT versions, no RL (the Impala PPO's starting point)",
+      "ppo_steps": 0
     }
   }
 }
