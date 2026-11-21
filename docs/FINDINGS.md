@@ -21,9 +21,9 @@ logs between runs (Line 4c: 40.5 over 50 vs 41.2 over 100). Arena scores are ove
 
 ## Best agent so far
 
-**The MineRL Impala PPO, fine-tuned here for 1M ticks** (MineRL mode, wooded spawns, one-hit axe):
-**43.4 logs** on the fixed forest spots, the highest forest mean so far but tied with Lines 4c, 4d and 5
-(+3.4 ± 4.0 vs Line 5), and **37.2** on the wooded spots, where it beats Line 5 by +5.6 ± 3.8.
+**The MineRL Impala PPO, fine-tuned here for 2M ticks** (MineRL mode, wooded spawns, one-hit axe):
+**44.7 logs** on the fixed forest spots and **38.5** on the wooded spots. It beats Line 5 on both:
++4.7 ± 3.9 on forests, +6.9 ± 4.0 on wooded spots. It levelled off after 1-1.5M ticks (43.4 at 1M).
 [MineRL results](minerl/results.md), [Fixed forest spawns](natural/fixed_forest_spawns.md),
 [Fixed wooded spawns](natural/fixed_wooded_spawns.md)
 
@@ -107,7 +107,8 @@ Details, every evaluation type and the open questions: [minerl/](minerl/README.m
 3. **Fine-tuned here, it catches up fast.** 1M ticks of PPO in the natural world (wooded spawns, one-hit
    axe) took it from 29.4 to 43.4 on the forest spots (+13.9 ± 3.1); 0.48M ticks already gave 38.5.
    Pure RL reached 26.6 at 1M ticks and ~41 at 3M. On the wooded spots it beats Line 5, 37.2 vs 31.6
-   (+5.6 ± 3.8). Its starting point cost BC on VPT videos plus ~0.5M ticks of PPO in MineRL.
+   (+5.6 ± 3.8). Another 1M ticks added little (44.7 forest, 38.5 wooded at 2M) but made it significantly
+   better than Line 5 on both sets. Its starting point cost BC on VPT videos plus ~0.5M ticks of PPO in MineRL.
    [MineRL notes](minerl/README.md)
 4. **Line 5 slows over long episodes.** Over 4,000 ticks it averages 118.9, about 3× its 1000-tick
    score, as nearby trees run out. [Results](minerl/results.md)

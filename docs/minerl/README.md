@@ -6,7 +6,7 @@ CraftGround's arena and natural world with MineRL's own view and actions ("MineR
 [arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 14:55._
+_Tables last updated 2026-11-20 19:41._
 
 - [Results](results.md): one table per evaluation type (world, spots, episode length, log cap, axe)
 - [Evaluation runs](evaluation_runs.md): one row per evaluate.py run, newest first, with its settings
@@ -75,6 +75,15 @@ All scores: *fixed spots · 1,000-tick, no cap · one-hit axe*, 100 spots.
    game time simulated here, starting from MineRL needed about a quarter of pure RL's; the
    demonstrations and the MineRL training are the rest of the price.
 
+10. **Another 1M ticks: a small gain, then it levels off** (run
+    `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415`, linear LR restarted at
+    1e-4 like Lines 4b/4c/5; it froze 10k decisions before its end, so its 240k checkpoint
+    `ppo_chop_615292_steps.zip`, 1.96M ticks in all, stands for 2M). Forest: 43.4 at 1M → 44.5 at 1.5M →
+    **44.7** at 2M (+1.3 ± 3.3 vs 1M: no real change). Wooded: 37.2 → **38.5** (+1.3 ± 3.4). Pure RL levelled
+    off the same way, at ~41 by 3M ticks; this levels off ~4 logs higher, after 1-1.5M ticks.
+11. **At 2M ticks it beats Line 5 on both spot sets**: forest **+4.7 ± 3.9** (better at 55 spots, worse at
+    40), wooded **+6.9 ± 4.0** (58 / 38). Both ranges exclude 0. Our best agent now.
+
 ### How the numbers relate
 
 - **Timesteps are decisions.** Our agents decide every tick; MineRL mode decides every 4 ticks. So
@@ -85,8 +94,8 @@ All scores: *fixed spots · 1,000-tick, no cap · one-hit axe*, 100 spots.
 
 ### Next
 
-1. Continue the fine-tune (it was still climbing: 38.5 → 43.4 between 0.48M and 1M ticks) to see where
-   it levels off; pure RL levelled off at ~41 by 3M ticks.
+1. Fine-tune the Impala **BC** model the same way (running, 2026-11-20): does skipping MineRL's PPO, so
+   MineRL's simulator entirely, give the same result?
 2. The cheap matching tests (zero-shot, ~10 min each): hand hidden, our 114×64 view, 1 tick per decision.
 3. PPO from scratch in MineRL's spaces (question 2, fair version).
 4. A continuous action head (question 4), starting from this fine-tuned model.

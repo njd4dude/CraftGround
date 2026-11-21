@@ -3,13 +3,15 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 14:55._
+_Tables last updated 2026-11-20 19:41._
 
 Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one episode each, same starting direction, current setup), so differences come from the agents, not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose ranges overlap a lot may not really differ. Older random-spawn scores are in [Random spawns](random_spawns.md).
 
 | Model | Line | Episodes | Mean logs | Median | 0-log episodes | Max | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Random actions (baseline) | random actions | 100 | **1.14** ± 0.41 | 0 | 65 | 11 | baseline |
+| MineRL Impala PPO + fine-tune @ 492k<br>`ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` @ 615,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 492,412 decisions = 1.97M ticks, from MineRL Impala PPO (see [MineRL](../minerl/README.md)) | 100 | **44.66** ± 3.73 | 49 | 2 | 78 | **39.2×** |
+| MineRL Impala PPO + fine-tune @ 372k<br>`ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` @ 495,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 372,412 decisions = 1.49M ticks, from MineRL Impala PPO (see [MineRL](../minerl/README.md)) | 100 | **44.54** ± 3.61 | 47 | 3 | 85 | **39.1×** |
 | MineRL Impala PPO + fine-tune @ 252k<br>`ft_impala-ppo_wooded_one-hit-axe_20261120_124557` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 252,412 decisions = 1.01M ticks, from MineRL Impala PPO (see [MineRL](../minerl/README.md)) | 100 | **43.35** ± 3.16 | 46 | 2 | 71 | **38.0×** |
 | Line 4d @ 4.0M<br>`20261119_112830` | resume Line 4c @ 3.0M for 1M more, forest spawns, linear LR from 1e-4 | 100 | **41.27** ± 5.56 | 40 | 8 | 109 | **36.2×** |
 | Line 4c @ 3.0M<br>`20261118_183414` | resume Line 4b @ 2.0M for 1M more, linear LR from 1e-4 | 100 | **41.18** ± 4.90 | 41 | 7 | 94 | **36.1×** |

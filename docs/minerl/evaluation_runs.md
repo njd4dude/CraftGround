@@ -3,12 +3,15 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 14:55._
+_Tables last updated 2026-11-20 19:41._
 
 One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (MineRL mode, or one of our models with a non-standard axe, episode length or log cap), newest first. **Steps/s** counts decisions (4 ticks each in MineRL mode).
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-20T19:31:36 | MineRL Impala PPO + fine-tune @ 372k | `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_495292_steps.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 44.54 | 11.2 | 45 |
+| 2026-11-20T19:20:16 | MineRL Impala PPO + fine-tune @ 492k | `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | natural | fixed wooded spots | 1000 | – | instant | 100 | 38.54 | 10.7 | 47 |
+| 2026-11-20T19:09:25 | MineRL Impala PPO + fine-tune @ 492k | `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 44.66 | 10.7 | 47 |
 | 2026-11-20T14:54:33 | MineRL Impala PPO + fine-tune @ 120k | `runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/checkpoints/ppo_chop_242874_steps.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 38.48 | 9.7 | 53 |
 | 2026-11-20T14:44:44 | MineRL Impala PPO + fine-tune @ 252k | `runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` | natural | fixed wooded spots | 1000 | – | instant | 100 | 37.22 | 12.8 | 38 |
 | 2026-11-20T14:31:46 | MineRL Impala PPO + fine-tune @ 252k | `runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 43.35 | 9.8 | 53 |
