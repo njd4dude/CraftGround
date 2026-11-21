@@ -1,29 +1,15 @@
-# CraftGround Experiments: MineRL Models in CraftGround
+# Experiments: MineRL models in CraftGround
 
-Models trained in the MineRL project (behavioural cloning on VPT videos, then PPO), run in
-CraftGround's arena and natural world with MineRL's own view and actions ("MineRL mode",
-`chop/envs/minerl.py`). Our own agents are in [natural/](../natural/README.md) and
-[arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
+Models trained in the MineRL project (behavioural cloning on VPT videos, then PPO), run here in "MineRL mode" (their own view and actions; set up in [Environments](../reference/environments.md#minerl-mode)): how well they transfer, and what fine-tuning them here gives. Written by hand. _Last updated 2026-11-21._
 
-<!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:34._
-
-- [Results](results.md): one table per evaluation type (world, spots, episode length, log cap, axe)
-- [Evaluation runs](evaluation_runs.md): one row per evaluate.py run, newest first, with its settings
-- [Training runs](training_runs.md): MineRL-mode fine-tunes and from-scratch runs (train.py)
-- [MineRL mode](setup.md): what it copies from MineRL, how it was checked, what still differs
-<!-- AUTO-GENERATED:END -->
-
-## Notes
-
-Written by hand; never overwritten. _Last updated 2026-11-21._
+[← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 **How these are scored, unless a line says otherwise:** natural world, the 100 fixed spots (forest
 or wooded), 1,000-tick episodes, no log cap, our one-hit axe: the same rules as our own agents'
 reports, so the numbers compare directly with Line 5. "±" is the 95% range of a spot-by-spot
-difference; a range that doesn't include 0 is a real difference. Every table is in [Results](results.md).
+difference; a range that doesn't include 0 is a real difference. Tables: [forest spots](../results/forest_spots.md), [wooded spots](../results/wooded_spots.md), [arena](../results/arena.md); MineRL's own scoring and the iron axe: [other rules](../results/other_rules.md).
 
-### Main results
+## Main results
 
 Fine-tuning ran in MineRL mode (the model's own view and actions, 4 ticks per decision) on wooded
 spawns, like Line 5. Training is given in game ticks, so it compares with our agents' steps.
@@ -40,7 +26,7 @@ spawns, like Line 5. Training is given in game ticks, so it compares with our ag
 | Pure RL (Line 4 → 4b → 4c → 5) | 1M / 2M / 3M ticks | 26.6 / 35.7 / 41.2 | |
 | | **Line 5**, 4M ticks | **40.0** | **31.6** |
 
-### What we found
+## What we found
 
 1. **MineRL models transfer without fine-tuning.** Scored the way MineRL scored them (4,000 ticks, iron
    axe, ends at 64 logs, first 50 forest spots) they keep 75-91% of their MineRL score: Impala PPO 54.0
@@ -61,7 +47,7 @@ spawns, like Line 5. Training is given in game ticks, so it compares with our ag
 6. **Over 4,000 ticks Line 5 averages 118.9,** about 3× its 1,000-tick score, not 4×: it slows as nearby
    trees run out. With MineRL's 64-log cap it scores 54.6.
 
-### The questions
+## The questions
 
 1. **How good is a MineRL model here, with and without fine-tuning?** Answered (1-3). Arena: zero-shot only.
 2. **Can pure RL here match or beat it?** Not so far (3, 4). Not yet run: PPO from scratch in MineRL's
@@ -70,18 +56,18 @@ spawns, like Line 5. Training is given in game ticks, so it compares with our ag
    Not yet run: hand hidden, our 114×64 view, 1 tick per decision.
 4. **Does a fine-tuned model still improve after switching to continuous controls?** Not started.
 
-### Next
+## Next
 
 1. The matching tests for question 3 (zero-shot, ~10 min each).
 2. PPO from scratch in MineRL's spaces (question 2).
 3. A continuous action head on the 2M-tick model (question 4).
 4. Optional: the BC fine-tune to 2M ticks, to see whether it catches up the last ~3 forest logs.
 
-### Training runs, every piece
+## Training runs, every piece
 
 All in `runs/minerl_mode/natural/`: wooded spawns, one-hit axe, MineRL's PPO settings (batch 64,
 10 epochs, entropy 0.001, target_kl 0.05), linear learning rate, 2 instances (3 ran out of memory).
-`train.py` lists only runs that ended normally in [Training runs](training_runs.md), so all pieces are here.
+`train.py` lists only runs that ended normally in the [training log](../logs/training.md), so all pieces are here.
 Decisions are counted from the MineRL model's start; 1 decision = 4 ticks.
 
 | Model | Piece (folder) | From | Decisions | Ended |
@@ -92,4 +78,4 @@ Decisions are counted from the MineRL model's start; 1 decision = 4 ticks.
 | Impala BC | `ft_impala-bc_wooded_one-hit-axe_20261120_193516` | MineRL Impala BC, LR 1e-4, 5-update value warm-up | 0 → 188k | paused by hand |
 | | `ft_impala-bc_wooded_one-hit-axe_20261120_220917` | its 180k checkpoint | 180k → 254k | completed: **the BC 1M-tick model** (`model.zip`) |
 
-Two BC launches crashed on `train.py` bugs before training (fixed; see FINDINGS' bug list).
+Two BC launches crashed on `train.py` bugs before training (fixed; see the bug list in [Findings](../FINDINGS.md#bugs-found-and-what-they-affected)).

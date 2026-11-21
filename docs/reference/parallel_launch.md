@@ -1,4 +1,6 @@
-# Starting Several Minecraft Instances at Once
+# Reference: starting several Minecraft instances at once
+
+[← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 Why running 6 Minecraft instances side by side sometimes hung at startup, what we
 tried, what worked, and what the code does now. Investigated 2026-11-14 and
@@ -232,7 +234,7 @@ launch tests.
 
 Once all 6 could start (one at a time, before separate folders existed), the
 natural world ran at **263 steps/s** total (44 per instance), against 165 with 4
-instances. See BENCHMARK.md.
+instances. See [speed](speed.md).
 
 ## What is implemented
 

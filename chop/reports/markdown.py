@@ -36,29 +36,7 @@ def write_report(path: Path, template: str, generated: str) -> None:
     print(f"Updated {path}")
 
 
-def page_template(world: str, title: str) -> str:
-    """A report page: its title, a link back to the folder's README.md index, the generated block."""
-    return f"""# {world}: {title}
-
-[← {world} index](README.md)
-
-{START}
-{END}
-"""
-
 
 def body(section: str) -> str:
     """A section without its own "## Title" line (the page's title replaces it)."""
     return re.sub(r"\A## [^\n]*\n+", "", section)
-
-
-def write_pages(folder: Path, world: str, index_template: str, stamp: str,
-                pages: list[tuple[str, str, str]], sections: dict[str, str]) -> None:
-    """Write one page per (file, title, what it holds) from sections[file], then the README.md index."""
-    folder.mkdir(parents=True, exist_ok=True)
-    index = []
-    for name, title, about in pages:
-        text = body(sections[name]) or "_No results yet._"
-        write_report(folder / name, page_template(world, title), f"{stamp}\n\n{text}")
-        index.append(f"- [{title}]({name}): {about}")
-    write_report(folder / "README.md", index_template, f"{stamp}\n\n" + "\n".join(index))

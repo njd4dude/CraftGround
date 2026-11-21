@@ -1,9 +1,13 @@
-# Natural world: Training lines
+# Experiments: natural-world training lines
 
-[← Natural world index](README.md)
+Every natural-world training line: what it tested, what it found, and its pieces.
+
+[← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:34._
+_Tables last updated 2026-11-21 14:49._
+
+## Training lines
 
 Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are the run folders inside, split by crashes, memory kills or deliberate stops, in order. `train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.
 

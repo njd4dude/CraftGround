@@ -1,5 +1,5 @@
 {
- "about": "Training lines for docs/natural/lines.md (experiments.py). Each line is one training history and has its own folder, runs/natural/<folder>/, with one subfolder per piece (train.py --resume adds pieces; --line <folder> starts a new line). This file gives each line folder a display id, name, purpose ('tested') and result ('found'), and notes on pieces (keyed by the piece folder name). Edit freely, then run experiments.py.",
+ "about": "Training lines for docs/experiments/natural_lines.md (experiments.py). Each line is one training history and has its own folder, runs/natural/<folder>/, with one subfolder per piece (train.py --resume adds pieces; --line <folder> starts a new line). This file gives each line folder a display id, name, purpose ('tested') and result ('found'), and notes on pieces (keyed by the piece folder name). Edit freely, then run experiments.py.",
  "lines": [
   {
    "folder": "line1_no-jump",

@@ -1,4 +1,5 @@
-"""docs/minerl/: MineRL-trained models run in CraftGround (MineRL mode), and MineRL-style scoring of ours.
+"""MineRL-mode sections: results under other rules (MineRL's own scoring, other axes and lengths),
+the MineRL evaluation and training logs, and the MineRL-mode setup. chop/reports/site.py places them.
 
 Built from results/eval_results_minerl.csv. Its rows differ in more than the model: world, spots,
 episode length, log cap and axe all vary, so results are grouped by all five ("evaluation type")
@@ -7,50 +8,23 @@ forest spots, 1000 ticks, no cap, one-hit axe) is added to its type as the refer
 Model names and MineRL scores come from results/minerl_models.json."""
 
 import json
-from datetime import datetime
 from pathlib import Path
 
 from chop.envs import minerl as minerl_env
 from chop.envs import natural as natural_env
-from chop.paths import DOCS_DIR, RESULTS_DIR
+from chop.paths import RESULTS_DIR
 from chop.reports.agents import model_label
 from chop.reports.csvio import (MINERL_EVAL_CSV, MINERL_TRAIN_CSV, NATURAL_EVAL_CSV, NATURAL_TRAIN_CSV,
                                 is_fixed, is_held_out, is_wooded, normalize_agent, read_rows)
-from chop.reports.markdown import END, START, mean_ci, table, write_pages
+from chop.reports.compare import REFERENCE, REFERENCE_NAME, paired, per_spot
+from chop.reports.markdown import mean_ci, table
 
-MINERL_DIR = DOCS_DIR / "minerl"
 MODELS_FILE = RESULTS_DIR / "minerl_models.json"
 
-# Our best agent, compared spot by spot with everything evaluated on the same spots and settings.
-REFERENCE = "runs/natural/line5_wooded-spawns/20261119_005447/model.zip"
-REFERENCE_NAME = "Line 5"
-# Our agents whose standard natural evaluations (fixed spots, 1000 ticks, no cap, one-hit axe) are
-# shown next to the MineRL models of the same type: the reference and our other best ones.
+# Our agents whose standard natural evaluations are shown next to MineRL rows of the same type.
 OUR_AGENTS = [REFERENCE,
               "runs/natural/line4c_resume-2M/20261118_183414/model.zip",
               "runs/natural/line4d_resume-3M/20261119_112830/model.zip"]
-
-PAGES = [
-    ("results.md", "Results", "one table per evaluation type (world, spots, episode length, log cap, axe)"),
-    ("evaluation_runs.md", "Evaluation runs", "one row per evaluate.py run, newest first, with its settings"),
-    ("training_runs.md", "Training runs", "MineRL-mode fine-tunes and from-scratch runs (train.py)"),
-    ("setup.md", "MineRL mode", "what it copies from MineRL, how it was checked, what still differs"),
-]
-
-INDEX_TEMPLATE = f"""# CraftGround Experiments: MineRL Models in CraftGround
-
-Models trained in the MineRL project (behavioural cloning on VPT videos, then PPO), run in
-CraftGround's arena and natural world with MineRL's own view and actions ("MineRL mode",
-`chop/envs/minerl.py`). Our own agents are in [natural/](../natural/README.md) and
-[arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
-
-{START}
-{END}
-
-## Notes
-
-Write your observations, ideas and next steps here. This section is never overwritten.
-"""
 
 
 def load_models() -> dict:
@@ -120,37 +94,27 @@ def reference_rows() -> list[dict]:
     return rows
 
 
-def per_spot(rows: list[dict]) -> dict[int, float]:
-    """Score per fixed spot, averaged if the spot was played more than once."""
-    acc: dict[int, list[int]] = {}
-    for r in rows:
-        spots = (r.get("spot_per_episode") or "").split()
-        for s, x in zip(spots, r["per_episode"].split()):
-            if s.isdigit():
-                acc.setdefault(int(s), []).append(int(x))
-    return {s: sum(v) / len(v) for s, v in acc.items()}
 
 
-def paired(a: dict[int, float], b: dict[int, float]) -> str:
-    shared = sorted(set(a) & set(b))
-    if len(shared) < 2:
-        return "–"
-    d = [a[s] - b[s] for s in shared]
-    mean, ci = mean_ci(d)
-    better, worse = sum(x > 0 for x in d), sum(x < 0 for x in d)
-    return f"{mean:+.1f} ± {ci:.1f} ({better} better / {worse} worse, {len(shared)} spots)"
+def is_standard(key: tuple) -> bool:
+    """Our own rules (1000 ticks, no cap, one-hit axe, fixed spots or the arena): these rows go in the
+    main results pages with our agents, not here."""
+    env, spots, ticks, cap, axe = key
+    return ticks == 1000 and not cap and axe == "instant" and (env == "arena" or spots.startswith("fixed")) \
+        and "held-out" not in spots
 
 
 def results_section(evals: list[dict], models: dict, natural_runs: list[dict]) -> str:
-    if not evals:
-        return "## Results\n\n_No MineRL-mode evaluations yet._"
+    """One table per evaluation type that isn't our standard rules (those are on the main results pages)."""
     groups: dict[tuple, list[dict]] = {}
     for r in evals + reference_rows():
-        groups.setdefault(eval_type(r), []).append(r)
-    # Our standard rules first (they compare with our own agents), then MineRL's scoring, then the rest.
-    standard = lambda k: k[0] == "natural" and k[2] == 1000 and not k[3] and k[4] == "instant"  # noqa: E731
-    order = sorted(groups, key=lambda k: (k[0] != "natural", not standard(k), not is_minerl_scoring(k),
-                                          k[1], k[2], k[3], k[4]))
+        key = eval_type(r)
+        if not is_standard(key):
+            groups.setdefault(key, []).append(r)
+    if not groups:
+        return "## Other episode rules\n\n_None yet._"
+    # MineRL's own scoring first, then the rest.
+    order = sorted(groups, key=lambda k: (k[0] != "natural", not is_minerl_scoring(k), k[1], k[2], k[3], k[4]))
     parts = []
     for key in order:
         if all(r.get("reference") for r in groups[key]):
@@ -182,16 +146,12 @@ def results_section(evals: list[dict], models: dict, natural_runs: list[dict]) -
         note = ("Scored the way the MineRL project scored these models (its 24 worlds, same rules), so "
                 "**In MineRL** is directly comparable.\n\n" if minerl_col else "")
         parts.append(f"### {type_title(key)}\n\n{note}" + table(headers, [r for *_, r in rows]))
-    return ("## Results\n\nOne table per **evaluation type**: the world and spots, episode length, log cap and "
-            "axe. Only rows in the same table are comparable. Logs per episode; **±** is the 95% range of the "
-            "mean. **vs " + REFERENCE_NAME + "** is the average difference per fixed spot over the spots both "
-            "played, with its 95% range (a range that doesn't include 0 is a real difference). "
-            "Our agents' 1,000-tick rows are their standard evaluations from the natural-world report "
-            "(MineRL rows of that type are also shown there). **Spots played**: fixed spots are played in "
-            "file order, so 50 = the first 50 of the 100; means over 50 and 100 spots can differ by which spots "
-            "they include, so compare those rows with the spot-by-spot column, which only uses shared spots. "
-            "MineRL mode runs 4 ticks per decision, so a 1,000-tick episode is 250 of its decisions.\n\n"
-            + "\n\n".join(parts))
+    return ("## Other episode rules\n\nEvaluations under rules other than our standard ones: MineRL's own "
+            "scoring (4,000 ticks, iron axe, ends at 64 logs), MineRL's iron axe, and long episodes. One table "
+            "per **evaluation type** (world and spots, episode length, log cap, axe); only rows in the same "
+            "table are comparable. **Spots played**: fixed spots are played in file order, so 50 = the first "
+            "50 of the 100. MineRL mode runs 4 ticks per decision, so a 1,000-tick episode is 250 of its "
+            "decisions.\n\n" + "\n\n".join(parts))
 
 
 def evals_section(evals: list[dict], models: dict, natural_runs: list[dict]) -> str:
@@ -246,7 +206,7 @@ def setup_section() -> str:
         ["Models loaded from", "`runs/minerl/` (copies of `~/mineRL/runs/` in WSL); ImpalaCNN via "
                                "`chop/networks.py`, a copy of the MineRL project's `networks.py`"],
     ]
-    return ("## MineRL mode\n\nThe env copies the MineRL project's `MineRLTreechopAxe320-v0` "
+    return ("## MineRL mode\n\nModels trained in the MineRL project run here with this. The env copies the MineRL project's `MineRLTreechopAxe320-v0` "
             "(`~/mineRL/train_treechop.py`), so its models run unchanged.\n\n"
             + table(["Setting", "Value"], rows)
             + "\n\n**Checked in the game** (`tools/check_minerl_compat.py`, 2026-11-19): every yaw and pitch "
@@ -256,17 +216,3 @@ def setup_section() -> str:
               "**Still different from MineRL:** CraftGround runs a newer Minecraft than MineRL's 1.16 "
               "(slightly different textures); worlds are peaceful (MineRL had mobs); and the worlds "
               f"themselves (MineRL: seeds 1-24; here: seed {natural_env.SEED}'s fixed spots, or the arena).")
-
-
-def update(stamp: str | None = None) -> None:
-    """Rebuild docs/minerl/ from results/eval_results_minerl.csv (and Line 5's standard evaluations)."""
-    stamp = stamp or f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
-    evals, models = read_rows(MINERL_EVAL_CSV), load_models()
-    natural_runs = read_rows(NATURAL_TRAIN_CSV)
-    sections = {
-        "results.md": results_section(evals, models, natural_runs),
-        "evaluation_runs.md": evals_section(evals, models, natural_runs),
-        "training_runs.md": training_section(read_rows(MINERL_TRAIN_CSV)),
-        "setup.md": setup_section(),
-    }
-    write_pages(MINERL_DIR, "MineRL in CraftGround", INDEX_TEMPLATE, stamp, PAGES, sections)

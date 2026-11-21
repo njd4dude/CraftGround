@@ -18,7 +18,7 @@ there (jump is turned off automatically to match); --no-jump forces the 11 actio
 Without jump the two worlds share the same actions, so --resume works across them. Natural runs get their
 own folders (runs/natural/<line>/<time>/, grouped by training line: --resume continues the
 model's line, --line names a new one), CSV (results/training_runs_natural.csv) and
-report (docs/natural/). The natural world is slower (about a third of
+report (docs/experiments/natural_lines.md). The natural world is slower (about a third of
 the arena's steps/s in evaluation) and needs more memory per instance, so it
 defaults to 3 instances (see N_ENVS_NATURAL).
 
@@ -26,7 +26,7 @@ Training runs --n-envs Minecraft instances side by side (default 6, natural 3). 
 needs ~2.4 GB of RAM in the arena and a lot of CPU. In the natural world each grows to
 ~4.2 GB (memprobe.py: Java fills its 2G heap cap, native memory levels off after ~10
 minutes, plus ~0.5 GB of Gradle launcher processes), so 4 would leave almost no RAM free. Measured raw env
-speed on this machine (8-core 7700X, docs/BENCHMARK.md): arena 1 -> 487, 2 -> 713,
+speed on this machine (8-core 7700X, docs/reference/speed.md): arena 1 -> 487, 2 -> 713,
 4 -> 977, 6 -> 1046 steps/s; natural 4 -> 235 steps/s with the current 0.75 s
 forest-check timeout (1 -> 48, 2 -> 120, 6 -> 263 were measured with the old 3 s
 timeout, so they understate it). Training runs ~20% below these raw speeds
@@ -61,8 +61,9 @@ Every run gets one folder with everything in it:
         wandb/                 W&B's local copy of the run
 
 Press Ctrl+C at any time: the current model is saved before exiting.
-Each run is added to results/training_runs.csv and docs/arena/experiments.md (list it under an
-experiment in results/experiments_arena.json), or to docs/natural/lines.md.
+Each run is added to results/training_runs.csv and docs/experiments/arena_experiments.md (list it
+under an experiment in results/experiments_arena.json), or to docs/experiments/natural_lines.md
+(natural world); MineRL-mode runs go to results/training_runs_minerl.csv and docs/logs/training.md.
 """
 
 from chop.training.cli import main

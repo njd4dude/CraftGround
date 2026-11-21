@@ -1,12 +1,12 @@
-# Natural world: Held-out world (archived)
+# Results: held-out world (archived)
 
 **Archived 2026-11-19, no longer updated.** The question is answered: agents score the same in a
 world they never trained in (gaps −0.5 to +3.9, all within noise), so they learned to chop trees,
-not one map. What still costs score is new *biomes*, not new worlds ([Fixed wooded spawns](../fixed_wooded_spawns.md)).
+not one map. What still costs score is new *biomes*, not new worlds ([Wooded spots](../wooded_spots.md)).
 The check still works for a final model: `make_eval_spots.py --held-out` (already done) and
 `evaluate.py <model> --env natural --held-out`; the results go to `results/eval_results_natural.csv`.
 
-[← Natural world index](../README.md)
+[← Other rules](../other_rules.md)
 
 _Tables last updated 2026-11-19 13:48._
 

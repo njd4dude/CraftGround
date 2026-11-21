@@ -1,9 +1,13 @@
-# Arena: Experiments
+# Experiments: arena
 
-[← Arena index](README.md)
+Every arena experiment: its question, what it found, and its runs.
+
+[← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:34._
+_Tables last updated 2026-11-21 14:49._
+
+## Experiments
 
 **Eval** is the mean over `evaluate.py` episodes (max 32), ± its 95% range. **Ground fixed** = no: holes the agent dug stayed for the rest of the run (fixed 2026-11-17), so those scores are rough. Edit the questions and findings in `results/experiments_arena.json`.
 
@@ -95,3 +99,10 @@ _Tables last updated 2026-11-21 14:34._
 | single, 1 tick, 200k | 3 | **30.46** | 30.6 31.1 29.7 |
 | multi, 1 tick, 200k | 3 | **31.34** | 30.9 31.7 31.4 |
 <!-- AUTO-GENERATED:END -->
+
+## Notes (written by hand, never overwritten)
+
+- **2026-11-13:** `check_env.py` passed. A scripted agent chopped 3 logs per episode and the trees regrew after reset. Rewards sometimes show up 1–2 steps after the attack that earned them.
+- **2026-11-13, run 1 (`chop_ppo_20261113_131702`):** PPO learned fast. Logs per episode went 3.5 → 18 → 25 → 28 over the first 70 episodes and finished at a last-20 average of 31.4/32. The task may now be too easy, so next ideas are harder layouts, more trees or random tree positions.
+- **2026-11-13:** Parallel envs: `train.py` runs 6 Minecraft instances by default (`--n-envs`); `--n-steps` is the total across all envs, so each update is still ~2048 steps. Raw env benchmark (random actions): 1 env 451, 2 → 714, 4 → 858, 8 → 1076 steps/s, with 8 using 92% CPU and 17 GB RAM. The CPU is the limit; the GPU stays under 40%.
+- **2026-11-17:** Speed with 3 instances: single actions ~490 steps/s, multi ~370 (turning the camera looks like the slow part, not verified), 4 ticks per step ~220 steps/s (~880 ticks/s). Each arena instance uses ~2.4 GB, so 3 is the safe number on this machine when anything else is open.

@@ -217,10 +217,11 @@ def line_note(agent: str) -> str:
         return "random actions"
     ft = minerl_finetune(agent)
     if ft is not None:
-        return ft["about"] + " (see [MineRL](../minerl/README.md))"
+        return ft["about"] + " (see [MineRL transfer](../experiments/minerl_transfer.md))"
     mrl = minerl_model(agent)
     if mrl is not None:
-        return f"**MineRL mode** (64×64 view, 4 ticks per decision; see [MineRL](../minerl/README.md)): {mrl['about']}"
+        return (f"**MineRL mode** (64×64 view, 4 ticks per decision; see "
+                f"[MineRL transfer](../experiments/minerl_transfer.md)): {mrl['about']}")
     line = line_of_agent(agent)
     if line is None:
         return describe(agent, [])

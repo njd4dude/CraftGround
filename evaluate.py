@@ -8,9 +8,9 @@
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --env natural # forest in a normal world
     python evaluate.py runs/arena/chop_ppo_20261113_131800/model.zip --env natural --held-out  # a world never trained in
 
-Runs 100 episodes by default so the mean is stable. Every run counts toward the
-agent's score in docs/arena/ (docs/natural/ for --env natural), so to just grab a couple of videos use a small
---episodes, e.g. --episodes 2.
+Runs 50 episodes by default (use --episodes 100 to separate close agents; the natural world's
+fixed spot sets have 100). Every run counts toward the agent's score in the docs/results/ tables,
+so to just grab a couple of videos use a small --episodes, e.g. --episodes 2.
 
 Episodes are spread over --n-envs Minecraft instances running side by side
 (default 6, natural world 3, never more than --episodes), each running from its own copy of the
@@ -21,7 +21,7 @@ share counts, so no half-played episode is ever dropped. (Stopping at "the first
 100 to finish" would favour short episodes, and here short means good, because
 an episode ends early once every log is chopped.)
 
-(Each run's model is runs/arena/<run>/model.zip; docs/arena/experiments.md lists the runs.)
+(Each run's model is runs/arena/<run>/model.zip; docs/experiments/arena_experiments.md lists the runs.)
 
 21 episodes are saved as MP4 videos by default, picked by score once every episode is
 done so they show where the agent succeeds and fails: the 7 best (file names start
@@ -52,8 +52,9 @@ instance), and how much of each instance's time went into resets. Those numbers
 are saved with the results too.
 
 Compare the trained model against the random baseline: that gap is what the
-agent actually learned. Every run is appended to results/eval_results.csv
-and the tables in docs/arena/ are refreshed.
+agent actually learned. Every run is appended to a CSV in results/ (eval_results.csv for the arena,
+eval_results_natural.csv for the natural world, eval_results_minerl.csv for MineRL mode and other
+rules) and the docs/ tables are rebuilt.
 """
 
 from chop.evaluation.cli import main

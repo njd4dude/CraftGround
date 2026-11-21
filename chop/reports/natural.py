@@ -1,9 +1,7 @@
-"""docs/natural/: the natural world's report, one page per table.
+"""The natural world's report sections: fixed-spot results, training lines, random spawns, setup.
 
-README.md is the index (and keeps your Notes); every other page is rebuilt from the CSVs. Like any
-report, a page keeps what you write outside its AUTO-GENERATED block."""
+chop/reports/site.py decides which page each one goes on."""
 
-from datetime import datetime
 from pathlib import Path
 
 from chop.envs import common
@@ -11,40 +9,24 @@ from chop.envs import natural as natural_env
 from chop.reports.agents import (label_with_folder, line_folders, line_meta, line_note,
                                  load_lines, model_label, pieces, run_config, run_dir_of, run_end, short_steps,
                                  start_of)
-from chop.reports.csvio import (EVAL_CSV, MINERL_EVAL_CSV, NATURAL_EVAL_CSV, is_standard_natural, NATURAL_TRAIN_CSV, episodes_by_agent, is_fixed, is_held_out,
-                                is_wooded, normalize_agent, read_rows)
-from chop.reports.markdown import END, START, mean_ci, table, write_pages
-from chop.reports.sections import evals_section
-from chop.paths import DOCS_DIR
+from chop.reports.compare import REFERENCE, REFERENCE_NAME, paired, per_spot
+from chop.reports.csvio import episodes_by_agent, normalize_agent
+from chop.reports.markdown import mean_ci, table
 
-NATURAL_DIR = DOCS_DIR / "natural"
-NATURAL_REPORT = NATURAL_DIR / "README.md"  # the index
 
-# (file, title, what it holds) in index order; update() fills each from its section function.
-PAGES = [
-    ("fixed_forest_spawns.md", "Fixed forest spawns", "100 fixed spots in oak/birch forests, one row per agent: the main comparison"),
-    ("fixed_wooded_spawns.md", "Fixed wooded spawns", "100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), "
-                                  "next to each agent's forest score"),
-    ("lines.md", "Training lines", "every training line: what it tested, what it found, its pieces"),
-    ("evaluation_runs.md", "Evaluation runs", "one row per evaluate.py run, newest first"),
-    ("random_spawns.md", "Random spawns", "a new random spot every episode, forest and wooded: checks the fixed-spawn scores hold"),
-    ("setup.md", "Environment setup", "world, spawns, actions, reward, episode length"),
-]
+def rows_by_agent(evals: list[dict]) -> dict[str, list[dict]]:
+    out: dict[str, list[dict]] = {}
+    for r in evals:
+        out.setdefault(normalize_agent(r["agent"]), []).append(r)
+    return out
 
-INDEX_TEMPLATE = f"""# CraftGround Experiments: Chop Trees in a Natural World
 
-Goal: chop as many logs as possible in one episode, starting in a real generated
-forest instead of the walled arena (chop/envs/natural.py). Arena results are in
-[arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
-
-{START}
-{END}
-
-## Notes
-
-Write your observations, ideas and next steps here. This section is never overwritten.
-"""
-
+def vs_reference(agent: str, by_rows: dict[str, list[dict]]) -> str:
+    if agent == REFERENCE:
+        return "reference"
+    if REFERENCE not in by_rows:
+        return "–"
+    return paired(per_spot(by_rows[agent]), per_spot(by_rows[REFERENCE]), short=True)
 
 def natural_setup_section() -> str:
     ne = natural_env
@@ -53,8 +35,8 @@ def natural_setup_section() -> str:
                   f"seed {ne.HELD_OUT_SEED}, never trained in)"],
         ["Evaluation", "100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); "
                        "`evaluate.py --random-spots` for random spawns. Held-out world (archived: "
-                       "[archive/held_out.md](archive/held_out.md)): `evaluate.py <model> --env natural "
-                       "--held-out`. Wooded spawns: see [Fixed wooded spawns](fixed_wooded_spawns.md)"],
+                       "[held-out world](../results/archive/held_out.md)): `evaluate.py <model> --env natural "
+                       "--held-out`. Wooded spawns: see [Wooded spots](../results/wooded_spots.md)"],
         ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
                   f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}. "
                   f"`train.py --spawn wooded` (Line 5, since 2026-11-18): any biome with trees but savanna, "
@@ -73,7 +55,7 @@ def natural_setup_section() -> str:
                    "(since 2026-11-16; earlier runs: player immune to all damage)"],
         ["Episode length", f"{common.EPISODE_STEPS} steps (no log cap), or until the agent dies"],
     ]
-    return "## Environment setup\n\n" + table(["Setting", "Value"], rows)
+    return "## Natural world\n\n" + table(["Setting", "Value"], rows)
 
 
 def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> str:
@@ -81,6 +63,7 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
     since 2026-11-16): every agent played the same forests, so these means compare fairly."""
     runs = runs or []
     by_agent = episodes_by_agent(evals)
+    by_rows = rows_by_agent(evals)
     if not by_agent:
         return ("## Results\n\n_None yet: `run.bat evaluate.py <model.zip> --env natural` "
                 "plays the 100 fixed spots in `results/eval_spots_natural.json`._")
@@ -94,16 +77,18 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         vs = ("baseline" if agent == "random"
               else f"**{mean / random_mean:.1f}×**" if random_mean else "no baseline yet")
         rows.append([label_with_folder(agent, runs), line_note(agent), n, f"**{mean:.2f}** ± {ci:.2f}", median,
-                     sum(x == 0 for x in eps), max(eps), vs])
+                     sum(x == 0 for x in eps), max(eps), vs_reference(agent, by_rows), vs])
     return (
         "## Results\n\n"
         "Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one "
         "episode each, same starting direction, current setup), so differences come from the agents, "
         "not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose "
-        "ranges overlap a lot may not really differ. Older random-spawn scores are in "
-        "[Random spawns](random_spawns.md).\n\n"
+        f"ranges overlap a lot may not really differ. **vs {REFERENCE_NAME}** is the average difference per "
+        "spot with its 95% range; a range that doesn't include 0 is a real difference. MineRL rows play in "
+        "MineRL mode (their own view and actions) under the same rules. Random-spawn scores are in "
+        "[Other rules](other_rules.md#random-spawns).\n\n"
         + table(["Model", "Line", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
-                 "vs random"], rows)
+                 f"vs {REFERENCE_NAME}", "vs random"], rows)
     )
 
 
@@ -116,6 +101,7 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
     if not by_agent:
         return ""
     forest = episodes_by_agent(forest_fixed)
+    by_rows = rows_by_agent(wooded)
     rows = []
     for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", -sum(kv[1]) / len(kv[1]))):
         mean, ci = mean_ci(eps)
@@ -126,17 +112,17 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
         else:
             f_cell, gap, f_zeros = "–", "–", "–"
         rows.append([label_with_folder(agent, runs), line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
-                     f_cell, gap, sum(x == 0 for x in eps), f_zeros])
+                     vs_reference(agent, by_rows), f_cell, gap, sum(x == 0 for x in eps), f_zeros])
     return (
         "## Wooded spots\n\n"
         "100 fixed spots in any biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
         "`make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, "
-        "same training world. **Forest mean** is the same agent's score on the [Fixed forest spawns](fixed_forest_spawns.md) page's oak/birch "
+        "same training world. **Forest mean** is the same agent's score on the [Forest spots](forest_spots.md) page's oak/birch "
         "spots; the **gap** is how much it loses outside them. **0-log episodes** count the episodes "
         "that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with "
         "`evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.\n\n"
-        + table(["Model", "Line", "Episodes", "Wooded mean", "Forest mean", "Gap", "0-log episodes (wooded)",
-                 "0-log episodes (forest)"], rows)
+        + table(["Model", "Line", "Episodes", "Wooded mean", f"vs {REFERENCE_NAME}", "Forest mean", "Gap",
+                 "0-log episodes (wooded)", "0-log episodes (forest)"], rows)
     )
 
 
@@ -217,41 +203,17 @@ def natural_random_spawn_section(forest: list[dict], wooded: list[dict], arena_e
     parts = [
         "Every episode starts at a new spot found by the same search training uses, so agents play "
         "different spots and each mean also moves by ±3-4 logs from spawn luck: compare agents on the "
-        "fixed spawns first ([Fixed forest spawns](fixed_forest_spawns.md), "
-        "[Fixed wooded spawns](fixed_wooded_spawns.md)). This checks that a fixed-spawn score holds on "
+        "fixed spawns first ([Forest spots](forest_spots.md), "
+        "[Wooded spots](wooded_spots.md)). This checks that a fixed-spawn score holds on "
         "spots no fixed set contains. Run with `evaluate.py <model> --env natural --random-spots "
         "[--spawn wooded]`."]
     if forest:
         parts.append("### Random forest spawns\n\nOak/birch forests. Rows from before 2026-11-16 were "
                      "made under an older setup (render distance 6, no damage). **Arena mean** is the same "
-                     "agent's score in the walled arena ([arena/](../arena/README.md)).\n\n"
+                     "agent's score in the walled arena ([Arena](arena.md)).\n\n"
                      + table(head + ["Arena mean", "vs random"], rows_for(forest, True)))
     if wooded:
         parts.append("### Random wooded spawns\n\nAny biome with trees but savanna, a new region every "
                      f"{natural_env.MAX_HOP_EPISODES['wooded'] + 1} episodes (as in wooded training).\n\n"
                      + table(head, rows_for(wooded, False)))
     return "## Random spawns\n\n" + "\n\n".join(parts)
-
-
-def update(stamp: str | None = None) -> None:
-    """Rebuild docs/natural/ from the natural-world CSVs: the index, then one page per table."""
-    stamp = stamp or f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
-    evals, runs = read_rows(NATURAL_EVAL_CSV), read_rows(NATURAL_TRAIN_CSV)
-    # MineRL models evaluated under exactly these rules (fixed spots, 1000 ticks, no cap, one-hit axe)
-    # join the fixed-spot tables; everything else of theirs stays in docs/minerl/.
-    minerl_rows = [r for r in read_rows(MINERL_EVAL_CSV)
-                   if is_standard_natural(r) and is_fixed(r) and not is_held_out(r)]
-    training_world = [r for r in evals if not is_held_out(r)]
-    wooded = [r for r in training_world + minerl_rows if is_wooded(r)]
-    fixed = [r for r in training_world + minerl_rows if is_fixed(r) and not is_wooded(r)]  # the forest spots
-    random_spawns = [r for r in training_world if not is_fixed(r) and r.get("spots") != "random_wooded"]  # forest
-    random_wooded = [r for r in training_world if r.get("spots") == "random_wooded"]
-    sections = {
-        "fixed_forest_spawns.md": fixed_spots_section(fixed, runs),
-        "fixed_wooded_spawns.md": wooded_section(wooded, fixed, runs),
-        "lines.md": lines_section(fixed, random_spawns, runs),
-        "evaluation_runs.md": evals_section(evals),
-        "random_spawns.md": natural_random_spawn_section(random_spawns, random_wooded, read_rows(EVAL_CSV), runs),
-        "setup.md": natural_setup_section(),
-    }
-    write_pages(NATURAL_DIR, "Natural world", INDEX_TEMPLATE, stamp, PAGES, sections)

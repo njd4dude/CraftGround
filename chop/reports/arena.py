@@ -1,44 +1,21 @@
-"""docs/arena/: the arena's report, one page per table (README.md is the index and keeps your Notes).
+"""The arena's report sections: results per agent, experiments, other runs, setup.
 
-Organised by experiment (results/experiments_arena.json): each one's question, what it found,
+chop/reports/site.py decides which page each one goes on. Experiments are organised by experiment (results/experiments_arena.json): each one's question, what it found,
 and its runs with their setup and evaluation score. Runs no experiment lists go under
 "Other runs". Everything per run (PPO settings, notes, every episode) stays in the CSVs and in
 each run's config.json; the report only shows what you compare runs by."""
 
 import json
 import re
-from datetime import datetime
 from pathlib import Path
 
 from chop.envs import arena as arena_env
 from chop.envs import common
-from chop.paths import DOCS_DIR, RESULTS_DIR
+from chop.paths import RESULTS_DIR
 from chop.reports.csvio import EVAL_CSV, TRAIN_CSV, episodes_by_agent, normalize_agent, read_rows
-from chop.reports.markdown import END, START, mean_ci, table, write_pages
+from chop.reports.markdown import mean_ci, table
 
-ARENA_DIR = DOCS_DIR / "arena"
-REPORT = ARENA_DIR / "README.md"  # the index
 EXPERIMENTS_FILE = RESULTS_DIR / "experiments_arena.json"
-
-# (file, title, what it holds) in index order.
-PAGES = [
-    ("experiments.md", "Experiments", "each experiment's question, what it found, and its runs with their scores"),
-    ("other_runs.md", "Other runs", "runs no experiment lists yet"),
-    ("setup.md", "Setup", "arena, trees, actions, reward, episode length, random baseline"),
-]
-
-TEMPLATE = f"""# CraftGround Experiments: Chop Trees (arena)
-
-Goal: train an agent to chop as many oak logs as possible in one episode. Natural-world results
-are in [natural/](../natural/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
-
-{START}
-{END}
-
-## Notes
-
-Write your observations, ideas and next steps here. This section is never overwritten.
-"""
 
 
 def load_experiments() -> list[dict]:
@@ -140,6 +117,36 @@ def by_setup_table(rows: list[tuple[tuple[str, int, bool], str, list[int] | None
     return "\n\n" + table(["Setup", "Runs", "Average of runs", "Each run"], out)
 
 
+def results_section(runs: Runs, minerl_rows: list[dict], label) -> str:
+    """Every evaluated arena agent, best first: our runs (eval_results.csv) and MineRL models played under
+    the same arena rules (1000 ticks, one-hit axe; minerl_rows). label(agent) names a MineRL model."""
+    rows = []
+    for agent, eps in runs.evals.items():
+        mean, ci = mean_ci(eps)
+        if agent == "random":
+            name, setup = "Random actions", "single actions"
+        else:
+            actions, ticks, repaired = setup_of(load_config(agent))
+            ckpt = checkpoint_steps(agent)
+            folder = Path(agent).parent.parent.name if ckpt else Path(agent).parent.name
+            name = f"`{folder}`" + (f" @ {short_steps(ckpt)}" if ckpt else "")
+            setup = (f"{actions} actions, {ticks} tick{'s' if ticks > 1 else ''}/step"
+                     + ("" if repaired else ", **ground not fixed**"))
+        rows.append((mean, [name, setup, len(eps), f"**{mean:.2f}** ± {ci:.2f}", min(eps), max(eps)]))
+    for agent, eps in episodes_by_agent(minerl_rows).items():
+        mean, ci = mean_ci(eps)
+        rows.append((mean, [label(agent), "MineRL mode (64×64, 4 ticks/decision)", len(eps),
+                            f"**{mean:.2f}** ± {ci:.2f}", min(eps), max(eps)]))
+    if not rows:
+        return "## Results\n\n_None yet: `run.bat evaluate.py <model.zip>`._"
+    rows.sort(key=lambda t: -t[0])
+    return ("## Results\n\nEvery evaluated arena agent, best first: 1,000-tick episodes, the one-hit axe, "
+            f"at most {arena_env.MAX_LOGS} logs. **± is the 95% range** of the mean. **Ground not fixed**: dug "
+            "holes stayed for the rest of the run (before 2026-11-17), so those scores are rough. Why each run "
+            "was made, grouped by experiment: [Arena experiments](../experiments/arena_experiments.md).\n\n"
+            + table(["Model", "Setup", "Episodes", "Mean logs", "Min", "Max"], [r for _, r in rows]))
+
+
 def experiments_section(runs: Runs) -> tuple[str, set[str]]:
     listed: set[str] = set()
     blocks = []
@@ -196,14 +203,4 @@ def setup_section(runs: Runs) -> str:
         ["Episode length", f"{common.EPISODE_STEPS} ticks (or all logs chopped)"],
         ["Random actions", random_text],
     ]
-    return "## Setup\n\n" + table(["Setting", "Value"], rows)
-
-
-def update(stamp: str | None = None) -> None:
-    """Rebuild docs/arena/ from the arena CSVs and results/experiments_arena.json."""
-    stamp = stamp or f"_Tables last updated {datetime.now():%Y-%m-%d %H:%M}._"
-    runs = Runs()
-    experiments, listed = experiments_section(runs)
-    sections = {"experiments.md": experiments, "other_runs.md": other_section(runs, listed),
-                "setup.md": setup_section(runs)}
-    write_pages(ARENA_DIR, "Arena", TEMPLATE, stamp, PAGES, sections)
+    return "## Arena\n\n" + table(["Setting", "Value"], rows)

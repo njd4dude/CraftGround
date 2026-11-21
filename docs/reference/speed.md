@@ -1,7 +1,9 @@
-# CraftGround Benchmark: Environment Speed
+# Reference: environment speed
 
 How many env steps per second the tree-chopping environments run at, measured by
 `benchmark.py`. Rebuild these tables by running it again; each run adds rows.
+
+[← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
 _Tables last updated 2026-11-17 14:05._

@@ -51,7 +51,7 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
 
 def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_repeat: int = 1,
                  spawn: str = "forest", use_minerl: bool = False, axe: str | None = None) -> dict:
-    """The environment's settings, saved in config.json (docs/natural/ flags changes between runs)."""
+    """The environment's settings, saved in config.json (and W&B), so runs can be compared later."""
     shared = {
         "world": env_name,
         "episode_steps": common.EPISODE_STEPS,

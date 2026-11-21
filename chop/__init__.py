@@ -4,7 +4,7 @@
     chop.infra       running Minecraft instances: per-port game folders, launching, closing
     chop.training    PPO training (train.py is its command line)
     chop.evaluation  scoring agents and recording videos (evaluate.py is its command line)
-    chop.reports     the CSVs in results/ and the reports built from them (EXPERIMENTS*.md)
+    chop.reports     the CSVs in results/ and the docs/ pages built from them
 
 The scripts in the repository root (train.py, evaluate.py, make_eval_spots.py, play.py,
 benchmark.py) are the commands; one-off diagnostics live in tools/. Everything runs from the
