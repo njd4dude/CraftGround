@@ -177,11 +177,13 @@ def main():
 
     started = datetime.now()
     if use_minerl:
-        # MineRL-mode runs (fine-tunes and from-scratch runs in MineRL's spaces) are kept apart from
-        # the natural lines and the arena runs: different view, actions and frame skip.
+        # MineRL-mode runs (fine-tunes of MineRL models, and from-scratch runs in MineRL's spaces) are
+        # kept apart from the natural lines and the arena runs: different view, actions and frame skip.
+        # runs/minerl/ holds the models copied from the MineRL project; runs trained here go here.
         default = ("ft_" + run_dir_name(args.resume)) if args.resume else "scratch"
-        run_dir = RUNS_DIR / "minerl_mode" / args.env / f"{args.name or default}_{started:%Y%m%d_%H%M%S}"
-        run_name = f"minerl_mode/{args.env}/{run_dir.name}"
+        world = "" if args.env == "natural" else f"{args.env}_"  # every run so far is natural-world
+        run_dir = RUNS_DIR / "minerl_finetuned" / f"{world}{args.name or default}_{started:%Y%m%d_%H%M%S}"
+        run_name = f"minerl_finetuned/{run_dir.name}"
     elif args.env == "natural":
         line_dir = natural_line_dir(args.resume, args.line)
         run_dir = line_dir / f"{started:%Y%m%d_%H%M%S}"

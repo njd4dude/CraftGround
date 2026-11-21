@@ -33,9 +33,9 @@ def minerl_model(agent: str) -> dict | None:
 
 
 def minerl_finetune(agent: str) -> dict | None:
-    """{label, about} for a MineRL-mode model trained here (runs/minerl_mode/...): follows resumed_from
+    """{label, about} for a MineRL-mode model trained here (runs/minerl_finetuned/...): follows resumed_from
     back to the MineRL model it started from, and counts the steps trained here. None otherwise."""
-    if not agent.startswith("runs/minerl_mode/"):
+    if not agent.startswith("runs/minerl_finetuned/"):
         return None
     from chop.reports.csvio import MINERL_TRAIN_CSV, read_rows  # noqa: PLC0415 (csvio imports nothing from here)
     path = Path(agent)

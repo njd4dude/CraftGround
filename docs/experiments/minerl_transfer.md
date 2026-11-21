@@ -70,7 +70,7 @@ compares with our agents' steps.
 
 ## Training runs, every piece
 
-All in `runs/minerl_mode/natural/`: wooded spawns, one-hit axe, MineRL's PPO settings (batch 64,
+All in `runs/minerl_finetuned/`: wooded spawns, one-hit axe, MineRL's PPO settings (batch 64,
 10 epochs, entropy 0.001, target_kl 0.05), linear learning rate, 2 instances (3 ran out of memory).
 `train.py` lists only runs that ended normally in the [training log](../logs/training.md), so all pieces are here.
 Decisions are counted from the MineRL model's start; 1 decision = 4 ticks.
@@ -79,7 +79,7 @@ Decisions are counted from the MineRL model's start; 1 decision = 4 ticks.
 | --- | --- | --- | --- | --- |
 | Impala PPO | `ft_impala-ppo_wooded_one-hit-axe_20261120_115737` | MineRL Impala PPO, LR 1e-4 | 0 → 60k | stopped at low memory |
 | | `ft_impala-ppo_wooded_one-hit-axe_20261120_124557` | its 60k checkpoint | 60k → 252k | completed: **the 1M-tick model** (`model.zip`) |
-| | `ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` | the 1M-tick model, LR 1e-4 again | 252k → 492k | froze 10k decisions from the end; **the 2M-tick model** is `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
+| | `ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` | the 1M-tick model, LR 1e-4 again | 252k → 492k | froze 10k decisions from the end; **the 2M-tick model** is `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
 | Impala BC | `ft_impala-bc_wooded_one-hit-axe_20261120_193516` | MineRL Impala BC, LR 1e-4, 5-update value warm-up | 0 → 188k | paused by hand |
 | | `ft_impala-bc_wooded_one-hit-axe_20261120_220917` | its 180k checkpoint | 180k → 254k | completed: **the BC 1M-tick model** (`model.zip`) |
 

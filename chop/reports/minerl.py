@@ -40,7 +40,7 @@ def run_folder(agent: str) -> str:
 
 
 def is_minerl_mode(agent: str) -> bool:
-    return agent == "random-minerl" or agent.startswith(("runs/minerl/", "runs/minerl_mode/"))
+    return agent == "random-minerl" or agent.startswith(("runs/minerl/", "runs/minerl_finetuned/"))
 
 
 def label(agent: str, models: dict, natural_runs: list[dict]) -> str:
