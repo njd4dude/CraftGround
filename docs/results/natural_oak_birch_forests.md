@@ -5,11 +5,11 @@ The main comparison: every agent on the same 100 spots in the natural world's oa
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 15:10._
+_Tables last updated 2026-11-21 15:21._
 
 ## Results
 
-Every agent here played the same 100 oak/birch forest spots (`results/eval_spots_natural.json`, one episode each, same starting direction, current setup), so differences come from the agents, not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose ranges overlap a lot may not really differ. **vs Line 5** is the average difference per spot with its 95% range; a range that doesn't include 0 is a real difference. MineRL rows play in MineRL mode (their own view and actions) under the same rules. Random-spawn scores are in [Other evaluations](other_evaluations.md#random-spawns).
+Every agent here played the same 100 oak/birch forest spots (`results/eval_spots_natural.json`, one episode each, same starting direction, current setup), so differences come from the agents, not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose ranges overlap a lot may not really differ. **vs Line 5** is the average difference per spot with its 95% range; a range that doesn't include 0 is a real difference. MineRL rows play in MineRL mode (their own view and actions) under the same rules. Random-spawn scores are in [Other evaluations](other_evaluations.md) (under Random spawns).
 
 | Model | Line | Episodes | Mean logs | Median | 0-log episodes | Max | vs Line 5 | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

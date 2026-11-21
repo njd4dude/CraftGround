@@ -1,6 +1,6 @@
 # Experiments: MineRL models in CraftGround
 
-Models trained in the MineRL project (behavioural cloning on VPT videos, then PPO), run here in "MineRL mode" (their own view and actions; set up in [Environments](../reference/environments.md#minerl-mode)): how well they transfer, and what fine-tuning them here gives. Written by hand. _Last updated 2026-11-21._
+Models trained in the MineRL project (behavioural cloning on VPT videos, then PPO), run here in "MineRL mode" (their own view and actions; set up in [Environments](../reference/environments.md)): how well they transfer, and what fine-tuning them here gives. Written by hand. _Last updated 2026-11-21._
 
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
@@ -83,4 +83,4 @@ Decisions are counted from the MineRL model's start; 1 decision = 4 ticks.
 | Impala BC | `ft_impala-bc_wooded_one-hit-axe_20261120_193516` | MineRL Impala BC, LR 1e-4, 5-update value warm-up | 0 → 188k | paused by hand |
 | | `ft_impala-bc_wooded_one-hit-axe_20261120_220917` | its 180k checkpoint | 180k → 254k | completed: **the BC 1M-tick model** (`model.zip`) |
 
-Two BC launches crashed on `train.py` bugs before training (fixed; see the bug list in [Findings](../FINDINGS.md#bugs-found-and-what-they-affected)).
+Two BC launches crashed on `train.py` bugs before training (fixed; see the bug list in [Findings](../FINDINGS.md)).

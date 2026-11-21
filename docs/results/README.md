@@ -5,7 +5,7 @@ Every agent compared, one page per environment, plus evaluations under other rul
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 15:10._
+_Tables last updated 2026-11-21 15:21._
 
 - [Natural world: oak and birch forests (100 fixed spots)](natural_oak_birch_forests.md): The main comparison: every agent on the same 100 spots in the natural world's oak and birch forests (`results/eval_spots_natural.json`).
 - [Natural world: every biome with trees (100 fixed spots)](natural_all_tree_biomes.md): Every agent on 100 spots spread over every biome with trees (taiga, snowy taiga, jungle, dark forest, swamp, cherry grove...; no savanna; `results/eval_spots_natural_wooded.json`), next to its oak/birch forest score.

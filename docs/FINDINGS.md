@@ -44,14 +44,14 @@ episodes of our pure-RL agents. [Oak/birch spots](results/natural_oak_birch_fore
    degrees), look and jump every step with attack held scored 26.6, against 22.4 for the
     same recipe with one action per step: +4.2 ± 3.0 logs spot by spot (better at 57 spots,
     worse at 36). It learned slower at first and kept improving after single actions levelled
-    off. [Line 4](experiments/natural_lines.md#line-4) vs [Line 3](experiments/natural_lines.md#line-3)
+    off. [Line 4](experiments/natural_lines.md) vs [Line 3](experiments/natural_lines.md)
 2. **Multi-action agents keep improving with more training.** Resuming Line 4 for 1M more
 
    steps (linear LR restarted at 1e-4) went 26.6 → 35.7 at 2M (+9.1 ± 3.6 spot by spot), and
     another 1M went to 41.2 at 3M (+5.5 ± 4.5), and a third 1M (Line 4d) to 41.3 (+0.1 ± 4.5):
     it levels off at ~41 by 3M. Single actions levelled off much earlier, at ~22–25 (see below).
-    [Line 4b](experiments/natural_lines.md#line-4b), [Line 4c](experiments/natural_lines.md#line-4c),
-    [Line 4d](experiments/natural_lines.md#line-4d)
+    [Line 4b](experiments/natural_lines.md), [Line 4c](experiments/natural_lines.md),
+    [Line 4d](experiments/natural_lines.md)
 3. **Training in every biome with trees, not just oak/birch forests.** With spawns in any biome with
 
    trees (snowy taiga, taiga, jungle, swamp, dark forest...; `train.py --spawn wooded`), Line 5
@@ -60,16 +60,16 @@ episodes of our pure-RL agents. [Oak/birch spots](results/natural_oak_birch_fore
     sets (p = 0.007): it gets stuck or lost much less. More forest-only training made the agent
     *worse* outside them (all-biome spots 30.5 → 25.7). Another 1M steps with wooded spawns (Line 5b)
     changed nothing (all-biome −0.3 ± 4.5, oak/birch −1.4 ± 4.5): it levels off by 4M too.
-    [Line 5](experiments/natural_lines.md#line-5), [Line 5b](experiments/natural_lines.md#line-5b),
+    [Line 5](experiments/natural_lines.md), [Line 5b](experiments/natural_lines.md),
     [All-biome spots](results/natural_all_tree_biomes.md)
 4. **Jump is needed on natural terrain.** Adding jump and forward_jump nearly doubled the
 
-   score at ~500k steps: 18.0 vs 9.7 (random spawns). [Line 1](experiments/natural_lines.md#line-1),
-    [Line 2](experiments/natural_lines.md#line-2)
+   score at ~500k steps: 18.0 vs 9.7 (random spawns). [Line 1](experiments/natural_lines.md),
+    [Line 2](experiments/natural_lines.md)
 5. **A learning rate that decays to 0 keeps the gains.** From the same 600k model, a linear
 
    decay rose to 24.7 while a constant rate fell to 15.0: +9.8 ± 3.5 spot by spot.
-    [Line 2b](experiments/natural_lines.md#line-2b)
+    [Line 2b](experiments/natural_lines.md)
 6. **Agents generalise to a world they never trained in.** On a held-out world, scores match
 
    the training world: Line 2b +0.7, Line 3 −0.5, Line 4b +3.9 logs (ranges overlap). They learned to chop trees, not to
@@ -77,11 +77,11 @@ episodes of our pure-RL agents. [Oak/birch spots](results/natural_oak_birch_fore
 7. **1 game tick per decision is best.** It beats 4 ticks for both action sets on the fixed
 
    arena (single 30.5 vs 24.0, multi 31.3 vs 27.8), whether runs are matched on decisions,
-    game time or wall time. [Arena experiment 4](experiments/arena_experiments.md#experiment-4)
+    game time or wall time. [Arena experiment 4](experiments/arena_experiments.md)
 8. **The arena is easy.** At 1 tick per step, PPO reaches 30–32 of 32 logs in 200k steps
 
    (~7 minutes) with either action set. Good for quick checks, too easy to rank good setups.
-    [Arena experiment 1](experiments/arena_experiments.md#experiment-1), [experiment 3](experiments/arena_experiments.md#experiment-3)
+    [Arena experiment 1](experiments/arena_experiments.md), [experiment 3](experiments/arena_experiments.md)
 9. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
 
    moves by ±3–4 logs from spawn luck alone; every model now plays the same 100 spots.
@@ -93,20 +93,20 @@ episodes of our pure-RL agents. [Oak/birch spots](results/natural_oak_birch_fore
 
    The 4-tick single agent skips the bottom log of most trees. It also takes about twice as
     long to train, since each decision simulates 4 ticks.
-    [Arena experiment 4](experiments/arena_experiments.md#experiment-4)
+    [Arena experiment 4](experiments/arena_experiments.md)
 2. **A constant learning rate past ~600k.** Line 2 peaked at 18.1 and slid to 15.0 by 1M
 
-   (−3.1 ± 2.6 spot by spot). [Line 2](experiments/natural_lines.md#line-2)
+   (−3.1 ± 2.6 spot by spot). [Line 2](experiments/natural_lines.md)
 3. **Training single-action agents longer.** Every single-action recipe ends at ~22–25 logs:
 
    500k more steps changed nothing (−0.5 ± 3.1), and one 3M schedule tied a 1M one
     (23.9 vs 22.4, +1.5 ± 3.4). The limit was the setup, which multi actions then passed.
-    [Line 3b](experiments/natural_lines.md#line-3b), [Line 3c](experiments/natural_lines.md#line-3c)
+    [Line 3b](experiments/natural_lines.md), [Line 3c](experiments/natural_lines.md)
 4. **Using arena-trained agents in the natural world.** Agents scoring 26–32 in the arena get
 
    ~5 logs in forests (random actions: 1.8; random spawns, older setup). The arena doesn't
     teach enough to transfer.
-    [Random spawns](results/other_evaluations.md#random-spawns)
+    [Random spawns](results/other_evaluations.md)
 
 ## MineRL models in CraftGround
 
@@ -131,7 +131,7 @@ decision. Details and every table: [MineRL transfer](experiments/minerl_transfer
 1. **Multi vs single actions in the arena.** Multi is ahead, 31.3 vs 30.5 over 3 runs each,
 
    but the groups overlap (p = 0.2); both are near the 32 cap.
-    [Arena experiment 3](experiments/arena_experiments.md#experiment-3)
+    [Arena experiment 3](experiments/arena_experiments.md)
 2. **Line 4 vs the previous best (Line 2b).** +1.9 ± 3.4 spot by spot: ahead, not significant.
 3. **Why 4 ticks is worse.** Likely coarser control (it can only correct every 4 ticks) and
 
@@ -173,7 +173,7 @@ before any training.
 1. **Dug holes stayed in the arena** (fixed 2026-11-17). Pits from earlier episodes trapped
 
    agents, so arena results before the fix aren't valid comparisons
-    ([experiment 2](experiments/arena_experiments.md#experiment-2) is marked preliminary). The arena now
+    ([experiment 2](experiments/arena_experiments.md) is marked preliminary). The arena now
     refills the ground every reset.
 2. **Held attack stopped working after a reset.** CraftGround only presses attack when it goes
 

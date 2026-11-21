@@ -5,7 +5,7 @@ Every arena experiment: its question, what it found, and its runs.
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 15:10._
+_Tables last updated 2026-11-21 15:21._
 
 ## Experiments
 

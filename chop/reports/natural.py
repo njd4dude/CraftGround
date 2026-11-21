@@ -87,7 +87,7 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
         f"ranges overlap a lot may not really differ. **vs {REFERENCE_NAME}** is the average difference per "
         "spot with its 95% range; a range that doesn't include 0 is a real difference. MineRL rows play in "
         "MineRL mode (their own view and actions) under the same rules. Random-spawn scores are in "
-        "[Other evaluations](other_evaluations.md#random-spawns).\n\n"
+        "[Other evaluations](other_evaluations.md) (under Random spawns).\n\n"
         + table(["Model", "Line", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
                  f"vs {REFERENCE_NAME}", "vs random"], rows)
     )
