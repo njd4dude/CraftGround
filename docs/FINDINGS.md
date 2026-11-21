@@ -138,9 +138,22 @@ Details, every evaluation type and the open questions: [minerl/](minerl/README.m
    ~89 minutes for 1M steps). [BENCHMARK.md](BENCHMARK.md)
 3. **Memory.** An arena instance uses ~2.4 GB; a natural one grows to ~4 GB (2G Java heap,
    render distance 4). 3 instances is the safe number on this 32 GB machine. Claude Code stops
-   background runs when memory runs low, which killed several runs.
+   background runs when memory runs low, which killed several runs. In MineRL mode 3 natural instances
+   plus training plus open apps (Cursor, browsers: ~6 GB) was too much (2026-11-20); MineRL-mode runs use
+   2, at almost the same speed (larger rollouts per instance).
+4. **An instance can freeze without an error.** On 2026-11-20 a natural-world instance stopped answering
+   during a training run; nothing was logged and the trainer waited 80 minutes. Long runs since then go
+   through a watchdog script that kills a run whose log is silent for 20 minutes and resumes it from the
+   latest checkpoint (saved every 20k steps).
 
 ## Bugs found, and what they affected
+
+- **Resumed runs recorded the wrong PPO settings** (fixed 2026-11-20). A resumed model keeps its own
+  batch size, epochs, entropy and target_kl, but config.json recorded train.py's defaults. Training was
+  never affected; the two MineRL fine-tune configs were corrected by hand (`config_note`).
+- **train.py crashed starting from a behaviour-cloned model** (fixed 2026-11-20): `--target-kl` had no
+  default to record, and a never-trained model has no episode buffers to clear. Both crashed at launch,
+  before any training.
 
 1. **Dug holes stayed in the arena** (fixed 2026-11-17). Pits from earlier episodes trapped
    agents, so arena results before the fix aren't valid comparisons

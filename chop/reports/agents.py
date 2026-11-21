@@ -63,7 +63,8 @@ def minerl_finetune(agent: str) -> dict | None:
         trained = steps
     else:
         trained = steps - base.get("ppo_steps", 0) if steps is not None else None
-        label = f"{base['label']} + fine-tune" + (f" @ {short_steps(trained)}" if trained else "")
+        # Game time trained here (4 ticks per decision), so it reads like our lines' step counts.
+        label = f"{base['label']} + fine-tune" + (f" @ {short_steps(trained * 4)} ticks" if trained else "")
     about = (f"**MineRL mode**, trained here ({where})"
              + (f" for {trained:,} decisions = {trained * 4 / 1e6:.2f}M ticks" if trained else "")
              + (f", from {base['label']}" if base else ", from scratch"))

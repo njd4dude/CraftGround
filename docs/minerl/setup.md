@@ -3,7 +3,7 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 23:49._
+_Tables last updated 2026-11-21 14:25._
 
 The env copies the MineRL project's `MineRLTreechopAxe320-v0` (`~/mineRL/train_treechop.py`), so its models run unchanged.
 

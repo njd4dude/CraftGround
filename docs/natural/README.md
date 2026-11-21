@@ -5,7 +5,7 @@ forest instead of the walled arena (chop/envs/natural.py). Arena results are in
 [arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 23:49._
+_Tables last updated 2026-11-21 14:25._
 
 - [Fixed forest spawns](fixed_forest_spawns.md): 100 fixed spots in oak/birch forests, one row per agent: the main comparison
 - [Fixed wooded spawns](fixed_wooded_spawns.md): 100 fixed spots in any biome with trees (snowy taiga, taiga, jungle, swamp...), next to each agent's forest score

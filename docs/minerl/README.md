@@ -6,7 +6,7 @@ CraftGround's arena and natural world with MineRL's own view and actions ("MineR
 [arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 23:49._
+_Tables last updated 2026-11-21 14:25._
 
 - [Results](results.md): one table per evaluation type (world, spots, episode length, log cap, axe)
 - [Evaluation runs](evaluation_runs.md): one row per evaluate.py run, newest first, with its settings
@@ -106,6 +106,23 @@ plus a 5-update value warm-up (its value head was never trained; `train.py --val
 14. **MineRL's simulator isn't needed to beat pure RL.** VPT videos → BC offline → 1M ticks of PPO here
     ties Line 5 on forests (+0.4 ± 3.5) and beats it on wooded spots (**+5.8 ± 3.7**), with a quarter
     of Line 5's game time. Starting from the MineRL PPO model gets ~3 more forest logs.
+
+### Training runs, every piece
+
+`train.py` only adds a row to [Training runs](training_runs.md) when a run ends normally, so stopped
+pieces are listed here. All: natural world, wooded spawns, one-hit axe, MineRL mode,
+`runs/minerl_mode/natural/`. Steps are decisions (4 ticks each), counted from the MineRL model's start.
+
+| Piece (folder) | From | Decisions | Ended |
+| --- | --- | --- | --- |
+| `ft_impala-ppo_wooded_one-hit-axe_20261120_115737` | MineRL Impala PPO | 0 → 60k | stopped by Claude Code at low memory (3 instances) |
+| `ft_impala-ppo_wooded_one-hit-axe_20261120_124557` | its 60k checkpoint, LR continued (7.6e-5) | 60k → 252k | completed, 2 instances: **1M-tick model** |
+| `ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` | the 1M-tick model, LR restarted at 1e-4 | 252k → 492k | froze at 17:37 (an instance stopped answering, no error); killed at 18:57. Its 240k checkpoint is the **2M-tick model** |
+| `ft_impala-bc_wooded_one-hit-axe_20261120_193516` | MineRL Impala BC, 5-update value warm-up | 0 → 188k | paused by hand at 21:15 |
+| `ft_impala-bc_wooded_one-hit-axe_20261120_220917` | its 180k checkpoint, LR continued (2.8e-5) | 180k → 254k | completed: **BC 1M-tick model** |
+
+Two BC starts crashed at launch on train.py bugs (fixed, see FINDINGS' bug list) and left nothing but
+short crashed runs on W&B.
 
 ### How the numbers relate
 
