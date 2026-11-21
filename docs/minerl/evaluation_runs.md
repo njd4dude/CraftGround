@@ -3,12 +3,18 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 19:41._
+_Tables last updated 2026-11-20 23:49._
 
 One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (MineRL mode, or one of our models with a non-standard axe, episode length or log cap), newest first. **Steps/s** counts decisions (4 ticks each in MineRL mode).
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-20T23:48:34 | MineRL Impala PPO | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` | natural | fixed wooded spots | 1000 | – | instant | 100 | 25.72 | 10.1 | 50 |
+| 2026-11-20T23:38:20 | MineRL Impala BC | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` | natural | fixed wooded spots | 1000 | – | instant | 100 | 21.15 | 10.3 | 49 |
+| 2026-11-20T23:27:54 | MineRL Impala BC | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 22.18 | 10.0 | 51 |
+| 2026-11-20T23:17:46 | MineRL Impala BC + fine-tune @ 120k | `runs/minerl_mode/natural/ft_impala-bc_wooded_one-hit-axe_20261120_193516/checkpoints/ppo_chop_120000_steps.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 37.17 | 10.2 | 50 |
+| 2026-11-20T23:07:26 | MineRL Impala BC + fine-tune @ 254k | `runs/minerl_mode/natural/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` | natural | fixed wooded spots | 1000 | – | instant | 100 | 37.48 | 11.6 | 43 |
+| 2026-11-20T22:55:41 | MineRL Impala BC + fine-tune @ 254k | `runs/minerl_mode/natural/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 40.43 | 9.8 | 53 |
 | 2026-11-20T19:31:36 | MineRL Impala PPO + fine-tune @ 372k | `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_495292_steps.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 44.54 | 11.2 | 45 |
 | 2026-11-20T19:20:16 | MineRL Impala PPO + fine-tune @ 492k | `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | natural | fixed wooded spots | 1000 | – | instant | 100 | 38.54 | 10.7 | 47 |
 | 2026-11-20T19:09:25 | MineRL Impala PPO + fine-tune @ 492k | `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | natural | fixed forest spots | 1000 | – | instant | 100 | 44.66 | 10.7 | 47 |

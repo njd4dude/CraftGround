@@ -6,7 +6,7 @@ CraftGround's arena and natural world with MineRL's own view and actions ("MineR
 [arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 19:41._
+_Tables last updated 2026-11-20 23:49._
 
 - [Results](results.md): one table per evaluation type (world, spots, episode length, log cap, axe)
 - [Evaluation runs](evaluation_runs.md): one row per evaluate.py run, newest first, with its settings
@@ -23,9 +23,9 @@ heading of its table in [Results](results.md). _Last updated 2026-11-20._
 
 1. **How well does a MineRL model do here, with and without fine-tuning, in the arena and in the
    natural world?** Natural world: answered below, both ways. Arena: zero-shot only.
-2. **Can pure RL here match or beat it?** Not so far: fine-tuned for 1M ticks, the MineRL model ties
-   our best pure-RL agents on forest spots and beats them on wooded ones; pure RL needed 3-4M ticks to
-   get there. PPO from scratch in MineRL's own spaces (the fairest version) isn't run yet.
+2. **Can pure RL here match or beat it?** Not so far: fine-tuned for 2M ticks, the MineRL model beats
+   our best pure-RL agent on both spot sets, and even the BC-only model (no MineRL simulator at all)
+   ties it on forests and beats it on wooded spots after 1M ticks; pure RL needed 3-4M ticks. PPO from scratch in MineRL's own spaces (the fairest version) isn't run yet.
 3. **How much does exactly matching the observations and actions matter?** One test so far (the axe).
    Next: hand hidden, our 114×64 view, 1 tick per decision.
 4. **Does a fine-tuned MineRL model still improve after switching from discrete to continuous
@@ -84,6 +84,29 @@ All scores: *fixed spots · 1,000-tick, no cap · one-hit axe*, 100 spots.
 11. **At 2M ticks it beats Line 5 on both spot sets**: forest **+4.7 ± 3.9** (better at 55 spots, worse at
     40), wooded **+6.9 ± 4.0** (58 / 38). Both ranges exclude 0. Our best agent now.
 
+### Without MineRL's simulator: fine-tuning the BC model (2026-11-20)
+
+The Impala BC model (behavioural cloning on VPT videos only: no PPO in MineRL, so MineRL's simulator
+was never needed) fine-tuned exactly like the Impala PPO: same settings, 250k decisions = 1M ticks,
+plus a 5-update value warm-up (its value head was never trained; `train.py --value-warmup 5`). Runs
+`ft_impala-bc_wooded_one-hit-axe_20261120_193516` (paused at 188k) and `..._220917` (resumed from 180k).
+*Fixed spots · 1,000-tick, no cap · one-hit axe*, 100 spots.
+
+| | Forest zero-shot | Forest 0.48M ticks | Forest 1M ticks | Wooded zero-shot | Wooded 1M ticks |
+| --- | --- | --- | --- | --- | --- |
+| Impala BC | 22.2 | 37.2 | **40.4** | 21.2 | **37.5** |
+| Impala PPO (BC + 120k PPO in MineRL) | 29.4 | 38.5 | **43.4** | 25.7 | **37.2** |
+| Line 5 (4M ticks of pure RL) | | | 40.0 | | 31.6 |
+
+12. **MineRL's PPO step helps zero-shot**: Impala PPO beats its BC start by +7.2 ± 2.1 on forests and
+    +4.6 ± 2.4 on wooded spots before any training here.
+13. **After 1M ticks here, most of that gap is gone.** BC fine-tune vs PPO fine-tune: forest −2.9 ± 2.6
+    (a small real difference), wooded +0.3 ± 3.3 (none). Fine-tuning gave the BC model +18.2 ± 2.4
+    (forest) and +16.3 ± 3.1 (wooded).
+14. **MineRL's simulator isn't needed to beat pure RL.** VPT videos → BC offline → 1M ticks of PPO here
+    ties Line 5 on forests (+0.4 ± 3.5) and beats it on wooded spots (**+5.8 ± 3.7**), with a quarter
+    of Line 5's game time. Starting from the MineRL PPO model gets ~3 more forest logs.
+
 ### How the numbers relate
 
 - **Timesteps are decisions.** Our agents decide every tick; MineRL mode decides every 4 ticks. So
@@ -94,8 +117,7 @@ All scores: *fixed spots · 1,000-tick, no cap · one-hit axe*, 100 spots.
 
 ### Next
 
-1. Fine-tune the Impala **BC** model the same way (running, 2026-11-20): does skipping MineRL's PPO, so
-   MineRL's simulator entirely, give the same result?
+1. (Optional) continue the BC fine-tune to 2M ticks, to see whether it closes the last ~3 forest logs.
 2. The cheap matching tests (zero-shot, ~10 min each): hand hidden, our 114×64 view, 1 tick per decision.
 3. PPO from scratch in MineRL's spaces (question 2, fair version).
 4. A continuous action head (question 4), starting from this fine-tuned model.

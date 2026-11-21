@@ -110,7 +110,11 @@ Details, every evaluation type and the open questions: [minerl/](minerl/README.m
    (+5.6 ± 3.8). Another 1M ticks added little (44.7 forest, 38.5 wooded at 2M) but made it significantly
    better than Line 5 on both sets. Its starting point cost BC on VPT videos plus ~0.5M ticks of PPO in MineRL.
    [MineRL notes](minerl/README.md)
-4. **Line 5 slows over long episodes.** Over 4,000 ticks it averages 118.9, about 3× its 1000-tick
+4. **MineRL's simulator isn't needed.** The BC-only model (VPT videos, no PPO in MineRL) fine-tuned the
+   same way for 1M ticks: 22.2 → 40.4 on forests (ties Line 5, +0.4 ± 3.5) and 21.2 → 37.5 on wooded
+   spots (beats Line 5, +5.8 ± 3.7). Starting from the MineRL PPO model is ~3 forest logs better
+   (−2.9 ± 2.6), the same on wooded spots. [MineRL notes](minerl/README.md)
+5. **Line 5 slows over long episodes.** Over 4,000 ticks it averages 118.9, about 3× its 1000-tick
    score, as nearby trees run out. [Results](minerl/results.md)
 
 ## Not proven yet
