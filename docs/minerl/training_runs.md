@@ -3,7 +3,7 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:25._
+_Tables last updated 2026-11-21 14:34._
 
 One row per MineRL-mode `train.py` run, newest first. **Steps** are decisions (4 ticks each) and include the MineRL model's own steps.
 

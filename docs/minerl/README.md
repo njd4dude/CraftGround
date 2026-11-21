@@ -6,7 +6,7 @@ CraftGround's arena and natural world with MineRL's own view and actions ("MineR
 [arena/](../arena/README.md); the summary of findings is [FINDINGS.md](../FINDINGS.md).
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:25._
+_Tables last updated 2026-11-21 14:34._
 
 - [Results](results.md): one table per evaluation type (world, spots, episode length, log cap, axe)
 - [Evaluation runs](evaluation_runs.md): one row per evaluate.py run, newest first, with its settings
@@ -16,125 +16,80 @@ _Tables last updated 2026-11-21 14:25._
 
 ## Notes
 
-Written by hand; this section is never overwritten. Every number names its evaluation type, the
-heading of its table in [Results](results.md). _Last updated 2026-11-20._
+Written by hand; never overwritten. _Last updated 2026-11-21._
+
+**How these are scored, unless a line says otherwise:** natural world, the 100 fixed spots (forest
+or wooded), 1,000-tick episodes, no log cap, our one-hit axe: the same rules as our own agents'
+reports, so the numbers compare directly with Line 5. "±" is the 95% range of a spot-by-spot
+difference; a range that doesn't include 0 is a real difference. Every table is in [Results](results.md).
+
+### Main results
+
+Fine-tuning ran in MineRL mode (the model's own view and actions, 4 ticks per decision) on wooded
+spawns, like Line 5. Training is given in game ticks, so it compares with our agents' steps.
+
+| Model | Trained here | Forest | Wooded |
+| --- | --- | --- | --- |
+| MineRL Impala PPO | 0 (zero-shot) | 29.4 | 25.7 |
+| | 0.48M ticks | 38.5 | |
+| | 1M ticks | 43.4 | 37.2 |
+| | **2M ticks** | **44.7** | **38.5** |
+| MineRL Impala BC (no MineRL simulator) | 0 (zero-shot) | 22.2 | 21.1 |
+| | 0.48M ticks | 37.2 | |
+| | 1M ticks | 40.4 | 37.5 |
+| Pure RL (Line 4 → 4b → 4c → 5) | 1M / 2M / 3M ticks | 26.6 / 35.7 / 41.2 | |
+| | **Line 5**, 4M ticks | **40.0** | **31.6** |
+
+### What we found
+
+1. **MineRL models transfer without fine-tuning.** Scored the way MineRL scored them (4,000 ticks, iron
+   axe, ends at 64 logs, first 50 forest spots) they keep 75-91% of their MineRL score: Impala PPO 54.0
+   (59.6 in MineRL), NatureCNN PPO 48.4 (59.8), Impala BC 44.1 (58.8). The arena is no harder for them
+   than forests (Impala PPO, iron axe: 21.4 vs 19.6).
+2. **Zero-shot, our pure-RL agents are ahead:** Impala PPO 29.4 vs Line 5's 40.0 (−10.6 ± 3.8).
+3. **Fine-tuned, the MineRL model is our best agent.** At 2M ticks it beats Line 5 on forests
+   (+4.7 ± 3.9) and wooded spots (+6.9 ± 4.0). It levels off after 1-1.5M ticks (43.4 → 44.7 from 1M to
+   2M); pure RL levelled off at ~41 after 3M.
+4. **MineRL's simulator isn't needed.** The BC model (VPT videos only, never run in MineRL), fine-tuned
+   the same way for 1M ticks, ties Line 5 on forests (+0.4 ± 3.5) and beats it on wooded spots
+   (+5.8 ± 3.7). Starting from the MineRL PPO model is worth ~3 forest logs (−2.9 ± 2.6 for BC) and
+   nothing on wooded spots (+0.3 ± 3.3).
+5. **The axe matters a lot; it is one setting that differs from MineRL.** Zero-shot, the one-hit axe
+   gives +6 to +10 logs over MineRL's iron axe (Impala PPO 19.6 → 29.4 on forests): the model's
+   aim-and-hold behaviour just finishes each log sooner. The one-hit axe is a diamond axe, so it also
+   looks different in the hand.
+6. **Over 4,000 ticks Line 5 averages 118.9,** about 3× its 1,000-tick score, not 4×: it slows as nearby
+   trees run out. With MineRL's 64-log cap it scores 54.6.
 
 ### The questions
 
-1. **How well does a MineRL model do here, with and without fine-tuning, in the arena and in the
-   natural world?** Natural world: answered below, both ways. Arena: zero-shot only.
-2. **Can pure RL here match or beat it?** Not so far: fine-tuned for 2M ticks, the MineRL model beats
-   our best pure-RL agent on both spot sets, and even the BC-only model (no MineRL simulator at all)
-   ties it on forests and beats it on wooded spots after 1M ticks; pure RL needed 3-4M ticks. PPO from scratch in MineRL's own spaces (the fairest version) isn't run yet.
-3. **How much does exactly matching the observations and actions matter?** One test so far (the axe).
-   Next: hand hidden, our 114×64 view, 1 tick per decision.
-4. **Does a fine-tuned MineRL model still improve after switching from discrete to continuous
-   controls?** Not started: needs a continuous action head.
-
-### What we found (zero-shot: no fine-tuning, 2026-11-19)
-
-1. **The MineRL models transfer.** Scored as MineRL scored them (*fixed forest spots · 4,000-tick
-   episodes, ends at 64 logs · iron axe*, first 50 spots), they keep 75-91% of their MineRL score:
-   Impala PPO 54.0 (59.6 in MineRL), NatureCNN PPO 48.4 (59.8), Impala BC 44.1 (58.8). This is a newer
-   Minecraft, a world they never saw, and no fine-tuning.
-2. **Impala PPO transfers best**, and PPO on top of BC still helps here: 54.0 vs its BC start's 44.1.
-   NatureCNN PPO scored the same as Impala PPO in MineRL but loses more here (48.4).
-3. **The arena and the natural world are about equally easy for them** (*1,000-tick, iron axe*):
-   Impala PPO 21.4 in the arena (out of 32), 19.6 on the forest spots. Walls and flat ground didn't
-   confuse them, though they never saw either.
-4. **The axe alone is worth +6 to +10 logs** (*1,000-tick*, iron vs one-hit axe): Impala PPO 19.6 → 29.4
-   on the forest spots, 21.4 → 27.8 in the arena. The model's behaviour carries over; its pace was
-   set by the slower axe. The first answer to question 3: one env difference changes the score a lot.
-5. **Our pure-RL agents are still ahead of the best one zero-shot.** Same rules as our own reports
-   (*fixed forest spots · 1,000-tick, no cap · one-hit axe*): Line 5 40.0, Impala PPO 29.4, so
-   −10.6 ± 3.8 spot by spot (Impala better at 28 spots, worse at 67). It rarely gets stuck, though:
-   3 empty episodes to Line 5's 4.
-6. **Line 5 over 4,000 ticks** (*fixed forest spots, one-hit axe*, first 50 spots): 118.9 uncapped,
-   about 3× its 1,000-tick 40, not 4×: it slows as nearby trees run out (median 112; one episode
-   reached 517 by walking into a dark oak forest, whose 2×2 trunks hold many logs). With MineRL's
-   64 cap: 54.6, reaching 64 on 37 of 50 spots. That matches Impala PPO's 54.0, but Impala had the
-   slower iron axe, so they're in different tables and this isn't a like-for-like comparison.
-
-### What we found (fine-tuned, 2026-11-20)
-
-The Impala PPO, fine-tuned here: natural world, wooded spawns, one-hit axe, linear LR from 1e-4,
-the model's own PPO settings (batch 64, 10 epochs, ent 0.001, target_kl 0.05), 252k decisions =
-1.0M ticks (run `runs/minerl_mode/natural/ft_impala-ppo_wooded_one-hit-axe_20261120_124557`,
-continued from the 11:57 run's 60k checkpoint after a low-memory stop; 2 instances).
-All scores: *fixed spots · 1,000-tick, no cap · one-hit axe*, 100 spots.
-
-7. **Fine-tuning works fast.** Forest spots: 29.4 zero-shot → 38.5 at 0.48M ticks → **43.4** at
-   1.0M ticks (+13.9 ± 3.1 over zero-shot), the highest forest mean of any agent so far. Our pure-RL
-   history reached 26.6 at 1M ticks (Line 4), 35.7 at 2M (4b), 41.2 at 3M (4c).
-8. **It ties our best on forests and beats it on wooded spots.** Forest: +3.4 ± 4.0 vs Line 5
-   (+2.1 ± 5.0 vs Line 4d): ahead, but not a significant difference. Wooded: **37.2 vs Line 5's 31.6,
-   +5.6 ± 3.8**, better at 56 spots, worse at 41: a real difference. Fewest 0-log forest episodes of
-   any agent (2; Line 5: 4).
-9. **What it cost.** 1M ticks here, on top of what the MineRL model already had: BC on VPT videos plus
-   120k PPO decisions (~0.5M ticks) in MineRL. Line 5 had 4M ticks of PPO here and nothing else. So in
-   game time simulated here, starting from MineRL needed about a quarter of pure RL's; the
-   demonstrations and the MineRL training are the rest of the price.
-
-10. **Another 1M ticks: a small gain, then it levels off** (run
-    `runs/minerl_mode/natural/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415`, linear LR restarted at
-    1e-4 like Lines 4b/4c/5; it froze 10k decisions before its end, so its 240k checkpoint
-    `ppo_chop_615292_steps.zip`, 1.96M ticks in all, stands for 2M). Forest: 43.4 at 1M → 44.5 at 1.5M →
-    **44.7** at 2M (+1.3 ± 3.3 vs 1M: no real change). Wooded: 37.2 → **38.5** (+1.3 ± 3.4). Pure RL levelled
-    off the same way, at ~41 by 3M ticks; this levels off ~4 logs higher, after 1-1.5M ticks.
-11. **At 2M ticks it beats Line 5 on both spot sets**: forest **+4.7 ± 3.9** (better at 55 spots, worse at
-    40), wooded **+6.9 ± 4.0** (58 / 38). Both ranges exclude 0. Our best agent now.
-
-### Without MineRL's simulator: fine-tuning the BC model (2026-11-20)
-
-The Impala BC model (behavioural cloning on VPT videos only: no PPO in MineRL, so MineRL's simulator
-was never needed) fine-tuned exactly like the Impala PPO: same settings, 250k decisions = 1M ticks,
-plus a 5-update value warm-up (its value head was never trained; `train.py --value-warmup 5`). Runs
-`ft_impala-bc_wooded_one-hit-axe_20261120_193516` (paused at 188k) and `..._220917` (resumed from 180k).
-*Fixed spots · 1,000-tick, no cap · one-hit axe*, 100 spots.
-
-| | Forest zero-shot | Forest 0.48M ticks | Forest 1M ticks | Wooded zero-shot | Wooded 1M ticks |
-| --- | --- | --- | --- | --- | --- |
-| Impala BC | 22.2 | 37.2 | **40.4** | 21.2 | **37.5** |
-| Impala PPO (BC + 120k PPO in MineRL) | 29.4 | 38.5 | **43.4** | 25.7 | **37.2** |
-| Line 5 (4M ticks of pure RL) | | | 40.0 | | 31.6 |
-
-12. **MineRL's PPO step helps zero-shot**: Impala PPO beats its BC start by +7.2 ± 2.1 on forests and
-    +4.6 ± 2.4 on wooded spots before any training here.
-13. **After 1M ticks here, most of that gap is gone.** BC fine-tune vs PPO fine-tune: forest −2.9 ± 2.6
-    (a small real difference), wooded +0.3 ± 3.3 (none). Fine-tuning gave the BC model +18.2 ± 2.4
-    (forest) and +16.3 ± 3.1 (wooded).
-14. **MineRL's simulator isn't needed to beat pure RL.** VPT videos → BC offline → 1M ticks of PPO here
-    ties Line 5 on forests (+0.4 ± 3.5) and beats it on wooded spots (**+5.8 ± 3.7**), with a quarter
-    of Line 5's game time. Starting from the MineRL PPO model gets ~3 more forest logs.
-
-### Training runs, every piece
-
-`train.py` only adds a row to [Training runs](training_runs.md) when a run ends normally, so stopped
-pieces are listed here. All: natural world, wooded spawns, one-hit axe, MineRL mode,
-`runs/minerl_mode/natural/`. Steps are decisions (4 ticks each), counted from the MineRL model's start.
-
-| Piece (folder) | From | Decisions | Ended |
-| --- | --- | --- | --- |
-| `ft_impala-ppo_wooded_one-hit-axe_20261120_115737` | MineRL Impala PPO | 0 → 60k | stopped by Claude Code at low memory (3 instances) |
-| `ft_impala-ppo_wooded_one-hit-axe_20261120_124557` | its 60k checkpoint, LR continued (7.6e-5) | 60k → 252k | completed, 2 instances: **1M-tick model** |
-| `ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` | the 1M-tick model, LR restarted at 1e-4 | 252k → 492k | froze at 17:37 (an instance stopped answering, no error); killed at 18:57. Its 240k checkpoint is the **2M-tick model** |
-| `ft_impala-bc_wooded_one-hit-axe_20261120_193516` | MineRL Impala BC, 5-update value warm-up | 0 → 188k | paused by hand at 21:15 |
-| `ft_impala-bc_wooded_one-hit-axe_20261120_220917` | its 180k checkpoint, LR continued (2.8e-5) | 180k → 254k | completed: **BC 1M-tick model** |
-
-Two BC starts crashed at launch on train.py bugs (fixed, see FINDINGS' bug list) and left nothing but
-short crashed runs on W&B.
-
-### How the numbers relate
-
-- **Timesteps are decisions.** Our agents decide every tick; MineRL mode decides every 4 ticks. So
-  a 1,000-tick episode is 1,000 decisions for Line 5 and 250 for a MineRL model, and 1M training
-  steps in MineRL mode is 4M ticks of play.
-- **MineRL's own scores** are over 24 worlds (seeds 1-24), 4,000 ticks, iron axe, ending at 64 logs,
-  with mobs. Ours are over fixed spots in one world (seed 20261114), peaceful.
+1. **How good is a MineRL model here, with and without fine-tuning?** Answered (1-3). Arena: zero-shot only.
+2. **Can pure RL here match or beat it?** Not so far (3, 4). Not yet run: PPO from scratch in MineRL's
+   own spaces, the fairest version.
+3. **How much does matching the observations and actions matter?** One test so far, the axe (5).
+   Not yet run: hand hidden, our 114×64 view, 1 tick per decision.
+4. **Does a fine-tuned model still improve after switching to continuous controls?** Not started.
 
 ### Next
 
-1. (Optional) continue the BC fine-tune to 2M ticks, to see whether it closes the last ~3 forest logs.
-2. The cheap matching tests (zero-shot, ~10 min each): hand hidden, our 114×64 view, 1 tick per decision.
-3. PPO from scratch in MineRL's spaces (question 2, fair version).
-4. A continuous action head (question 4), starting from this fine-tuned model.
+1. The matching tests for question 3 (zero-shot, ~10 min each).
+2. PPO from scratch in MineRL's spaces (question 2).
+3. A continuous action head on the 2M-tick model (question 4).
+4. Optional: the BC fine-tune to 2M ticks, to see whether it catches up the last ~3 forest logs.
+
+### Training runs, every piece
+
+All in `runs/minerl_mode/natural/`: wooded spawns, one-hit axe, MineRL's PPO settings (batch 64,
+10 epochs, entropy 0.001, target_kl 0.05), linear learning rate, 2 instances (3 ran out of memory).
+`train.py` lists only runs that ended normally in [Training runs](training_runs.md), so all pieces are here.
+Decisions are counted from the MineRL model's start; 1 decision = 4 ticks.
+
+| Model | Piece (folder) | From | Decisions | Ended |
+| --- | --- | --- | --- | --- |
+| Impala PPO | `ft_impala-ppo_wooded_one-hit-axe_20261120_115737` | MineRL Impala PPO, LR 1e-4 | 0 → 60k | stopped at low memory |
+| | `ft_impala-ppo_wooded_one-hit-axe_20261120_124557` | its 60k checkpoint | 60k → 252k | completed: **the 1M-tick model** (`model.zip`) |
+| | `ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` | the 1M-tick model, LR 1e-4 again | 252k → 492k | froze 10k decisions from the end; **the 2M-tick model** is `checkpoints/ppo_chop_615292_steps.zip` |
+| Impala BC | `ft_impala-bc_wooded_one-hit-axe_20261120_193516` | MineRL Impala BC, LR 1e-4, 5-update value warm-up | 0 → 188k | paused by hand |
+| | `ft_impala-bc_wooded_one-hit-axe_20261120_220917` | its 180k checkpoint | 180k → 254k | completed: **the BC 1M-tick model** (`model.zip`) |
+
+Two BC launches crashed on `train.py` bugs before training (fixed; see FINDINGS' bug list).

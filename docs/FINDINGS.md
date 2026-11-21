@@ -10,7 +10,7 @@ every run:
 - [BENCHMARK.md](BENCHMARK.md): environment speed; [PARALLEL_LAUNCH.md](PARALLEL_LAUNCH.md): running several instances
 
 This file is written by hand: update it when a result changes a statement.
-_Last updated 2026-11-20._
+_Last updated 2026-11-21._
 
 **How to read the numbers.** Scores are logs chopped per 1000-tick episode. Natural-world
 scores are over the same 100 fixed forest spots for every model, so models can be compared
@@ -32,7 +32,7 @@ The best pure-RL agent:
 **Line 5**, multi actions, 4M steps (Line 4c + 1M with wooded spawns): **40.0 logs** per
 episode on the fixed forest spots (tied with Line 4c's 41.2 and Line 4d's 41.3) and **31.6** on
 the wooded spots, where it beats the forest-trained Line 4d by +6.0 ± 4.8. Fewest 0-log
-episodes of any agent. [Fixed forest spawns](natural/fixed_forest_spawns.md), [Fixed wooded spawns](natural/fixed_wooded_spawns.md)
+episodes of our pure-RL agents. [Fixed forest spawns](natural/fixed_forest_spawns.md), [Fixed wooded spawns](natural/fixed_wooded_spawns.md)
 
 ## What works
 
@@ -94,28 +94,18 @@ episodes of any agent. [Fixed forest spawns](natural/fixed_forest_spawns.md), [F
 
 ## MineRL models in CraftGround
 
-Models trained in the MineRL project (BC on VPT videos, then PPO) run here unchanged in "MineRL
-mode": their own 64×64 view with the hand, `[move, yaw, pitch]` actions and 4 ticks per decision.
-Details, every evaluation type and the open questions: [minerl/](minerl/README.md).
+Models trained in the MineRL project (behavioural cloning on VPT videos, then PPO) run here unchanged
+in "MineRL mode": their own 64×64 view with the hand, `[move, yaw, pitch]` actions, 4 ticks per
+decision. Details and every table: [minerl/](minerl/README.md).
 
-1. **They transfer.** Scored as MineRL scored them (4,000 ticks, iron axe, ends at 64 logs; first 50
-   forest spots) they keep 75-91% of their MineRL score: Impala PPO 54.0 (59.6 in MineRL),
-   NatureCNN PPO 48.4 (59.8), Impala BC 44.1 (58.8). [Results](minerl/results.md)
-2. **Our pure-RL agents are still ahead zero-shot.** Under our own rules (forest spots, 1000 ticks,
-   one-hit axe) Impala PPO scores 29.4 to Line 5's 40.0: −10.6 ± 3.8 spot by spot. With MineRL's slower
-   iron axe it scores 19.6; the axe alone is worth ~10 logs. [Fixed forest spawns](natural/fixed_forest_spawns.md)
-3. **Fine-tuned here, it catches up fast.** 1M ticks of PPO in the natural world (wooded spawns, one-hit
-   axe) took it from 29.4 to 43.4 on the forest spots (+13.9 ± 3.1); 0.48M ticks already gave 38.5.
-   Pure RL reached 26.6 at 1M ticks and ~41 at 3M. On the wooded spots it beats Line 5, 37.2 vs 31.6
-   (+5.6 ± 3.8). Another 1M ticks added little (44.7 forest, 38.5 wooded at 2M) but made it significantly
-   better than Line 5 on both sets. Its starting point cost BC on VPT videos plus ~0.5M ticks of PPO in MineRL.
-   [MineRL notes](minerl/README.md)
-4. **MineRL's simulator isn't needed.** The BC-only model (VPT videos, no PPO in MineRL) fine-tuned the
-   same way for 1M ticks: 22.2 → 40.4 on forests (ties Line 5, +0.4 ± 3.5) and 21.2 → 37.5 on wooded
-   spots (beats Line 5, +5.8 ± 3.7). Starting from the MineRL PPO model is ~3 forest logs better
-   (−2.9 ± 2.6), the same on wooded spots. [MineRL notes](minerl/README.md)
-5. **Line 5 slows over long episodes.** Over 4,000 ticks it averages 118.9, about 3× its 1000-tick
-   score, as nearby trees run out. [Results](minerl/results.md)
+1. **They transfer.** With no training here they keep 75-91% of their MineRL score (scored MineRL's way),
+   but trail our agents under our rules: Impala PPO 29.4 vs Line 5's 40.0 (−10.6 ± 3.8).
+2. **Fine-tuned here, they beat pure RL, in a quarter of the game time.** Impala PPO: 44.7 forest /
+   38.5 wooded after 2M ticks (Line 5 after 4M: 40.0 / 31.6; +4.7 ± 3.9 and +6.9 ± 4.0). It levels off
+   after 1-1.5M ticks; pure RL levelled off at ~41 after 3M.
+3. **MineRL's simulator isn't needed.** The BC-only model (never run in MineRL), fine-tuned for 1M
+   ticks, ties Line 5 on forests (40.4, +0.4 ± 3.5) and beats it on wooded spots (37.5, +5.8 ± 3.7).
+   The MineRL PPO start is worth ~3 forest logs.
 
 ## Not proven yet
 

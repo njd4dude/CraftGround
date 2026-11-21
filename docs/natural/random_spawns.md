@@ -3,7 +3,7 @@
 [← Natural world index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:25._
+_Tables last updated 2026-11-21 14:34._
 
 Every episode starts at a new spot found by the same search training uses, so agents play different spots and each mean also moves by ±3-4 logs from spawn luck: compare agents on the fixed spawns first ([Fixed forest spawns](fixed_forest_spawns.md), [Fixed wooded spawns](fixed_wooded_spawns.md)). This checks that a fixed-spawn score holds on spots no fixed set contains. Run with `evaluate.py <model> --env natural --random-spots [--spawn wooded]`.
 

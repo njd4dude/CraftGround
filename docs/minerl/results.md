@@ -3,19 +3,9 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:25._
+_Tables last updated 2026-11-21 14:34._
 
 One table per **evaluation type**: the world and spots, episode length, log cap and axe. Only rows in the same table are comparable. Logs per episode; **±** is the 95% range of the mean. **vs Line 5** is the average difference per fixed spot over the spots both played, with its 95% range (a range that doesn't include 0 is a real difference). Our agents' 1,000-tick rows are their standard evaluations from the natural-world report (MineRL rows of that type are also shown there). **Spots played**: fixed spots are played in file order, so 50 = the first 50 of the 100; means over 50 and 100 spots can differ by which spots they include, so compare those rows with the spot-by-spot column, which only uses shared spots. MineRL mode runs 4 ticks per decision, so a 1,000-tick episode is 250 of its decisions.
-
-### Natural world, fixed forest spots · 4,000-tick episodes, ends at 64 logs · iron axe (MineRL's)
-
-Scored the way the MineRL project scored these models (its 24 worlds, same rules), so **In MineRL** is directly comparable.
-
-| Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | In MineRL |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| MineRL Impala PPO | MineRL mode | 50 | **54.0** ± 5.6 | 64 | 3 | 64 | 59.6 |
-| MineRL NatureCNN PPO | MineRL mode | 50 | **48.4** ± 6.6 | 64 | 5 | 64 | 59.8 |
-| MineRL Impala BC | MineRL mode | 50 | **44.1** ± 6.9 | 64 | 5 | 64 | 58.8 |
 
 ### Natural world, fixed forest spots · 1,000-tick episodes, no log cap · one-hit axe (ours)
 
@@ -33,6 +23,29 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 | MineRL Impala PPO | MineRL mode | 100 | **29.4** ± 2.4 | 32 | 3 | 49 | -10.6 ± 3.8 (28 better / 67 worse, 100 spots) |
 | MineRL NatureCNN PPO | MineRL mode | 100 | **24.3** ± 2.4 | 26 | 5 | 46 | -15.7 ± 4.0 (20 better / 74 worse, 100 spots) |
 | MineRL Impala BC | MineRL mode | 100 | **22.2** ± 2.4 | 24 | 6 | 43 | -17.8 ± 3.8 (17 better / 80 worse, 100 spots) |
+
+### Natural world, fixed wooded spots · 1,000-tick episodes, no log cap · one-hit axe (ours)
+
+| Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | vs Line 5, spot by spot |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| MineRL Impala PPO + fine-tune @ 2.0M ticks | MineRL mode | 100 | **38.5** ± 4.7 | 41 | 5 | 121 | +6.9 ± 4.0 (58 better / 38 worse, 100 spots) |
+| MineRL Impala BC + fine-tune @ 1.0M ticks | MineRL mode | 100 | **37.5** ± 4.2 | 41 | 6 | 100 | +5.8 ± 3.7 (58 better / 35 worse, 100 spots) |
+| MineRL Impala PPO + fine-tune @ 1.0M ticks | MineRL mode | 100 | **37.2** ± 4.5 | 39 | 5 | 134 | +5.6 ± 3.8 (56 better / 41 worse, 100 spots) |
+| Line 5 @ 4.0M *(reference)* | ours (114×64, 1 tick) | 100 | **31.6** ± 4.8 | 31 | 9 | 101 | – |
+| Line 4c @ 3.0M | ours (114×64, 1 tick) | 100 | **30.5** ± 5.2 | 26 | 16 | 88 | -1.1 ± 4.5 (43 better / 51 worse, 100 spots) |
+| MineRL Impala PPO | MineRL mode | 100 | **25.7** ± 2.8 | 26 | 6 | 70 | -5.9 ± 3.6 (38 better / 57 worse, 100 spots) |
+| Line 4d @ 4.0M | ours (114×64, 1 tick) | 100 | **25.7** ± 5.1 | 19 | 18 | 102 | -6.0 ± 4.8 (32 better / 58 worse, 100 spots) |
+| MineRL Impala BC | MineRL mode | 100 | **21.1** ± 2.7 | 21 | 8 | 57 | -10.5 ± 3.7 (28 better / 66 worse, 100 spots) |
+
+### Natural world, fixed forest spots · 4,000-tick episodes, ends at 64 logs · iron axe (MineRL's)
+
+Scored the way the MineRL project scored these models (its 24 worlds, same rules), so **In MineRL** is directly comparable.
+
+| Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | In MineRL |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| MineRL Impala PPO | MineRL mode | 50 | **54.0** ± 5.6 | 64 | 3 | 64 | 59.6 |
+| MineRL NatureCNN PPO | MineRL mode | 50 | **48.4** ± 6.6 | 64 | 5 | 64 | 59.8 |
+| MineRL Impala BC | MineRL mode | 50 | **44.1** ± 6.9 | 64 | 5 | 64 | 58.8 |
 
 ### Natural world, fixed forest spots · 1,000-tick episodes, no log cap · iron axe (MineRL's)
 
@@ -54,19 +67,6 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 | Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | vs Line 5, spot by spot |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Line 5 @ 4.0M *(reference)* | ours (114×64, 1 tick) | 50 | **54.6** ± 5.2 | 64 | 2 | 64 | – |
-
-### Natural world, fixed wooded spots · 1,000-tick episodes, no log cap · one-hit axe (ours)
-
-| Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | vs Line 5, spot by spot |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| MineRL Impala PPO + fine-tune @ 2.0M ticks | MineRL mode | 100 | **38.5** ± 4.7 | 41 | 5 | 121 | +6.9 ± 4.0 (58 better / 38 worse, 100 spots) |
-| MineRL Impala BC + fine-tune @ 1.0M ticks | MineRL mode | 100 | **37.5** ± 4.2 | 41 | 6 | 100 | +5.8 ± 3.7 (58 better / 35 worse, 100 spots) |
-| MineRL Impala PPO + fine-tune @ 1.0M ticks | MineRL mode | 100 | **37.2** ± 4.5 | 39 | 5 | 134 | +5.6 ± 3.8 (56 better / 41 worse, 100 spots) |
-| Line 5 @ 4.0M *(reference)* | ours (114×64, 1 tick) | 100 | **31.6** ± 4.8 | 31 | 9 | 101 | – |
-| Line 4c @ 3.0M | ours (114×64, 1 tick) | 100 | **30.5** ± 5.2 | 26 | 16 | 88 | -1.1 ± 4.5 (43 better / 51 worse, 100 spots) |
-| MineRL Impala PPO | MineRL mode | 100 | **25.7** ± 2.8 | 26 | 6 | 70 | -5.9 ± 3.6 (38 better / 57 worse, 100 spots) |
-| Line 4d @ 4.0M | ours (114×64, 1 tick) | 100 | **25.7** ± 5.1 | 19 | 18 | 102 | -6.0 ± 4.8 (32 better / 58 worse, 100 spots) |
-| MineRL Impala BC | MineRL mode | 100 | **21.1** ± 2.7 | 21 | 8 | 57 | -10.5 ± 3.7 (28 better / 66 worse, 100 spots) |
 
 ### Arena · 1,000-tick episodes, ends at 32 logs (all of them) · one-hit axe (ours)
 

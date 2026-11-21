@@ -147,7 +147,10 @@ def results_section(evals: list[dict], models: dict, natural_runs: list[dict]) -
     groups: dict[tuple, list[dict]] = {}
     for r in evals + reference_rows():
         groups.setdefault(eval_type(r), []).append(r)
-    order = sorted(groups, key=lambda k: (k[0] != "natural", k[1], not is_minerl_scoring(k), k[2], k[3], k[4]))
+    # Our standard rules first (they compare with our own agents), then MineRL's scoring, then the rest.
+    standard = lambda k: k[0] == "natural" and k[2] == 1000 and not k[3] and k[4] == "instant"  # noqa: E731
+    order = sorted(groups, key=lambda k: (k[0] != "natural", not standard(k), not is_minerl_scoring(k),
+                                          k[1], k[2], k[3], k[4]))
     parts = []
     for key in order:
         if all(r.get("reference") for r in groups[key]):
