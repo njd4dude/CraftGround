@@ -203,8 +203,8 @@ def main():
         "ppo": ppo_settings,
         "lr_schedule": args.lr_schedule,
         "value_warmup_updates": args.value_warmup,
-        "changed_from_defaults": {k: {"default": PPO_SETTINGS[k], "used": v}
-                                  for k, v in overrides.items() if v != PPO_SETTINGS[k]},
+        "changed_from_defaults": {k: {"default": PPO_SETTINGS.get(k), "used": v}  # target_kl has no default here
+                                  for k, v in overrides.items() if v != PPO_SETTINGS.get(k)},
         "env": env_settings(args.env, jump, multi, action_repeat, args.spawn, use_minerl, axe),
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
