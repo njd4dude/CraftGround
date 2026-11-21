@@ -1,17 +1,17 @@
-# Results: wooded spots
+# Natural world: every biome with trees (100 fixed spots)
 
-Every agent on 100 spots in any biome with trees, next to its forest score.
+Every agent on 100 spots spread over every biome with trees (taiga, snowy taiga, jungle, dark forest, swamp, cherry grove...; no savanna; `results/eval_spots_natural_wooded.json`), next to its oak/birch forest score.
 
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:49._
+_Tables last updated 2026-11-21 15:10._
 
-## Wooded spots
+## Results
 
-100 fixed spots in any biome with trees except savanna (`results/eval_spots_natural_wooded.json`, `make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, same training world. **Forest mean** is the same agent's score on the [Forest spots](forest_spots.md) page's oak/birch spots; the **gap** is how much it loses outside them. **0-log episodes** count the episodes that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with `evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.
+100 fixed spots in every biome with trees except savanna (`results/eval_spots_natural_wooded.json`, made with `make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, same training world. **Oak/birch mean** is the same agent's score on the [oak and birch forests](natural_oak_birch_forests.md) page; the **gap** is how much it loses outside them. **0-log episodes** count the episodes that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with `evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.
 
-| Model | Line | Episodes | Wooded mean | vs Line 5 | Forest mean | Gap | 0-log episodes (wooded) | 0-log episodes (forest) |
+| Model | Line | Episodes | Mean logs | vs Line 5 | Oak/birch mean | Gap | 0-log episodes (here) | 0-log episodes (oak/birch) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | MineRL Impala PPO + fine-tune @ 2.0M ticks<br>`ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` @ 615,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 492,412 decisions = 1.97M ticks, from MineRL Impala PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **38.54** ± 4.73 | +6.9 ± 4.0 | 44.66 ± 3.73 | -6.12 | 5 | 2 |
 | MineRL Impala BC + fine-tune @ 1.0M ticks<br>`ft_impala-bc_wooded_one-hit-axe_20261120_220917` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 253,692 decisions = 1.01M ticks, from MineRL Impala BC (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **37.48** ± 4.16 | +5.8 ± 3.7 | 40.43 ± 3.14 | -2.95 | 6 | 3 |

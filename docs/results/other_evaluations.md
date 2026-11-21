@@ -1,17 +1,17 @@
-# Results: other rules
+# Other evaluations: different rules
 
-Scores that don't compare with the main tables: MineRL's own scoring and other episode rules, random spawns, and the held-out world.
+Scores that don't compare with the three main pages because the rules differ: MineRL's own scoring (4,000 ticks, iron axe, ends at 64 logs), the iron axe, long episodes, random spawns instead of fixed spots, and the held-out world.
 
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:49._
+_Tables last updated 2026-11-21 15:10._
 
 ## Other episode rules
 
 Evaluations under rules other than our standard ones: MineRL's own scoring (4,000 ticks, iron axe, ends at 64 logs), MineRL's iron axe, and long episodes. One table per **evaluation type** (world and spots, episode length, log cap, axe); only rows in the same table are comparable. **Spots played**: fixed spots are played in file order, so 50 = the first 50 of the 100. MineRL mode runs 4 ticks per decision, so a 1,000-tick episode is 250 of its decisions.
 
-### Natural world, fixed forest spots · 4,000-tick episodes, ends at 64 logs · iron axe (MineRL's)
+### Natural world, fixed spots in oak/birch forests · 4,000-tick episodes, ends at 64 logs · iron axe (MineRL's)
 
 Scored the way the MineRL project scored these models (its 24 worlds, same rules), so **In MineRL** is directly comparable.
 
@@ -21,7 +21,7 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 | MineRL NatureCNN PPO | MineRL mode | 50 | **48.4** ± 6.6 | 64 | 5 | 64 | 59.8 |
 | MineRL Impala BC | MineRL mode | 50 | **44.1** ± 6.9 | 64 | 5 | 64 | 58.8 |
 
-### Natural world, fixed forest spots · 1,000-tick episodes, no log cap · iron axe (MineRL's)
+### Natural world, fixed spots in oak/birch forests · 1,000-tick episodes, no log cap · iron axe (MineRL's)
 
 | Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -30,13 +30,13 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 | MineRL Impala BC | MineRL mode | 100 | **16.3** ± 1.5 | 17 | 5 | 29 |
 | Random actions | MineRL mode | 100 | **0.6** ± 0.2 | 0 | 63 | 4 |
 
-### Natural world, fixed forest spots · 4,000-tick episodes, no log cap · one-hit axe (ours)
+### Natural world, fixed spots in oak/birch forests · 4,000-tick episodes, no log cap · one-hit axe (ours)
 
 | Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | vs Line 5, spot by spot |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Line 5 @ 4.0M *(reference)* | ours (114×64, 1 tick) | 50 | **118.9** ± 26.0 | 112 | 2 | 517 | – |
 
-### Natural world, fixed forest spots · 4,000-tick episodes, ends at 64 logs · one-hit axe (ours)
+### Natural world, fixed spots in oak/birch forests · 4,000-tick episodes, ends at 64 logs · one-hit axe (ours)
 
 | Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | vs Line 5, spot by spot |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -53,11 +53,11 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 
 ## Random spawns
 
-Every episode starts at a new spot found by the same search training uses, so agents play different spots and each mean also moves by ±3-4 logs from spawn luck: compare agents on the fixed spawns first ([Forest spots](forest_spots.md), [Wooded spots](wooded_spots.md)). This checks that a fixed-spawn score holds on spots no fixed set contains. Run with `evaluate.py <model> --env natural --random-spots [--spawn wooded]`.
+Every episode starts at a new spot found by the same search training uses, so agents play different spots and each mean also moves by ±3-4 logs from spawn luck: compare agents on the fixed spots first ([oak and birch forests](natural_oak_birch_forests.md), [every biome with trees](natural_all_tree_biomes.md)). This checks that a fixed-spawn score holds on spots no fixed set contains. Run with `evaluate.py <model> --env natural --random-spots [--spawn wooded]`.
 
-### Random forest spawns
+### Random spawns in oak/birch forests
 
-Oak/birch forests. Rows from before 2026-11-16 were made under an older setup (render distance 6, no damage). **Arena mean** is the same agent's score in the walled arena ([Arena](arena.md)).
+Rows from before 2026-11-16 were made under an older setup (render distance 6, no damage). **Arena mean** is the same agent's score in the walled arena ([Arena](arena.md)).
 
 | Model | Line | Episodes | Mean logs | 0-log episodes | Max | Arena mean | vs random |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -73,7 +73,7 @@ Oak/birch forests. Rows from before 2026-11-16 were made under an older setup (r
 | `chop_ppo_20261113_135620` | trained in the arena | 100 | **5.10** ± 0.81 | 15 | 18 | 26.20 | 2.8× |
 | `chop_ppo_20261113_131702` | trained in the arena | 100 | **5.01** ± 1.22 | 33 | 30 | 31.67 | 2.8× |
 
-### Random wooded spawns
+### Random spawns in every biome with trees
 
 Any biome with trees but savanna, a new region every 5 episodes (as in wooded training).
 
@@ -85,5 +85,5 @@ Any biome with trees but savanna, a new region every 5 episodes (as in wooded tr
 
 ## Held-out world
 
-Archived 2026-11-19: agents score the same in a world they never trained in. See [Held-out world](archive/held_out.md).
+Archived 2026-11-19: agents score the same in a world they never trained in. See [held-out world](archive/held_out.md).
 <!-- AUTO-GENERATED:END -->

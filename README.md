@@ -8,9 +8,10 @@ here unchanged, in **MineRL mode** (their own 64×64 view and actions).
 
 ## Best agents so far
 
-Logs per episode on the 100 fixed forest spots / 100 fixed wooded spots (natural world):
+Logs per episode in the natural world, on two fixed sets of 100 spots: oak and birch forests, and
+every biome with trees (taiga, snowy taiga, jungle, dark forest, swamp...):
 
-| Agent | Forest | Wooded |
+| Agent | Oak/birch forests | Every biome with trees |
 | --- | --- | --- |
 | MineRL Impala PPO, fine-tuned here for 2M ticks | **44.7** | **38.5** |
 | MineRL Impala BC, fine-tuned here for 1M ticks | 40.4 | 37.5 |
@@ -23,14 +24,15 @@ What's behind these, and everything else learned so far: **[docs/FINDINGS.md](do
 | Folder | What's in it |
 | --- | --- |
 | [FINDINGS.md](docs/FINDINGS.md) | **Start here.** What works, what doesn't, the best agent, written by hand |
-| [results/](docs/results/forest_spots.md) | Every agent compared, one page per set of rules: [forest spots](docs/results/forest_spots.md) (the main comparison), [wooded spots](docs/results/wooded_spots.md), [arena](docs/results/arena.md), [other rules](docs/results/other_rules.md) (MineRL's own scoring, random spawns, held-out world) |
-| [experiments/](docs/experiments/natural_lines.md) | Why each run was made: [natural-world training lines](docs/experiments/natural_lines.md), [arena experiments](docs/experiments/arena_experiments.md), [MineRL transfer](docs/experiments/minerl_transfer.md) |
-| [reference/](docs/reference/environments.md) | [How the environments are set up](docs/reference/environments.md), [their speed](docs/reference/speed.md), [starting several Minecraft instances](docs/reference/parallel_launch.md) |
-| [logs/](docs/logs/evaluations.md) | Every [evaluation](docs/logs/evaluations.md) and [training](docs/logs/training.md) run, newest first |
+| [results/](docs/results/README.md) | Every agent compared, one page per environment: [natural world, oak and birch forests](docs/results/natural_oak_birch_forests.md) (the main comparison), [natural world, every biome with trees](docs/results/natural_all_tree_biomes.md), [arena](docs/results/arena.md); and [other evaluations](docs/results/other_evaluations.md) under different rules (MineRL's own scoring, random spawns, held-out world) |
+| [experiments/](docs/experiments/README.md) | Why each run was made: [natural-world training lines](docs/experiments/natural_lines.md), [arena experiments](docs/experiments/arena_experiments.md), [MineRL transfer](docs/experiments/minerl_transfer.md) |
+| [reference/](docs/reference/README.md) | [How the environments are set up](docs/reference/environments.md), [their speed](docs/reference/speed.md), [starting several Minecraft instances](docs/reference/parallel_launch.md) |
+| [logs/](docs/logs/README.md) | Every [evaluation](docs/logs/evaluations.md) and [training](docs/logs/training.md) run, newest first |
 
-The tables in `results/`, `experiments/`, `reference/environments.md` and `logs/` are rebuilt from
-the CSVs in `results/` after every run; text outside their generated blocks is kept.
-`FINDINGS.md`, `experiments/minerl_transfer.md` and this README are written by hand.
+The tables in `docs/results/`, `docs/experiments/`, `docs/reference/environments.md` and `docs/logs/`
+are rebuilt from the CSVs in the top-level `results/` folder after every run; text outside their
+generated blocks is kept. `docs/FINDINGS.md`, `docs/experiments/minerl_transfer.md` and this README
+are written by hand.
 
 ## Running things
 
@@ -40,8 +42,8 @@ Run scripts through `run.bat` from the repository root: it sets up the compiler 
 ```
 run.bat train.py --env natural                     # train in the natural world (3 Minecraft instances)
 run.bat train.py --env natural --resume <model.zip> --timesteps 1000000   # continue a run
-run.bat evaluate.py <model.zip> --env natural      # score it on the 100 fixed forest spots
-run.bat evaluate.py <model.zip> --env natural --spots results/eval_spots_natural_wooded.json
+run.bat evaluate.py <model.zip> --env natural      # score it on the 100 oak/birch forest spots
+run.bat evaluate.py <model.zip> --env natural --spots results/eval_spots_natural_wooded.json   # ...or every biome with trees
 run.bat evaluate.py <model.zip>                    # score it in the arena
 run.bat experiments.py                             # rebuild the docs tables by hand
 run.bat play.py                                    # play the env yourself, seeing what the agent sees
@@ -52,7 +54,7 @@ MineRL models (`runs/minerl/`) are detected automatically and run in MineRL mode
 
 | Where | What |
 | --- | --- |
-| `chop/` | The code: `envs/` (arena, natural world, MineRL mode), `training/`, `evaluation/`, `reports/` (builds the docs), `infra/` (launching instances) |
+| `chop/` | The code: `chop/envs/` (arena, natural world, MineRL mode), `chop/training/`, `chop/evaluation/`, `chop/reports/` (builds the docs), `chop/infra/` (launching instances) |
 | `train.py`, `evaluate.py`, ... | Thin entry points into `chop/` |
 | `runs/` | Trained models, checkpoints and videos (not in git) |
 | `results/` | Every evaluation and training run as CSV rows, the fixed spot sets, and the JSON files naming lines and experiments |

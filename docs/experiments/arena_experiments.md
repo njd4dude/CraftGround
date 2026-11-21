@@ -5,15 +5,15 @@ Every arena experiment: its question, what it found, and its runs.
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:49._
+_Tables last updated 2026-11-21 15:10._
 
 ## Experiments
 
 **Eval** is the mean over `evaluate.py` episodes (max 32), ± its 95% range. **Ground fixed** = no: holes the agent dug stayed for the rest of the run (fixed 2026-11-17), so those scores are rough. Edit the questions and findings in `results/experiments_arena.json`.
 
-<a id="arena-exp-1"></a>
+### Experiment 1
 
-### 1 · First runs
+**First runs**
 
 **Question:** Can PPO with the default CNN learn to chop the arena's 32 logs at all?
 
@@ -24,9 +24,9 @@ _Tables last updated 2026-11-21 14:49._
 | `chop_ppo_20261113_131702` | single | 1 | **no** | 200k | 11.1 | **31.67** ± 0.19 (24) | 31 | 32 | – |
 | `chop_ppo_20261113_135620` | single | 1 | **no** | 51k | 4.3 | **26.20** ± 0.17 (429) | 18 | 31 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/9te3935j) |
 
-<a id="arena-exp-2"></a>
+### Experiment 2
 
-### 2 · Action repeat: 1 vs 4 ticks per step (before the ground fix: preliminary)
+**Action repeat: 1 vs 4 ticks per step (before the ground fix: preliminary)**
 
 **Question:** CraftGround shows an action's effects 1-3 ticks late (tools/check_timing.py). Does holding each action for 4 ticks, so each step shows its own result, learn better? Tried with single and multi actions.
 
@@ -51,9 +51,9 @@ _Tables last updated 2026-11-21 14:49._
 | multi, 1 tick, ground not fixed, 200k | 1 | **30.80** | 30.8 |
 | multi, 4 ticks, ground not fixed, 200k | 1 | **27.68** | 27.7 |
 
-<a id="arena-exp-3"></a>
+### Experiment 3
 
-### 3 · Single vs multi actions (ground fixed)
+**Single vs multi actions (ground fixed)**
 
 **Question:** Multi actions choose move, turn and look every step with attack always held, and turn by exact degrees. Do they beat the 11 single actions? 3 runs each, 1 tick, after the ground fix.
 
@@ -73,9 +73,9 @@ _Tables last updated 2026-11-21 14:49._
 | single, 1 tick, 200k | 3 | **30.46** | 30.6 31.1 29.7 |
 | multi, 1 tick, 200k | 3 | **31.34** | 30.9 31.7 31.4 |
 
-<a id="arena-exp-4"></a>
+### Experiment 4
 
-### 4 · Action repeat: 1 vs 4 ticks per step (ground fixed)
+**Action repeat: 1 vs 4 ticks per step (ground fixed)**
 
 **Question:** Experiment 2 again on the fixed arena: 1 run each of single and multi at 4 ticks, compared with experiment 3's 1-tick runs (listed again here).
 

@@ -65,7 +65,7 @@ Write your observations here. This section is never overwritten.
 
 ### Natural: rows were measured with different forest-check timeouts (2026-11-15)
 
-The natural table mixes two versions of `natural_env.py`, so its rows are not directly comparable:
+The natural table mixes two versions of the natural world (`natural_env.py` then, `chop/envs/natural.py` now), so its rows are not directly comparable:
 
 | Row | `CHECK_TIMEOUT_S` | Measured |
 | --- | --- | --- |

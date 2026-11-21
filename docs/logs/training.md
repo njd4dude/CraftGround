@@ -5,7 +5,7 @@ Every `train.py` run that ended normally, newest first. Stopped pieces are liste
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:49._
+_Tables last updated 2026-11-21 15:10._
 
 ## Natural world
 

@@ -36,9 +36,16 @@ def page_template(title: str, about: str, depth: int = 1) -> str:
 
 
 def write_page(rel: str, title: str, about: str, generated: str, stamp: str) -> None:
+    """Write a page: its title and intro (always from here, so renaming a page here renames it there),
+    the generated block, then whatever was written by hand below the block."""
     path = DOCS_DIR / rel
     path.parent.mkdir(parents=True, exist_ok=True)
-    write_report(path, page_template(title, about, depth=rel.count("/")), f"{stamp}\n\n{generated}")
+    template = page_template(title, about, depth=rel.count("/"))
+    if path.exists():
+        text = path.read_text(encoding="utf-8")
+        if START in text and END in text:
+            path.write_text(template.split(START)[0] + START + text.split(START, 1)[1], encoding="utf-8")
+    write_report(path, template, f"{stamp}\n\n{generated}")
 
 
 def section(heading: str, text: str) -> str:
@@ -67,24 +74,29 @@ def update(stamp: str | None = None) -> None:
         return minerl.label(agent, models, natural_runs)
 
     pages = [
-        ("results/forest_spots.md", "Results: forest spots",
-         "The main comparison: every agent on the same 100 oak/birch forest spots in the natural world.",
+        ("results/natural_oak_birch_forests.md", "Natural world: oak and birch forests (100 fixed spots)",
+         "The main comparison: every agent on the same 100 spots in the natural world's oak and birch forests "
+         "(`results/eval_spots_natural.json`).",
          natural.fixed_spots_section(forest, natural_runs)),
-        ("results/wooded_spots.md", "Results: wooded spots",
-         "Every agent on 100 spots in any biome with trees, next to its forest score.",
+        ("results/natural_all_tree_biomes.md", "Natural world: every biome with trees (100 fixed spots)",
+         "Every agent on 100 spots spread over every biome with trees (taiga, snowy taiga, jungle, dark forest, "
+         "swamp, cherry grove...; no savanna; `results/eval_spots_natural_wooded.json`), next to its "
+         "oak/birch forest score.",
          natural.wooded_section(wooded, forest, natural_runs)),
-        ("results/arena.md", "Results: arena",
-         "Every agent in the walled arena (8 trees, 32 logs at most).",
+        ("results/arena.md", "Arena: walled flat arena with 8 oaks",
+         "Every agent in the one arena: superflat, stone-brick walls, 8 oaks of 4 logs (32 logs at most), "
+         "rebuilt every episode. Only the agents' actions differ between runs.",
          arena.results_section(arena_runs, minerl_arena, minerl_label)),
-        ("results/other_rules.md", "Results: other rules",
-         "Scores that don't compare with the main tables: MineRL's own scoring and other episode rules, "
-         "random spawns, and the held-out world.",
+        ("results/other_evaluations.md", "Other evaluations: different rules",
+         "Scores that don't compare with the three main pages because the rules differ: MineRL's own scoring "
+         "(4,000 ticks, iron axe, ends at 64 logs), the iron axe, long episodes, random spawns instead of fixed "
+         "spots, and the held-out world.",
          "\n\n".join([
              minerl.results_section(minerl_evals, models, natural_runs),
              natural.natural_random_spawn_section(random_forest, random_wooded, arena_evals, natural_runs)
              or "## Random spawns\n\n_None yet._",
              "## Held-out world\n\nArchived 2026-11-19: agents score the same in a world they never trained in. "
-             "See [Held-out world](archive/held_out.md).",
+             "See [held-out world](archive/held_out.md).",
          ])),
         ("experiments/natural_lines.md", "Experiments: natural-world training lines",
          "Every natural-world training line: what it tested, what it found, and its pieces.",
@@ -100,7 +112,7 @@ def update(stamp: str | None = None) -> None:
          "Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs in `results/`.",
          "\n\n".join([section("Natural world", evals_section(natural_evals)),
                       section("Arena", evals_section(arena_evals)),
-                      section("MineRL mode and other rules", minerl.evals_section(minerl_evals, models,
+                      section("MineRL mode and other evaluations", minerl.evals_section(minerl_evals, models,
                                                                                   natural_runs))])),
         ("logs/training.md", "Log: training runs",
          "Every `train.py` run that ended normally, newest first. Stopped pieces are listed on the "
@@ -111,6 +123,33 @@ def update(stamp: str | None = None) -> None:
     ]
     for rel, title, about, generated in pages:
         write_page(rel, title, about, generated, stamp)
+
+    # One README.md per folder, listing its pages: editors can't open a folder from a link, and GitHub
+    # shows a folder's README.md under its file list. Hand-written pages are listed here too.
+    listed = [(rel, title, about) for rel, title, about, _ in pages] + HAND_WRITTEN
+    for folder, (title, about) in FOLDERS.items():
+        items = [f"- [{t}]({Path(rel).relative_to(folder).as_posix()}): {a}"
+                 for rel, t, a in listed if Path(rel).parent.as_posix().startswith(folder)]
+        write_page(f"{folder}/README.md", title, about, "\n".join(items), stamp)
+
+
+# Pages written by hand (or by benchmark.py), for the folder indexes: (path under docs/, title, about).
+HAND_WRITTEN = [
+    ("experiments/minerl_transfer.md", "MineRL models in CraftGround",
+     "how well MineRL-trained models transfer, and what fine-tuning them here gives (written by hand)"),
+    ("reference/speed.md", "Environment speed", "steps per second of each world (written by benchmark.py)"),
+    ("reference/parallel_launch.md", "Starting several Minecraft instances at once",
+     "why parallel launches hung, and what the code does about it (written by hand)"),
+    ("results/archive/held_out.md", "Held-out world (archived)",
+     "agents score the same in a world they never trained in (written by hand)"),
+]
+
+FOLDERS = {
+    "results": ("Results", "Every agent compared, one page per environment, plus evaluations under other rules."),
+    "experiments": ("Experiments", "Why each run was made: its question, what it found, its runs."),
+    "reference": ("Reference", "How the environments are set up, how fast they run, and launching instances."),
+    "logs": ("Logs", "Every evaluation and training run, newest first."),
+}
 
 
 if __name__ == "__main__":

@@ -76,8 +76,9 @@ def is_fixed(row: dict) -> bool:
 
 
 def is_wooded(row: dict) -> bool:
-    """Played the wooded spot set (make_eval_spots.py --spawn wooded: any biome with trees), not the
-    forest one. Its scores aren't comparable with the forest spots, so they get their own table."""
+    """Played the spot set in every biome with trees (eval_spots_natural_wooded.json, made with
+    make_eval_spots.py --spawn wooded), not the oak/birch one. Not comparable with the oak/birch spots,
+    so it gets its own page."""
     return is_fixed(row) and (row.get("spots") or "").endswith("_wooded.json")
 
 

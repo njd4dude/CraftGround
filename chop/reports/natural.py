@@ -33,10 +33,11 @@ def natural_setup_section() -> str:
     rows = [
         ["World", f"Normal generated world, fixed seed {ne.SEED} (held-out evaluation world: "
                   f"seed {ne.HELD_OUT_SEED}, never trained in)"],
-        ["Evaluation", "100 fixed forest spots (`results/eval_spots_natural.json`, `make_eval_spots.py`); "
+        ["Evaluation", "100 fixed spots in oak/birch forests (`results/eval_spots_natural.json`, `make_eval_spots.py`), "
+                       "and 100 in every biome with trees (`results/eval_spots_natural_wooded.json`); "
                        "`evaluate.py --random-spots` for random spawns. Held-out world (archived: "
                        "[held-out world](../results/archive/held_out.md)): `evaluate.py <model> --env natural "
-                       "--held-out`. Wooded spawns: see [Wooded spots](../results/wooded_spots.md)"],
+                       "--held-out`. Every biome with trees: [Natural world: every biome with trees](../results/natural_all_tree_biomes.md)"],
         ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
                   f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}. "
                   f"`train.py --spawn wooded` (Line 5, since 2026-11-18): any biome with trees but savanna, "
@@ -80,13 +81,13 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
                      sum(x == 0 for x in eps), max(eps), vs_reference(agent, by_rows), vs])
     return (
         "## Results\n\n"
-        "Every agent here played the same 100 forest spots (`results/eval_spots_natural.json`, one "
+        "Every agent here played the same 100 oak/birch forest spots (`results/eval_spots_natural.json`, one "
         "episode each, same starting direction, current setup), so differences come from the agents, "
         "not from where they spawned. Best first. **± is the 95% range** of the mean: two agents whose "
         f"ranges overlap a lot may not really differ. **vs {REFERENCE_NAME}** is the average difference per "
         "spot with its 95% range; a range that doesn't include 0 is a real difference. MineRL rows play in "
         "MineRL mode (their own view and actions) under the same rules. Random-spawn scores are in "
-        "[Other rules](other_rules.md#random-spawns).\n\n"
+        "[Other evaluations](other_evaluations.md#random-spawns).\n\n"
         + table(["Model", "Line", "Episodes", "Mean logs", "Median", "0-log episodes", "Max",
                  f"vs {REFERENCE_NAME}", "vs random"], rows)
     )
@@ -114,15 +115,15 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
         rows.append([label_with_folder(agent, runs), line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
                      vs_reference(agent, by_rows), f_cell, gap, sum(x == 0 for x in eps), f_zeros])
     return (
-        "## Wooded spots\n\n"
-        "100 fixed spots in any biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
-        "`make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, "
-        "same training world. **Forest mean** is the same agent's score on the [Forest spots](forest_spots.md) page's oak/birch "
-        "spots; the **gap** is how much it loses outside them. **0-log episodes** count the episodes "
+        "## Results\n\n"
+        "100 fixed spots in every biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
+        "made with `make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, "
+        "same training world. **Oak/birch mean** is the same agent's score on the "
+        "[oak and birch forests](natural_oak_birch_forests.md) page; the **gap** is how much it loses outside them. **0-log episodes** count the episodes "
         "that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with "
         "`evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.\n\n"
-        + table(["Model", "Line", "Episodes", "Wooded mean", f"vs {REFERENCE_NAME}", "Forest mean", "Gap",
-                 "0-log episodes (wooded)", "0-log episodes (forest)"], rows)
+        + table(["Model", "Line", "Episodes", "Mean logs", f"vs {REFERENCE_NAME}", "Oak/birch mean", "Gap",
+                 "0-log episodes (here)", "0-log episodes (oak/birch)"], rows)
     )
 
 
@@ -159,7 +160,8 @@ def lines_section(fixed: list[dict], random_spawns: list[dict], runs: list[dict]
                          row["status"] if row else "no record (killed or hung)", ", ".join(scores) or "–",
                          notes.get(run_dir.name, ""),
                          f"[open]({row['wandb_url']})" if row and row.get("wandb_url") else "–"])
-        blocks.append(f"<a id=\"line-{meta['id']}\"></a>\n\n### Line {meta['id']} · {meta['name']}\n\n`{line_dir.as_posix()}/`\n\n"
+        # A short heading is its own anchor (#line-4b) in GitHub, Cursor and VS Code alike.
+        blocks.append(f"### Line {meta['id']}\n\n**{meta['name']}** · `{line_dir.as_posix()}/`\n\n"
                       + (f"**Question:** {meta['tested']}\n\n" if meta.get("tested") else "")
                       + (f"**Found:** {meta['found']}\n\n" if meta.get("found") else
                          "**Found:** _not yet (add `found` in `results/lines_natural.json`)_\n\n")
@@ -203,17 +205,17 @@ def natural_random_spawn_section(forest: list[dict], wooded: list[dict], arena_e
     parts = [
         "Every episode starts at a new spot found by the same search training uses, so agents play "
         "different spots and each mean also moves by ±3-4 logs from spawn luck: compare agents on the "
-        "fixed spawns first ([Forest spots](forest_spots.md), "
-        "[Wooded spots](wooded_spots.md)). This checks that a fixed-spawn score holds on "
+        "fixed spots first ([oak and birch forests](natural_oak_birch_forests.md), "
+        "[every biome with trees](natural_all_tree_biomes.md)). This checks that a fixed-spawn score holds on "
         "spots no fixed set contains. Run with `evaluate.py <model> --env natural --random-spots "
         "[--spawn wooded]`."]
     if forest:
-        parts.append("### Random forest spawns\n\nOak/birch forests. Rows from before 2026-11-16 were "
+        parts.append("### Random spawns in oak/birch forests\n\nRows from before 2026-11-16 were "
                      "made under an older setup (render distance 6, no damage). **Arena mean** is the same "
                      "agent's score in the walled arena ([Arena](arena.md)).\n\n"
                      + table(head + ["Arena mean", "vs random"], rows_for(forest, True)))
     if wooded:
-        parts.append("### Random wooded spawns\n\nAny biome with trees but savanna, a new region every "
+        parts.append("### Random spawns in every biome with trees\n\nAny biome with trees but savanna, a new region every "
                      f"{natural_env.MAX_HOP_EPISODES['wooded'] + 1} episodes (as in wooded training).\n\n"
                      + table(head, rows_for(wooded, False)))
     return "## Random spawns\n\n" + "\n\n".join(parts)

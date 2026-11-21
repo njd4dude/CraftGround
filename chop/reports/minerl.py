@@ -1,10 +1,10 @@
-"""MineRL-mode sections: results under other rules (MineRL's own scoring, other axes and lengths),
+"""MineRL-mode sections: other evaluations (MineRL's own scoring, other axes and lengths),
 the MineRL evaluation and training logs, and the MineRL-mode setup. chop/reports/site.py places them.
 
 Built from results/eval_results_minerl.csv. Its rows differ in more than the model: world, spots,
 episode length, log cap and axe all vary, so results are grouped by all five ("evaluation type")
 and only rows of the same type share a table. Line 5's standard evaluation (natural CSV: fixed
-forest spots, 1000 ticks, no cap, one-hit axe) is added to its type as the reference.
+oak/birch spots, 1000 ticks, no cap, one-hit axe) is added to its type as the reference.
 Model names and MineRL scores come from results/minerl_models.json."""
 
 import json
@@ -58,10 +58,11 @@ def spots_of(row: dict) -> str:
         return "arena"
     world = " (held-out world)" if is_held_out(row) else ""
     if is_wooded(row):
-        return "fixed wooded spots" + world
+        return "fixed spots in every biome with trees" + world
     if is_fixed(row):
-        return "fixed forest spots" + world
-    return ("random wooded spawns" if row.get("spots") == "random_wooded" else "random forest spawns") + world
+        return "fixed spots in oak/birch forests" + world
+    return ("random spawns in every biome with trees" if row.get("spots") == "random_wooded"
+            else "random spawns in oak/birch forests") + world
 
 
 def eval_type(row: dict) -> tuple:

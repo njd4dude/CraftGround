@@ -5,17 +5,15 @@ Every natural-world training line: what it tested, what it found, and its pieces
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:49._
+_Tables last updated 2026-11-21 15:10._
 
 ## Training lines
 
 Each line is one training history in its own folder (`runs/natural/<line>/`); its pieces are the run folders inside, split by crashes, memory kills or deliberate stops, in order. `train.py --resume` adds a piece to the model's line; `--line <folder>` starts a new one (a branch when resuming). **Steps** with ~ come from the last checkpoint (the run left no record). **Eval** is the fixed-spot mean logs per episode at that point (* = random spawns only, older and noisier). Names, purposes and notes: `results/lines_natural.json`.
 
-<a id="line-1"></a>
+### Line 1
 
-### Line 1 · no jump, constant LR
-
-`runs/natural/line1_no-jump/`
+**no jump, constant LR** · `runs/natural/line1_no-jump/`
 
 **Question:** Can PPO learn to chop trees in a generated world at all? First natural-world run, the arena's 11 actions.
 
@@ -27,11 +25,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261115_160512` | continued | 100k → ~200k | 6 | constant | – | no record (killed or hung) | – | 6 instances; hung while closing them (stopped from W&B), so no CSV row | – |
 | `20261115_161832` | continued | 200k → 503k | 4 | constant | 19.0 | completed | 9.7* @ 503k |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/6hob06tk) |
 
-<a id="line-2"></a>
+### Line 2
 
-### Line 2 · jump, constant LR
-
-`runs/natural/line2_jump-constant-lr/`
+**jump, constant LR** · `runs/natural/line2_jump-constant-lr/`
 
 **Question:** Does adding jump and forward_jump help on hilly terrain? Compare with Line 1.
 
@@ -44,11 +40,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261115_185527` | continued | 502k → ~682k | 4 | constant | – | no record (killed or hung) | **18.1** @ 602k | killed for low memory at ~688k; its 601k checkpoint is Line 2's best and starts Line 2b | – |
 | `20261115_192015` | continued | 682k → 1.0M | 4 | constant | 21.8 | completed | **15.0** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/12zz1rvp) |
 
-<a id="line-2b"></a>
+### Line 2b
 
-### Line 2b · linear LR from Line 2's 601k checkpoint
-
-`runs/natural/line2b_linear-lr-from-601k/`
+**linear LR from Line 2's 601k checkpoint** · `runs/natural/line2b_linear-lr-from-601k/`
 
 **Question:** Line 2 slid from ~22 to ~15 logs between 600k and 1M at a constant learning rate. Does decaying the rate to 0 keep the gains?
 
@@ -58,11 +52,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261115_231007` | branch from Line 2 | 602k → 1.0M | 3 | linear | 29.7 | completed | **24.7** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/f61norjd) |
 
-<a id="line-3"></a>
+### Line 3
 
-### Line 3 · jump, linear LR, from scratch
-
-`runs/natural/line3_jump-linear-lr-scratch/`
+**jump, linear LR, from scratch** · `runs/natural/line3_jump-linear-lr-scratch/`
 
 **Question:** Line 2b's recipe in one consistent setup from step 0 (3 instances, render distance 4, linear LR). Does the patchwork history of 2b matter?
 
@@ -73,11 +65,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261115_235545` | from scratch | 0 → 257k | 3 | linear | 20.5 | interrupted | **12.3** @ 257k | stopped on purpose (Ctrl+C) to free the machine for fixed spots | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/idjjc1jj) |
 | `20261116_123155` | continued | 257k → 1.0M | 3 | linear | 67.5 | completed | **22.4** @ 1.0M | resumed with --learning-rate 1.858e-4 so the schedule matches one uninterrupted 1M run; hazards hurt from here on | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2x96rt9o) |
 
-<a id="line-3b"></a>
+### Line 3b
 
-### Line 3b · fine-tune Line 3 @ 1.0M for 500k more at a small LR
-
-`runs/natural/line3b_finetune-500k/`
+**fine-tune Line 3 @ 1.0M for 500k more at a small LR** · `runs/natural/line3b_finetune-500k/`
 
 **Question:** Line 3 ended with its learning rate at 0. Does 500k more steps at a small rate (5e-5 -> 0) still improve it, or is it at its limit with this setup?
 
@@ -87,11 +77,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261116_145213` | branch from Line 3 | 1.0M → 1.5M | 3 | linear | 34.3 | completed | **21.9** @ 1.5M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/nsc8z41e) |
 
-<a id="line-3c"></a>
+### Line 3c
 
-### Line 3c · 3M linear LR schedule, from Line 3 @ 257k
-
-`runs/natural/line3c_linear-lr-3M/`
+**3M linear LR schedule, from Line 3 @ 257k** · `runs/natural/line3c_linear-lr-3M/`
 
 **Question:** Line 3's 1M schedule stalled near 22 and fine-tuning (3b) didn't help. Does one longer schedule (2.29e-4 -> 0 over 257k -> 3M, as if a single 3M run) keep improving past 22? Also the first run with 4 instances (same 2048-step updates).
 
@@ -103,11 +91,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261116_173633` | continued | 717k → 2.1M | 4 | linear | 103.2 | interrupted | **16.1** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/rlc5ue18) |
 | `20261117_114712` | continued | 2.1M → 3.0M | 3 | linear | 84.7 | completed | **23.9** @ 3.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/ato3q2uf) |
 
-<a id="line-4"></a>
+### Line 4
 
-### Line 4 · multi actions (move x turn x look x jump, attack held), linear LR, from scratch
-
-`runs/natural/line4_multi-actions/`
+**multi actions (move x turn x look x jump, attack held), linear LR, from scratch** · `runs/natural/line4_multi-actions/`
 
 **Question:** Every single-action recipe ends at ~22-25 logs, so the limit looks like the setup. Do multi-choice actions (choose move, turn, look and jump every step, attack always held, exact-degree turns) beat Line 3's 22.4 at 1M with the same schedule? In the fixed arena they scored 31.3 vs 30.5 (3 runs each, not significant: the arena is near its 32 cap).
 
@@ -118,11 +104,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261118_121806` | from scratch | 0 → ~? | 3 | linear | – | no record (killed or hung) | – | killed for low memory at ~8k steps, before any checkpoint; restarted from scratch | – |
 | `20261118_124345` | from scratch | 0 → 1.0M | 3 | linear | 88.8 | completed | **26.6** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/hg4felig) |
 
-<a id="line-4b"></a>
+### Line 4b
 
-### Line 4b · resume Line 4 @ 1.0M for 1M more, linear LR from 1e-4
-
-`runs/natural/line4b_resume-1M/`
+**resume Line 4 @ 1.0M for 1M more, linear LR from 1e-4** · `runs/natural/line4b_resume-1M/`
 
 **Question:** Line 4 was still improving at the end of its 1M schedule (training avg +4.6 logs in its last 100k), unlike Line 3, which had levelled off before 3b. Does 1M more steps (1e-4 -> 0) keep improving it?
 
@@ -132,11 +116,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261118_162138` | branch from Line 4 | 1.0M → 2.0M | 3 | linear | 82.2 | completed | **35.7** @ 2.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/1lbhj5a9) |
 
-<a id="line-4c"></a>
+### Line 4c
 
-### Line 4c · resume Line 4b @ 2.0M for 1M more, linear LR from 1e-4
-
-`runs/natural/line4c_resume-2M/`
+**resume Line 4b @ 2.0M for 1M more, linear LR from 1e-4** · `runs/natural/line4c_resume-2M/`
 
 **Question:** Line 4b was still rising at 2M. Does a third 1M (same recipe) keep improving it?
 
@@ -146,11 +128,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261118_183414` | branch from Line 4b | 2.0M → 3.0M | 3 | linear | 98.2 | completed | **41.2** @ 3.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/ms2j7prx) |
 
-<a id="line-5"></a>
+### Line 5
 
-### Line 5 · wooded spawns, from Line 4c @ 3.0M, 1M more, linear LR from 1e-4
-
-`runs/natural/line5_wooded-spawns/`
+**wooded spawns, from Line 4c @ 3.0M, 1M more, linear LR from 1e-4** · `runs/natural/line5_wooded-spawns/`
 
 **Question:** Line 4 does badly in snow and gets stuck. Do spawns in any biome with trees (snowy taiga, taiga, jungle, swamp, dark forest...; not savanna) and a new region every 5 episodes make the agent better in unfamiliar biomes, without losing forest skill? Same recipe as 4c's last 1M; Line 4d is the control (forest spawns).
 
@@ -162,11 +142,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | `20261118_213914` | continued | 3.1M → ~3.8M | 3 | linear | – | no record (killed or hung) | – | resumed with --learning-rate 9.19e-5 so the schedule matches one 1M run; hung at 3.79M (cause unknown, logs overwritten) and stopped by hand | – |
 | `20261119_005447` | continued | 3.8M → 4.0M | 3 | linear | 23.2 | completed | **40.0** @ 4.0M | resumed from the 3.78M checkpoint with --learning-rate 2.186e-5 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/1v3paa89) |
 
-<a id="line-4d"></a>
+### Line 4d
 
-### Line 4d · resume Line 4c @ 3.0M for 1M more, forest spawns, linear LR from 1e-4
-
-`runs/natural/line4d_resume-3M/`
+**resume Line 4c @ 3.0M for 1M more, forest spawns, linear LR from 1e-4** · `runs/natural/line4d_resume-3M/`
 
 **Question:** Control for Line 5: the same 1M steps and recipe with forest spawns only, so Line 5's effect can be told apart from simply training longer.
 
@@ -176,11 +154,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261119_112830` | branch from Line 4c | 3.0M → 4.0M | 3 | linear | 90.5 | completed | **41.3** @ 4.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/m7mtph3f) |
 
-<a id="line-6"></a>
+### Line 6
 
-### Line 6 · wooded spawns from scratch, Line 4's recipe (multi actions, linear LR from 2.5e-4, 1M)
-
-`runs/natural/line6_wooded-scratch/`
+**wooded spawns from scratch, Line 4's recipe (multi actions, linear LR from 2.5e-4, 1M)** · `runs/natural/line6_wooded-scratch/`
 
 **Question:** Line 5 showed wooded spawns help on top of a forest-trained agent. Does training on them from step 0 work as well, compared with Line 4 @ 1M (same recipe, forest spawns)?
 
@@ -190,11 +166,9 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261119_133211` | from scratch | 0 → ~480k | 3 | linear | – | no record (killed or hung) | – | stopped by hand at ~491k: no clear difference from Line 4 so far; last checkpoint ppo_chop_479952_steps.zip | – |
 
-<a id="line-5b"></a>
+### Line 5b
 
-### Line 5b · resume Line 5 @ 4.0M for 1M more, wooded spawns, linear LR from 1e-4
-
-`runs/natural/line5b_resume-4M/`
+**resume Line 5 @ 4.0M for 1M more, wooded spawns, linear LR from 1e-4** · `runs/natural/line5b_resume-4M/`
 
 **Question:** Line 4d showed forest training levels off by 3M. Wooded spawns give the agent harder places it hasn't mastered (31.6 wooded vs 40.0 forest), so does Line 5 keep improving with 1M more steps?
 

@@ -1,11 +1,11 @@
-# Results: arena
+# Arena: walled flat arena with 8 oaks
 
-Every agent in the walled arena (8 trees, 32 logs at most).
+Every agent in the one arena: superflat, stone-brick walls, 8 oaks of 4 logs (32 logs at most), rebuilt every episode. Only the agents' actions differ between runs.
 
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 14:49._
+_Tables last updated 2026-11-21 15:10._
 
 ## Results
 

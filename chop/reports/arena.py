@@ -158,7 +158,8 @@ def experiments_section(runs: Runs) -> tuple[str, set[str]]:
             rows.append(cells)
             setups.append((setup, cells[4], eps, checkpoint_steps(runs.model_of(entry)) is None))
         found = exp.get("found") or "_not yet_"
-        blocks.append(f"<a id=\"arena-exp-{exp['id']}\"></a>\n\n### {exp['id']} · {exp['name']}\n\n**Question:** {exp.get('tested', '')}\n\n"
+        # A short heading is its own anchor (#experiment-4) in GitHub, Cursor and VS Code alike.
+        blocks.append(f"### Experiment {exp['id']}\n\n**{exp['name']}**\n\n**Question:** {exp.get('tested', '')}\n\n"
                       f"**Found:** {found}\n\n" + table(HEADERS, rows) + by_setup_table(setups))
     if not blocks:
         return "", listed

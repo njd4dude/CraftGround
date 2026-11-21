@@ -10,8 +10,9 @@ def evals_section(evals: list[dict]) -> str:
     with_spots = any(r.get("spots") for r in evals)  # natural world: fixed or random spawns
     with_world = any(is_held_out(r) for r in evals)  # natural world: training or held-out world
     rows = [[r["timestamp"], f"`{r['agent']}`",
-             *([("wooded" if is_wooded(r) else "fixed" if is_fixed(r)
-               else "random wooded" if r.get("spots") == "random_wooded" else "random")] if with_spots else []),
+             *([("fixed, all tree biomes" if is_wooded(r) else "fixed, oak/birch" if is_fixed(r)
+               else "random, all tree biomes" if r.get("spots") == "random_wooded" else "random, oak/birch")]
+               if with_spots else []),
              *([("held-out" if is_held_out(r) else "training")] if with_world else []),
              r["episodes"], r["mean_logs"], r["min_logs"],
              r["max_logs"], r.get("n_envs") or "–", r.get("minutes") or "–", r.get("steps_per_s") or "–"]
@@ -19,7 +20,7 @@ def evals_section(evals: list[dict]) -> str:
     return ("## Evaluation runs\n\nOne row per `evaluate.py` run, newest first. **Minutes** includes "
             "launching Minecraft; **Steps/s** is env steps per second over all instances while playing "
             "(runs from before timing was added show –)."
-            + (" **Spots**: fixed = the saved forest spots, wooded = the saved wooded spots (any biome with "
+            + (" **Spots**: fixed = one of the two saved sets of 100 spots (oak/birch forests, or every biome with "
                "trees), random = random spawns (all runs before 2026-11-16)." if with_spots else "")
             + (" **World**: training = the world agents train in, held-out = one they never see "
                "(`--held-out`)." if with_world else "") + "\n\n"
