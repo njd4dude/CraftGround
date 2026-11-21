@@ -266,8 +266,10 @@ def main():
         if use_minerl:
             # A MineRL model's saved episode stats are from MineRL (4000-tick episodes, up to 64 logs);
             # without this the first ~100 episodes' ep_rew_mean here would be averaged with them.
-            model.ep_info_buffer.clear()
-            model.ep_success_buffer.clear()
+            # (A behaviour-cloned model never ran PPO, so it has no buffers; SB3 makes fresh ones.)
+            for buffer in (model.ep_info_buffer, model.ep_success_buffer):
+                if buffer is not None:
+                    buffer.clear()
         print(f"Resumed from {args.resume}" + (f" with {overrides}" if overrides else ""))
     else:
         model = PPO("CnnPolicy", env, device=device, verbose=1, **sb3_settings)
