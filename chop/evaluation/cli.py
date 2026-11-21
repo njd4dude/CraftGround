@@ -125,6 +125,21 @@ def video_folder(stamp: str, spot_label: str) -> str:
     return f"{stamp}_{spot_label}_spawns" if spot_label else stamp
 
 
+def videos_base(model: str | None, random_name: str | None) -> Path:
+    """The folder that gets the videos/ folder: the run folder, also for a checkpoint
+    (<run>/checkpoints/ppo_chop_N_steps.zip -> <run>/), or runs/baselines/<name> for random actions."""
+    if random_name:
+        return Path("runs/baselines") / random_name
+    parent = Path(model).parent
+    return parent.parent if parent.name == "checkpoints" else parent
+
+
+def checkpoint_suffix(model: str | None) -> str:
+    """'_at_615292_steps' for a checkpoint, so its videos say which checkpoint they show; '' otherwise."""
+    m = re.search(r"ppo_chop_(\d+)_steps\.zip$", Path(model).name) if model else None
+    return f"_at_{m.group(1)}_steps" if m else ""
+
+
 def main():
     args = parse_args()
     # Load the model first: its number of actions says which action set the env must offer
@@ -195,8 +210,8 @@ def main():
                    "random" + ("-multi" if multi else "") + (f"-repeat{action_repeat}" if action_repeat > 1 else ""))
     agent = random_name if args.random else normalize_agent(args.model)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    video_dir = ((Path("runs/baselines") / random_name if args.random else Path(args.model).parent)
-                 / "videos" / args.env / video_folder(stamp, spot_label))
+    video_dir = videos_base(args.model, random_name if args.random else None) / "videos" / args.env / (
+        video_folder(stamp, spot_label) + checkpoint_suffix(args.model))
     recorder = EpisodeRecorder(video_dir, stamp, list(dict.fromkeys(args.video_fps)), label, max_logs, n_envs,
                                step_ticks=action_repeat,
                                enabled=args.record > 0)
