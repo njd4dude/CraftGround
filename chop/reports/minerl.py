@@ -231,7 +231,10 @@ def setup_section() -> str:
                     f"pitch {m.PITCH_DEGREES}° (+ = down); attack always held"],
         ["Ticks per decision", f"{m.FRAME_SKIP}: keys held every tick, the turn split evenly over them "
                                "(as MineRL), logs added up"],
-        ["Axe", "iron (MineRL's) by default; `--axe instant` for our one-hit Efficiency X axe"],
+        ["Axe", "iron (MineRL's) by default; `--axe instant` for our one-hit Efficiency X axe. That one is a "
+                "diamond axe, so the hand shows a light-blue axe with the enchantment shimmer instead of MineRL's "
+                "plain iron one: a small visual difference in every one-hit-axe result and fine-tune (not tested "
+                "on its own)"],
         ["Pop-ups", "every recipe unlocked on the first reset, so no \"New Recipes Unlocked!\" toast covers "
                     "the view (MineRL patched toasts out; `tools/check_minerl_toasts.py`)"],
         ["Field of view", "70° (Minecraft's default, as MineRL)"],

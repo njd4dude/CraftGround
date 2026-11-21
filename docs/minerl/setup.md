@@ -3,7 +3,7 @@
 [← MineRL in CraftGround index](README.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-20 14:55._
+_Tables last updated 2026-11-20 17:34._
 
 The env copies the MineRL project's `MineRLTreechopAxe320-v0` (`~/mineRL/train_treechop.py`), so its models run unchanged.
 
@@ -14,7 +14,7 @@ The env copies the MineRL project's `MineRLTreechopAxe320-v0` (`~/mineRL/train_t
 | Observation | top 138 rows (hotbar, hearts, hunger cut off), `cv2.resize` to 64×64 with `INTER_AREA`: MineRL's `process_pov` |
 | Actions | `MultiDiscrete([3, 11, 9])`: move ['stand', 'forward', 'forward_jump'], yaw [-40, -20, -10, -5, -2, 0, 2, 5, 10, 20, 40]° (+ = right), pitch [-20, -10, -5, -2, 0, 2, 5, 10, 20]° (+ = down); attack always held |
 | Ticks per decision | 4: keys held every tick, the turn split evenly over them (as MineRL), logs added up |
-| Axe | iron (MineRL's) by default; `--axe instant` for our one-hit Efficiency X axe |
+| Axe | iron (MineRL's) by default; `--axe instant` for our one-hit Efficiency X axe. That one is a diamond axe, so the hand shows a light-blue axe with the enchantment shimmer instead of MineRL's plain iron one: a small visual difference in every one-hit-axe result and fine-tune (not tested on its own) |
 | Pop-ups | every recipe unlocked on the first reset, so no "New Recipes Unlocked!" toast covers the view (MineRL patched toasts out; `tools/check_minerl_toasts.py`) |
 | Field of view | 70° (Minecraft's default, as MineRL) |
 | Episode | `--episode-ticks` (default 1,000; MineRL scored 4,000), `--log-cap` (MineRL: 64), or death |
