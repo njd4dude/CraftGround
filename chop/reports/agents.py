@@ -59,8 +59,10 @@ def minerl_finetune(agent: str) -> dict | None:
     env = (first_cfg or {}).get("env", {})
     where = f"{env.get('world', '?')}, {env.get('spawn', 'forest')} spawns, "             f"{'one-hit' if 'diamond' in str(env.get('axe', '')) else 'iron'} axe"
     if base is None:
-        label = f"MineRL mode from scratch `{run_dir_of(agent).name}`"
+        # The folder goes under the label (label_with_folder), so the label names the network instead.
+        net = {"impala": "ImpalaCNN", "nature": "NatureCNN"}.get((first_cfg or {}).get("network", "nature"))
         trained = steps
+        label = f"PPO from scratch in MineRL mode, {net}" + (f" @ {short_steps(trained * 4)} ticks" if trained else "")
     else:
         trained = steps - base.get("ppo_steps", 0) if steps is not None else None
         # Game time trained here (4 ticks per decision), so it reads like our lines' step counts.

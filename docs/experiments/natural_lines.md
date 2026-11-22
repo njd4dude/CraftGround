@@ -5,7 +5,7 @@ Every natural-world training line: what it tested, what it found, and its pieces
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 16:12._
+_Tables last updated 2026-11-21 20:59._
 
 ## Training lines
 
@@ -102,7 +102,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261118_121806` | from scratch | 0 → ~? | 3 | linear | – | no record (killed or hung) | – | killed for low memory at ~8k steps, before any checkpoint; restarted from scratch | – |
-| `20261118_124345` | from scratch | 0 → 1.0M | 3 | linear | 88.8 | completed | **26.6** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/hg4felig) |
+| `20261118_124345` | from scratch | 0 → 1.0M | 3 | linear | 88.8 | completed | **12.8** @ 260k, **26.6** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/hg4felig) |
 
 ### Line 4b
 

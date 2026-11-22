@@ -5,7 +5,7 @@ The main comparison: every agent on the same 100 spots in the natural world's oa
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 16:12._
+_Tables last updated 2026-11-21 20:59._
 
 ## Results
 
@@ -36,5 +36,7 @@ Every agent here played the same 100 oak/birch forest spots (`results/eval_spots
 | Line 2 @ 602k<br>`20261115_185527` @ 601,536 steps | jump, constant LR · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | -21.9 ± 3.8 | **15.9×** |
 | Line 3c @ 1.0M<br>`20261116_173633` @ 996,932 steps | 3M linear LR schedule, from Line 3 @ 257k | 100 | **16.15** ± 2.12 | 15 | 10 | 47 | -23.8 ± 3.8 | **14.2×** |
 | Line 2 @ 1.0M<br>`20261115_192015` | jump, constant LR · render distance 6 | 100 | **14.98** ± 2.09 | 14 | 11 | 43 | -25.0 ± 4.0 | **13.1×** |
+| PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks<br>`scratch_impala_20261121_193751` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 252,282 decisions = 1.01M ticks, from scratch (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **14.57** ± 1.38 | 15 | 5 | 30 | -25.4 ± 4.1 | **12.8×** |
+| Line 4 @ 260k<br>`20261118_124345` @ 259,974 steps | multi actions (move x turn x look x jump, attack held), linear LR, from scratch | 100 | **12.79** ± 1.38 | 13 | 8 | 27 | -27.2 ± 4.1 | **11.2×** |
 | Line 3 @ 257k<br>`20261115_235545` | jump, linear LR, from scratch | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | -27.6 ± 3.9 | **10.8×** |
 <!-- AUTO-GENERATED:END -->

@@ -5,7 +5,7 @@ Scores that don't compare with the three main pages because the rules differ: Mi
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 16:12._
+_Tables last updated 2026-11-21 20:59._
 
 ## Other episode rules
 

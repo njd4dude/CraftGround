@@ -116,6 +116,12 @@ decision. "BC→PPO" is a BC model plus 120k PPO steps in MineRL, so both kinds 
 3. **MineRL's simulator isn't needed.** The BC-only model (never run in MineRL), fine-tuned for 1M
    ticks, ties Line 5 on the oak/birch spots (40.4, +0.4 ± 3.5) and beats it on the all-biome spots (37.5,
    +5.8 ± 3.7). The BC→PPO start (the same BC model plus 120k PPO steps in MineRL) is worth ~3 logs on the oak/birch spots.
+4. **The pretraining is what makes them good.** PPO from scratch in MineRL mode (same ImpalaCNN, settings
+   and 1M ticks as the BC→PPO fine-tune, random weights) scores 14.6 oak/birch / 14.3 all-biome: −28.8 ± 2.9
+   and −22.9 ± 3.5 vs the fine-tune. Per decision MineRL's view and actions learn about as fast as ours
+   (Line 4 at the same ~250k decisions: 12.8, +1.8 ± 1.6); per game tick they are slower (Line 4 at 1M
+   ticks: 26.6, −12.0 ± 3.1), since MineRL mode decides once every 4 ticks. That run kept the fine-tune's
+   gentle PPO settings (LR 1e-4, entropy 0.001).
 
 ## Not proven yet
 
@@ -174,10 +180,13 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 | MineRL Impala BC→PPO, fine-tuned 1M ticks | 43.4 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` |
 | MineRL Impala BC, fine-tuned 1M ticks | 40.4 | `runs/minerl_finetuned/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` |
 | MineRL Impala BC→PPO, no fine-tuning | 29.4 | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` |
+| PPO from scratch in MineRL mode (ImpalaCNN), 1M ticks | 14.6 | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` |
 | MineRL Impala BC, no fine-tuning | 22.2 | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` |
 | **Line 5** (best pure RL) | 40.0 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` |
 | Line 5b | 38.6 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` |
 | Line 4d | 41.3 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` |
+| Line 4, 1M steps | 26.6 | `runs/natural/line4_multi-actions/20261118_124345/model.zip` |
+| Line 4 at 260k steps (same decisions as the from-scratch MineRL-mode run) | 12.8 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_259974_steps.zip` |
 | Line 4c | 41.2 | `runs/natural/line4c_resume-2M/20261118_183414/model.zip` |
 | Line 4b | 35.7 | `runs/natural/line4b_resume-1M/20261118_162138/model.zip` |
 | Line 4 | 26.6 | `runs/natural/line4_multi-actions/20261118_124345/model.zip` |

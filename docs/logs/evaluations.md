@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 16:12._
+_Tables last updated 2026-11-21 20:59._
 
 ## Natural world
 
@@ -13,6 +13,7 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-21T20:57:52 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_259974_steps.zip` | fixed, oak/birch | training | 100 | 12.79 | 0 | 27 | 3 | 9.7 | 213 |
 | 2026-11-19T18:02:55 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | random, all tree biomes | training | 100 | 37.72 | 0 | 186 | 3 | 10.2 | 202 |
 | 2026-11-19T17:52:17 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | random, all tree biomes | training | 100 | 42.77 | 0 | 139 | 3 | 10.4 | 192 |
 | 2026-11-19T17:41:29 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | random, all tree biomes | training | 100 | 35.01 | 0 | 182 | 3 | 10.0 | 225 |
@@ -96,6 +97,8 @@ One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (Mi
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-21T20:09:01 | PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 14.28 | 11.8 | 43 |
+| 2026-11-21T19:57:02 | PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` | natural | fixed spots in oak/birch forests | 1000 | – | instant | 100 | 14.57 | 10.5 | 50 |
 | 2026-11-21T16:12:10 | MineRL Impala BC→PPO + fine-tune @ 1.5M ticks | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_495292_steps.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 39.01 | 13.2 | 38 |
 | 2026-11-20T23:48:34 | MineRL Impala BC→PPO | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 25.72 | 10.1 | 50 |
 | 2026-11-20T23:38:20 | MineRL Impala BC | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 21.15 | 10.3 | 49 |
