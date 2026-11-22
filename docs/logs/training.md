@@ -5,7 +5,7 @@ Every `train.py` run that ended normally, newest first. Stopped pieces are liste
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 20:59._
+_Tables last updated 2026-11-22 13:40._
 
 ## Natural world
 
@@ -60,6 +60,7 @@ One row per MineRL-mode `train.py` run, newest first. **Steps** are decisions (4
 
 | Started | From | Steps | Episodes | Minutes | Last-20 avg logs | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-21T23:15:45 | `runs\minerl_finetuned\scratch_impala_rl-settings_20261121_210129\checkpoints\ppo_chop_220000_steps.zip` | 250720 | 122 | 13.8 | 14.5 | completed | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/qxs6tzi2) |
 | 2026-11-21T19:37:51 | `runs\minerl_finetuned\scratch_impala_20261121_170105\checkpoints\ppo_chop_240000_steps.zip` | 252282 | 49 | 7.2 | 12.45 | completed | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/fb4wpq7m) |
 | 2026-11-20T22:09:17 | `runs/minerl_finetuned/ft_impala-bc_wooded_one-hit-axe_20261120_193516/checkpoints/ppo_chop_180000_steps.zip` | 253692 | 295 | 34.8 | 28.45 | completed | `runs/minerl_finetuned/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/w31wgcfb) |
 | 2026-11-20T12:45:57 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_115737/checkpoints/ppo_chop_182874_steps.zip` | 375292 | 773 | 94.8 | 45.55 | completed | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/xg6dr5d3) |

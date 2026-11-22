@@ -5,7 +5,7 @@ Every agent on 100 spots spread over every biome with trees (taiga, snowy taiga,
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 20:59._
+_Tables last updated 2026-11-22 13:40._
 
 ## Results
 
@@ -23,5 +23,6 @@ _Tables last updated 2026-11-21 20:59._
 | MineRL Impala BC→PPO<br>`model_20261112_130747_ppo_bc_impala_all_kl05` | **MineRL mode** (64×64 view, 4 ticks per decision; see [MineRL transfer](../experiments/minerl_transfer.md)): ImpalaCNN BC on all VPT versions, then 120k PPO steps (target_kl 0.05) | 100 | **25.72** ± 2.84 | -5.9 ± 3.6 | 29.41 ± 2.44 | -3.69 | 6 | 3 |
 | Line 4d @ 4.0M<br>`20261119_112830` | resume Line 4c @ 3.0M for 1M more, forest spawns, linear LR from 1e-4 | 100 | **25.66** ± 5.07 | -6.0 ± 4.8 | 41.27 ± 5.56 | -15.61 | 18 | 8 |
 | MineRL Impala BC<br>`model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont` | **MineRL mode** (64×64 view, 4 ticks per decision; see [MineRL transfer](../experiments/minerl_transfer.md)): ImpalaCNN behavioural cloning on all VPT versions, no RL (the Impala BC→PPO's starting point) | 100 | **21.15** ± 2.67 | -10.5 ± 3.7 | 22.18 ± 2.36 | -1.03 | 8 | 6 |
+| PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks<br>`scratch_impala_rl-settings_20261121_231545` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 250,720 decisions = 1.00M ticks, from scratch (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **18.45** ± 2.63 | -13.2 ± 3.8 | 18.95 ± 1.89 | -0.50 | 8 | 7 |
 | PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks<br>`scratch_impala_20261121_193751` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 252,282 decisions = 1.01M ticks, from scratch (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **14.28** ± 2.05 | -17.4 ± 3.8 | 14.57 ± 1.38 | -0.29 | 11 | 5 |
 <!-- AUTO-GENERATED:END -->

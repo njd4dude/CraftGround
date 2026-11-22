@@ -31,7 +31,8 @@ plus 120k PPO steps in MineRL's simulator; "BC" is behavioural cloning alone.
 | | 1M ticks | 40.4 | 37.5 |
 | Pure RL (Line 4 → 4b → 4c → 5) | 1M / 2M / 3M ticks | 26.6 / 35.7 / 41.2 | |
 | | **Line 5**, 4M ticks | **40.0** | **31.6** |
-| PPO from scratch in MineRL mode (ImpalaCNN, no BC) | 1M ticks = 252k decisions | 14.6 | 14.3 |
+| PPO from scratch in MineRL mode (ImpalaCNN, no BC), fine-tune PPO settings | 1M ticks = 252k decisions | 14.6 | 14.3 |
+| | same, our PPO settings (Line 4's) | **18.9** | **18.4** |
 | Line 4 at the same number of decisions | 260k steps = 0.26M ticks | 12.8 | |
 
 ## What we found
@@ -60,15 +61,21 @@ plus 120k PPO steps in MineRL's simulator; "BC" is behavioural cloning alone.
    from random weights, scores 14.6 on the oak/birch spots and 14.3 on every biome with trees:
    −28.8 ± 2.9 and −22.9 ± 3.5 vs the fine-tune at 1M ticks (−25.9 ± 2.8 and −23.2 ± 2.9 vs the BC
    fine-tune). Starting from VPT videos is worth ~25-29 logs.
-7. **MineRL's view and actions learn about as fast as ours per decision, slower per tick.** Compared
+7. **MineRL's view and actions learn faster than ours per decision, slower per tick.** Compared
    with Line 4 (pure RL, our setup) on the oak/birch spots:
    - **Same decisions** (~250k): 14.6 vs Line 4 at 260k steps 12.8, +1.8 ± 1.6 (better on 58 spots,
      worse on 35): slightly ahead.
    - **Same game time** (1M ticks): 14.6 vs 26.6, −12.0 ± 3.1. MineRL mode makes one decision every
      4 ticks, so in 1M ticks it gets a quarter of Line 4's decisions, samples and PPO updates.
-   Two things still favour Line 4: it trained on oak/birch spawns (this run: wooded), and it used our
-   PPO settings (LR 2.5e-4, entropy 0.01) where this run kept the fine-tune's gentler ones (LR 1e-4,
-   entropy 0.001), which suit a model that already knows the task.
+   That run kept the fine-tune's gentle PPO settings (LR 1e-4, entropy 0.001, batch 64, 10 epochs,
+   target_kl 0.05), which suit a model that already knows the task. Rerun with Line 4's settings
+   (LR 2.5e-4, entropy 0.01, batch 256, 4 epochs, no target_kl) it scores 18.9 oak/birch / 18.4
+   all-biome: +4.4 ± 1.9 and +4.2 ± 2.2 over the gentle-settings run. With the settings matched:
+   - **Same decisions:** 18.9 vs Line 4 at 260k steps 12.8, +6.2 ± 1.7 (better on 71 spots, worse
+     on 22): MineRL's view, actions and network learn clearly faster per decision.
+   - **Same game time:** 18.9 vs 26.6, −7.7 ± 2.9: our 4× more decisions still win per tick.
+   Line 4 also trained on oak/birch spawns (these runs: wooded). The from-scratch runs are still far
+   behind the BC fine-tune (40.4), so the pretraining remains the big win (6).
 8. **Over 4,000 ticks Line 5 averages 118.9,** about 3× its 1,000-tick score, not 4×: it slows as nearby
    trees run out. With MineRL's 64-log cap it scores 54.6.
 
@@ -76,8 +83,8 @@ plus 120k PPO steps in MineRL's simulator; "BC" is behavioural cloning alone.
 
 1. **How good is a MineRL model here, with and without fine-tuning?** Answered (1-3). Arena: zero-shot only.
 2. **Can pure RL here match or beat it?** No (3, 4, 6). PPO from scratch in MineRL's own spaces is
-   ~29 logs behind the fine-tune at 1M ticks; per decision it learns about as fast as our setup (7).
-   Not yet run: the same with our PPO settings (LR 2.5e-4, entropy 0.01).
+   ~29 logs behind the fine-tune at 1M ticks (~25 with our PPO settings); per decision it learns faster
+   than our setup, per tick slower (7).
 3. **How much does matching the observations and actions matter?** One test so far, the axe (5).
    Not yet run: hand hidden, our 114×64 view, 1 tick per decision.
 4. **Does a fine-tuned model still improve after switching to continuous controls?** Not started.
@@ -85,10 +92,8 @@ plus 120k PPO steps in MineRL's simulator; "BC" is behavioural cloning alone.
 ## Next
 
 1. The matching tests for question 3 (zero-shot, ~10 min each).
-2. Optional: PPO from scratch in MineRL's spaces with our PPO settings, to see how much of the gap
-   to Line 4 at 1M ticks was the gentle fine-tune settings (question 2).
-3. A continuous action head on the 2M-tick model (question 4).
-4. Optional: the BC fine-tune to 2M ticks, to see whether it catches up the last ~3 oak/birch logs.
+2. A continuous action head on the 2M-tick model (question 4).
+3. Optional: the BC fine-tune to 2M ticks, to see whether it catches up the last ~3 oak/birch logs.
 
 ## Training runs, every piece
 
@@ -96,7 +101,8 @@ All in `runs/minerl_finetuned/`: wooded spawns, one-hit axe, MineRL's PPO settin
 10 epochs, entropy 0.001, target_kl 0.05), linear learning rate, 2 instances (3 ran out of memory).
 `train.py` lists only runs that ended normally in the [training log](../logs/training.md), so all pieces are here.
 Decisions are counted from the MineRL model's start; 1 decision = 4 ticks. The from-scratch run uses
-`train.py --actions minerl --network impala` with the same settings.
+`train.py --actions minerl --network impala` with the same settings; the second one with Line 4's PPO
+settings (n_steps 2048, batch 256, 4 epochs, entropy 0.01, LR 2.5e-4, no target_kl).
 
 | Model | Piece (folder) | From | Decisions | Ended |
 | --- | --- | --- | --- | --- |
@@ -107,5 +113,7 @@ Decisions are counted from the MineRL model's start; 1 decision = 4 ticks. The f
 | | `ft_impala-bc_wooded_one-hit-axe_20261120_220917` | its 180k checkpoint | 180k → 254k | completed: **the BC 1M-tick model** (`model.zip`) |
 | From scratch (Impala) | `scratch_impala_20261121_170105` | random weights, LR 1e-4 | 0 → 241k | an instance froze; a watchdog killed it after 20 silent minutes |
 | | `scratch_impala_20261121_193751` | its 240k checkpoint | 240k → 252k | completed: **the from-scratch 1M-tick model** (`model.zip`) |
+| From scratch (Impala), our PPO settings | `scratch_impala_rl-settings_20261121_210129` | random weights, LR 2.5e-4 | 0 → ~225k | an instance froze; the watchdog killed it |
+| | `scratch_impala_rl-settings_20261121_231545` | its 220k checkpoint | 220k → 250k | completed: **the from-scratch 1M-tick model with our settings** (`model.zip`) |
 
 Two BC launches crashed on `train.py` bugs before training (fixed; see the bug list in [Findings](../FINDINGS.md)).

@@ -5,7 +5,7 @@ The main comparison: every agent on the same 100 spots in the natural world's oa
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 20:59._
+_Tables last updated 2026-11-22 13:40._
 
 ## Results
 
@@ -33,6 +33,7 @@ Every agent here played the same 100 oak/birch forest spots (`results/eval_spots
 | Line 3 @ 1.0M<br>`20261116_123155` | jump, linear LR, from scratch | 100 | **22.39** ± 2.97 | 23 | 6 | 53 | -17.6 ± 3.6 | **19.6×** |
 | MineRL Impala BC<br>`model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont` | **MineRL mode** (64×64 view, 4 ticks per decision; see [MineRL transfer](../experiments/minerl_transfer.md)): ImpalaCNN behavioural cloning on all VPT versions, no RL (the Impala BC→PPO's starting point) | 100 | **22.18** ± 2.36 | 24 | 6 | 43 | -17.8 ± 3.8 | **19.5×** |
 | Line 3b @ 1.5M<br>`20261116_145213` | fine-tune Line 3 @ 1.0M for 500k more at a small LR | 100 | **21.86** ± 3.08 | 20 | 14 | 53 | -18.1 ± 3.5 | **19.2×** |
+| PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks<br>`scratch_impala_rl-settings_20261121_231545` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 250,720 decisions = 1.00M ticks, from scratch (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **18.95** ± 1.89 | 20 | 7 | 40 | -21.0 ± 3.9 | **16.6×** |
 | Line 2 @ 602k<br>`20261115_185527` @ 601,536 steps | jump, constant LR · render distance 6 | 100 | **18.07** ± 2.95 | 16 | 17 | 59 | -21.9 ± 3.8 | **15.9×** |
 | Line 3c @ 1.0M<br>`20261116_173633` @ 996,932 steps | 3M linear LR schedule, from Line 3 @ 257k | 100 | **16.15** ± 2.12 | 15 | 10 | 47 | -23.8 ± 3.8 | **14.2×** |
 | Line 2 @ 1.0M<br>`20261115_192015` | jump, constant LR · render distance 6 | 100 | **14.98** ± 2.09 | 14 | 11 | 43 | -25.0 ± 4.0 | **13.1×** |

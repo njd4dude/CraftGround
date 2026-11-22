@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 20:59._
+_Tables last updated 2026-11-22 13:40._
 
 ## Natural world
 
@@ -97,6 +97,8 @@ One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (Mi
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-21T23:53:05 | PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | natural | fixed spots in oak/birch forests | 1000 | – | instant | 100 | 18.95 | 10.1 | 51 |
+| 2026-11-21T23:42:44 | PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 18.45 | 12.3 | 43 |
 | 2026-11-21T20:09:01 | PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 14.28 | 11.8 | 43 |
 | 2026-11-21T19:57:02 | PPO from scratch in MineRL mode, ImpalaCNN @ 1.0M ticks | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` | natural | fixed spots in oak/birch forests | 1000 | – | instant | 100 | 14.57 | 10.5 | 50 |
 | 2026-11-21T16:12:10 | MineRL Impala BC→PPO + fine-tune @ 1.5M ticks | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_495292_steps.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 39.01 | 13.2 | 38 |
