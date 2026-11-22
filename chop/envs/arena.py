@@ -121,11 +121,13 @@ class ChopTreesEnv(gym.Wrapper):
     with the turn split over them, so MineRL-trained models run unchanged; jump and action_repeat
     don't apply (its move choice has forward+jump).
     axe: the item the player holds (default: the one-hit AXE, or an iron axe with actions="minerl").
-    episode_ticks: game ticks per episode (MineRL's own evaluation ran 4000)."""
+    episode_ticks: game ticks per episode (MineRL's own evaluation ran 4000).
+    tick_frames: also return every tick's frame, not just the last one, as info["tick_frames"]:
+    a list of (image, logs chopped so far) per tick, so videos can play at 20 fps (evaluate.py)."""
 
     def __init__(self, port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
                  actions: str = "single", action_repeat: int = 1, jump: bool = False,
-                 axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS):
+                 axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS, tick_frames: bool = False):
         if actions not in ("single", "multi", "minerl"):
             raise ValueError(f"actions must be 'single', 'multi' or 'minerl', not {actions!r}")
         if action_repeat < 1:
@@ -137,6 +139,7 @@ class ChopTreesEnv(gym.Wrapper):
         self.jump = jump
         self.action_repeat = minerl.FRAME_SKIP if self.minerl else action_repeat
         self.max_steps = episode_ticks // self.action_repeat
+        self.tick_frames = tick_frames
         self.axe = axe or (minerl.IRON_AXE if self.minerl else AXE)
         width, height = minerl.RENDER_RES if self.minerl else (IMAGE_WIDTH, IMAGE_HEIGHT)
         config = InitialEnvironmentConfig(
@@ -225,11 +228,14 @@ class ChopTreesEnv(gym.Wrapper):
     def step(self, action):
         reward = 0.0
         terminated = False
+        frames = []
         for tick in range(self.action_repeat):
             obs, _, _, _, _ = self.env.step(self._game_action(action, camera=tick == 0))
             logs_now = self._logs_mined_total(obs) - self._logs_at_start
             reward += float(logs_now - self._logs_chopped)
             self._logs_chopped = logs_now
+            if self.tick_frames:
+                frames.append((self._image(obs), logs_now))
             terminated = bool(obs["full"].is_dead)
             if terminated or self._logs_chopped >= MAX_LOGS:
                 break
@@ -237,14 +243,19 @@ class ChopTreesEnv(gym.Wrapper):
 
         truncated = self._steps >= self.max_steps or self._logs_chopped >= MAX_LOGS
         info: dict[str, Any] = {"logs_chopped": self._logs_chopped}
+        if self.tick_frames:
+            info["tick_frames"] = frames
+            return frames[-1][0], reward, terminated, truncated, info
         return self._image(obs), reward, terminated, truncated, info
 
 
 def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = None,
              actions: str = "single", action_repeat: int = 1, jump: bool = False,
-             axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS) -> ChopTreesEnv:
+             axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS,
+             tick_frames: bool = False) -> ChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     actions: "single", "multi" or "minerl"; action_repeat: game ticks per agent step; jump: offer the
-    natural world's jump actions; axe, episode_ticks: see ChopTreesEnv."""
+    natural world's jump actions; axe, episode_ticks, tick_frames: see ChopTreesEnv."""
     return ChopTreesEnv(port=port, verbose=verbose, env_path=env_path, actions=actions,
-                        action_repeat=action_repeat, jump=jump, axe=axe, episode_ticks=episode_ticks)
+                        action_repeat=action_repeat, jump=jump, axe=axe, episode_ticks=episode_ticks,
+                        tick_frames=tick_frames)

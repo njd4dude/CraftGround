@@ -171,9 +171,15 @@ def main():
     if action_repeat > 1 and args.env != "arena" and not use_minerl:
         args.error("--action-repeat / repeat-trained models are arena only for now")
     actions = "minerl" if use_minerl else "multi" if multi else "single"
+    record = args.record > 0 and bool(args.video_fps)
+    # With several ticks per step, have the env hand back every tick's frame so videos play at 20 fps
+    # instead of one frame per step (5 fps for MineRL's 4 ticks).
+    tick_frames = record and action_repeat > 1
     env_kwargs = ({"jump": jump, "seed": args.seed, "actions": actions, "spawn": args.spawn}
                   if args.env == "natural" else
                   {"actions": actions, "action_repeat": 1 if use_minerl else action_repeat, "jump": jump})
+    if tick_frames:
+        env_kwargs["tick_frames"] = True
     # MineRL mode, or MineRL-style scoring of one of our models (another axe, episode length or log cap):
     # these rows go to the MineRL CSV, so they're never averaged with the reports' standard evaluations.
     minerl_info = None
@@ -213,8 +219,8 @@ def main():
     video_dir = videos_base(args.model, random_name if args.random else None) / "videos" / args.env / (
         video_folder(stamp, spot_label) + checkpoint_suffix(args.model))
     recorder = EpisodeRecorder(video_dir, stamp, list(dict.fromkeys(args.video_fps)), label, max_logs, n_envs,
-                               step_ticks=action_repeat,
-                               enabled=args.record > 0)
+                               step_ticks=1 if tick_frames else action_repeat,
+                               enabled=record)
     print(f"{args.episodes} episodes over {n_envs} Minecraft instance(s): {shares}")
 
     done_count = [0] * n_envs        # counted episodes each instance has finished
@@ -251,7 +257,10 @@ def main():
                 ep = episode_id[i]
                 # On the last step obs[i] is already the next episode's first frame.
                 image = infos[i]["terminal_observation"] if dones[i] else obs[i]
-                recorder.add_frame(i, image, steps[i], infos[i]["logs_chopped"], actions[i])
+                if tick_frames:
+                    recorder.add_frames(i, infos[i]["tick_frames"], steps[i], actions[i])
+                else:
+                    recorder.add_frame(i, image, steps[i], infos[i]["logs_chopped"], actions[i])
                 if not dones[i]:
                     continue
                 logs = infos[i]["logs_chopped"]

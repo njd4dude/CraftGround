@@ -5,6 +5,7 @@ pick_video_episodes), so EpisodeRecorder keeps every episode's small frames on d
 
     rec = EpisodeRecorder(video_dir, stamp, speeds, label, max_logs)   # label(action) -> text
     rec.add_frame(i, image, step, logs, action)    # every step of instance i
+    rec.add_frames(i, tick_frames, step, action)   # or every tick of it (the env's info["tick_frames"])
     rec.end_episode(i, episode)                     # written to _frames_<stamp>/ep<N>.npz in the background
     rec.finish(played_all)                          # after the envs are closed
     rec.encode(scores, per_group)                   # the chosen episodes -> MP4, then the frames are deleted
@@ -20,7 +21,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 VIDEO_SCALE = 4
-VIDEO_FPS = 20  # one step is one game tick (1/20 s), so videos play at real Minecraft speed
+VIDEO_FPS = 20  # one frame per game tick (1/20 s), so videos play at real Minecraft speed
 MAX_PENDING = 8  # episodes waiting to be written before playing pauses to let writing catch up
 RECORD_PER_GROUP = 7  # videos of the best, worst and median episodes, this many each
 
@@ -114,6 +115,11 @@ class EpisodeRecorder:
     def add_frame(self, i: int, image: np.ndarray, step: int, logs: int, action) -> None:
         if self.enabled:
             self._raw[i].append((np.array(image), step, logs, np.asarray(action).tolist()))
+
+    def add_frames(self, i: int, tick_frames: list[tuple], step: int, action) -> None:
+        """One step's frames, one per game tick: (image, logs so far) each. Use with step_ticks=1."""
+        for image, logs in tick_frames:
+            self.add_frame(i, image, step, logs, action)
 
     def end_episode(self, i: int, episode: int) -> None:
         """Instance i finished `episode` (0-based): write its frames, start a fresh list."""

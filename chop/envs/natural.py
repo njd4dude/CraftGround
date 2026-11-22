@@ -164,7 +164,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
                  jump: bool = True, render_distance: int = RENDER_DISTANCE,
                  jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
                  seed: str = SEED, actions: str = "single", spawn: str = "forest",
-                 axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS, log_cap: Optional[int] = None):
+                 axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS, log_cap: Optional[int] = None,
+                 tick_frames: bool = False):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15).
@@ -179,7 +180,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
         move choice has forward+jump).
         axe: the item the player holds (default: the one-hit AXE, or an iron axe with actions="minerl").
         episode_ticks: game ticks per episode (MineRL's own evaluation ran 4000).
-        log_cap: end the episode once this many logs are chopped (MineRL's: 64). Default: no cap."""
+        log_cap: end the episode once this many logs are chopped (MineRL's: 64). Default: no cap.
+        tick_frames: also return every tick's frame, not just the last one, as info["tick_frames"]:
+        a list of (image, logs chopped so far) per tick, so videos can play at 20 fps (evaluate.py)."""
         if actions not in ("single", "multi", "minerl"):
             raise ValueError(f"actions must be 'single', 'multi' or 'minerl', not {actions!r}")
         if spawn not in SPAWN_CHECKS:
@@ -190,6 +193,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self.minerl = actions == "minerl"
         self.action_names = ACTION_NAMES_JUMP if jump else ACTION_NAMES
         self.ticks_per_step = minerl.FRAME_SKIP if self.minerl else 1
+        self.tick_frames = tick_frames
         self.episode_ticks = episode_ticks
         self.log_cap = log_cap
         self.axe = axe or (minerl.IRON_AXE if self.minerl else AXE)
@@ -389,12 +393,15 @@ class NaturalChopTreesEnv(gym.Wrapper):
         reward = 0.0
         terminated = False
         act = self._game_action(action)
+        frames = []
         for _ in range(self.ticks_per_step):
             obs, _, _, _, _ = self.env.step(dict(act) if self.v2 else list(act))
             self._ticks += 1
             logs_now = self._logs_mined_total(obs) - self._logs_at_start
             reward += float(logs_now - self._logs_chopped)
             self._logs_chopped = logs_now
+            if self.tick_frames:
+                frames.append((self._image(obs), logs_now))
             terminated = bool(obs["full"].is_dead)
             capped = self.log_cap is not None and self._logs_chopped >= self.log_cap
             if terminated or capped or self._ticks >= self.episode_ticks:
@@ -402,6 +409,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
         truncated = self._ticks >= self.episode_ticks or capped
         info: dict[str, Any] = {"logs_chopped": self._logs_chopped}
+        if self.tick_frames:
+            info["tick_frames"] = frames
+            return frames[-1][0], reward, terminated, truncated, info
         return self._image(obs), reward, terminated, truncated, info
 
 
@@ -410,18 +420,18 @@ def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = 
              jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
              seed: str = SEED, actions: str = "single", spawn: str = "forest",
              axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS,
-             log_cap: Optional[int] = None) -> NaturalChopTreesEnv:
+             log_cap: Optional[int] = None, tick_frames: bool = False) -> NaturalChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
     actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation).
     spawn: "forest" (default) or "wooded" (see SPAWN_CHECKS).
-    actions="minerl", axe, episode_ticks, log_cap: see NaturalChopTreesEnv."""
+    actions="minerl", axe, episode_ticks, log_cap, tick_frames: see NaturalChopTreesEnv."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
                                seed=seed, actions=actions, spawn=spawn, axe=axe, episode_ticks=episode_ticks,
-                               log_cap=log_cap)
+                               log_cap=log_cap, tick_frames=tick_frames)
 
 
 def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:
