@@ -41,11 +41,12 @@ def write_page(rel: str, title: str, about: str, generated: str, stamp: str) -> 
     path = DOCS_DIR / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     template = page_template(title, about, depth=rel.count("/"))
+    text = None
     if path.exists():
         text = path.read_text(encoding="utf-8")
         if START in text and END in text:
-            path.write_text(template.split(START)[0] + START + text.split(START, 1)[1], encoding="utf-8")
-    write_report(path, template, f"{stamp}\n\n{generated}")
+            text = template.split(START)[0] + START + text.split(START, 1)[1]
+    write_report(path, template, f"{stamp}\n\n{generated}", text)
 
 
 def section(heading: str, text: str) -> str:
