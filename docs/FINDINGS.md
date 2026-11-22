@@ -13,7 +13,7 @@ several Minecraft instances
 - [logs/](logs/README.md): every evaluation and training run
 
 This file is written by hand: update it when a result changes a statement.
-_Last updated 2026-11-21._
+_Last updated 2026-11-22._
 
 **How to read the numbers.** Scores are logs chopped per 1000-tick episode. Natural-world
 scores are over the same 100 fixed spots for every model, either in oak and birch forests ("oak/birch
@@ -97,10 +97,14 @@ episodes of our pure-RL agents. Model: `runs/natural/line5_wooded-spawns/2026111
    500k more steps changed nothing (−0.5 ± 3.1), and one 3M schedule tied a 1M one
    (23.9 vs 22.4, +1.5 ± 3.4). The limit was the setup, which multi actions then passed.
    [Line 3b](experiments/natural_lines.md), [Line 3c](experiments/natural_lines.md)
-4. **Using arena-trained agents in the natural world.** Agents scoring 26–32 in the arena get
-   ~5 logs in forests (random actions: 1.8; random spawns, older setup). The arena doesn't
-   teach enough to transfer.
-   [Random spawns](results/other_evaluations.md)
+4. **Using arena-trained agents in the natural world.** The best arena agent
+   (`fixed_multi_1tick_r2`, 31.7 of 32 in the arena) scores 5.7 on the oak/birch spots: 5× random
+   actions (1.1) but −34.3 ± 4.2 vs Line 5, with 31 of 100 episodes at 0 logs (median 3). The
+   arena's 8 oaks stand at the same spots every episode on flat ground, so arena agents never learn
+   to search for trees or climb. The transfer only works the other way: Impala BC→PPO + CG 2M,
+   trained on wooded spawns and never in the arena, scores 29.9 of 32 there (min 23), above every
+   4-tick arena agent (27.8) and Impala BC→PPO, zero-shot (27.8, min 3).
+   [Oak/birch spots](results/natural_oak_birch_forests.md), [Arena](results/arena.md)
 
 ## MineRL models in CraftGround
 
@@ -210,6 +214,7 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 | Line 2 at 1M | 15.0 | `runs/natural/line2_jump-constant-lr/20261115_192015/model.zip` |
 | Line 2 at ~500k (random spawns, finding 4) | 18.0* | `runs/natural/line2_jump-constant-lr/20261115_173930/model.zip` |
 | Line 1 (random spawns, finding 4) | 9.7* | `runs/natural/line1_no-jump/20261115_161832/model.zip` |
+| `fixed_multi_1tick_r2` (best arena agent; arena 31.7) | 5.7 | `runs/arena/fixed_multi_1tick_r2_20261117_220328/model.zip` |
 
 \* random spawns, not the fixed spots (older evaluations, before fixed spots existed).
 
