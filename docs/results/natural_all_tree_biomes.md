@@ -5,7 +5,7 @@ Every agent on 100 spots spread over every biome with trees (taiga, snowy taiga,
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 16:05._
+_Tables last updated 2026-11-21 16:12._
 
 ## Results
 
@@ -13,6 +13,7 @@ _Tables last updated 2026-11-21 16:05._
 
 | Model | Line | Episodes | Mean logs | vs Line 5 | Oak/birch mean | Gap | 0-log episodes (here) | 0-log episodes (oak/birch) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| MineRL Impala BC→PPO + fine-tune @ 1.5M ticks<br>`ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` @ 495,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 372,412 decisions = 1.49M ticks, from MineRL Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **39.01** ± 4.77 | +7.4 ± 4.0 | 44.54 ± 3.61 | -5.53 | 7 | 3 |
 | MineRL Impala BC→PPO + fine-tune @ 2.0M ticks<br>`ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` @ 615,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 492,412 decisions = 1.97M ticks, from MineRL Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **38.54** ± 4.73 | +6.9 ± 4.0 | 44.66 ± 3.73 | -6.12 | 5 | 2 |
 | MineRL Impala BC + fine-tune @ 1.0M ticks<br>`ft_impala-bc_wooded_one-hit-axe_20261120_220917` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 253,692 decisions = 1.01M ticks, from MineRL Impala BC (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **37.48** ± 4.16 | +5.8 ± 3.7 | 40.43 ± 3.14 | -2.95 | 6 | 3 |
 | MineRL Impala BC→PPO + fine-tune @ 1.0M ticks<br>`ft_impala-ppo_wooded_one-hit-axe_20261120_124557` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 252,412 decisions = 1.01M ticks, from MineRL Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **37.22** ± 4.48 | +5.6 ± 3.8 | 43.35 ± 3.16 | -6.13 | 5 | 2 |

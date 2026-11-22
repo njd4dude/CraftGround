@@ -24,6 +24,7 @@ plus 120k PPO steps in MineRL's simulator; "BC" is behavioural cloning alone.
 | MineRL Impala BC→PPO | 0 (zero-shot) | 29.4 | 25.7 |
 | | 0.48M ticks | 38.5 | |
 | | 1M ticks | 43.4 | 37.2 |
+| | 1.5M ticks | 44.5 | 39.0 |
 | | **2M ticks** | **44.7** | **38.5** |
 | MineRL Impala BC (no MineRL simulator) | 0 (zero-shot) | 22.2 | 21.1 |
 | | 0.48M ticks | 37.2 | |
@@ -40,8 +41,10 @@ plus 120k PPO steps in MineRL's simulator; "BC" is behavioural cloning alone.
 2. **Zero-shot, our pure-RL agents are ahead:** Impala BC→PPO 29.4 vs Line 5's 40.0 on the oak/birch
    spots (−10.6 ± 3.8).
 3. **Fine-tuned, the MineRL model is our best agent.** At 2M ticks it beats Line 5 on both spot sets:
-   oak/birch +4.7 ± 3.9, every biome with trees +6.9 ± 4.0. It levels off after 1-1.5M ticks
-   (43.4 → 44.7 on oak/birch from 1M to 2M); pure RL levelled off at ~41 after 3M.
+   oak/birch +4.7 ± 3.9, every biome with trees +6.9 ± 4.0. It levels off after 1-1.5M ticks: the
+   1.5M and 2M checkpoints score the same on both sets (oak/birch 44.5 vs 44.7, +0.1 ± 3.8; every biome
+   with trees 39.0 vs 38.5, −0.5 ± 3.7), so either is "the best model". Pure RL levelled off at ~41
+   after 3M.
 4. **MineRL's simulator isn't needed.** The BC model (VPT videos only, never run in MineRL), fine-tuned
    the same way for 1M ticks, ties Line 5 on the oak/birch spots (+0.4 ± 3.5) and beats it on every
    biome with trees (+5.8 ± 3.7). The 120k PPO steps in MineRL are worth ~3 logs on the oak/birch spots
