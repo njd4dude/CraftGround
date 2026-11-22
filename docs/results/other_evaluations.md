@@ -5,7 +5,7 @@ Scores that don't compare with the three main pages because the rules differ: Mi
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 15:32._
+_Tables last updated 2026-11-21 16:05._
 
 ## Other episode rules
 
@@ -17,16 +17,16 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 
 | Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max | In MineRL |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| MineRL Impala PPO | MineRL mode | 50 | **54.0** ± 5.6 | 64 | 3 | 64 | 59.6 |
-| MineRL NatureCNN PPO | MineRL mode | 50 | **48.4** ± 6.6 | 64 | 5 | 64 | 59.8 |
+| MineRL Impala BC→PPO | MineRL mode | 50 | **54.0** ± 5.6 | 64 | 3 | 64 | 59.6 |
+| MineRL NatureCNN BC→PPO | MineRL mode | 50 | **48.4** ± 6.6 | 64 | 5 | 64 | 59.8 |
 | MineRL Impala BC | MineRL mode | 50 | **44.1** ± 6.9 | 64 | 5 | 64 | 58.8 |
 
 ### Natural world, fixed spots in oak/birch forests · 1,000-tick episodes, no log cap · iron axe (MineRL's)
 
 | Model | View & actions | Spots played | Mean logs | Median | 0-log episodes | Max |
 | --- | --- | --- | --- | --- | --- | --- |
-| MineRL Impala PPO | MineRL mode | 100 | **19.6** ± 1.3 | 21 | 4 | 29 |
-| MineRL NatureCNN PPO | MineRL mode | 100 | **17.5** ± 1.3 | 19 | 6 | 28 |
+| MineRL Impala BC→PPO | MineRL mode | 100 | **19.6** ± 1.3 | 21 | 4 | 29 |
+| MineRL NatureCNN BC→PPO | MineRL mode | 100 | **17.5** ± 1.3 | 19 | 6 | 28 |
 | MineRL Impala BC | MineRL mode | 100 | **16.3** ± 1.5 | 17 | 5 | 29 |
 | Random actions | MineRL mode | 100 | **0.6** ± 0.2 | 0 | 63 | 4 |
 
@@ -46,8 +46,8 @@ Scored the way the MineRL project scored these models (its 24 worlds, same rules
 
 | Model | View & actions | Episodes | Mean logs | Median | 0-log episodes | Max |
 | --- | --- | --- | --- | --- | --- | --- |
-| MineRL Impala PPO | MineRL mode | 50 | **21.4** ± 0.9 | 22 | 0 | 26 |
-| MineRL NatureCNN PPO | MineRL mode | 50 | **20.0** ± 0.9 | 21 | 0 | 25 |
+| MineRL Impala BC→PPO | MineRL mode | 50 | **21.4** ± 0.9 | 22 | 0 | 26 |
+| MineRL NatureCNN BC→PPO | MineRL mode | 50 | **20.0** ± 0.9 | 21 | 0 | 25 |
 | MineRL Impala BC | MineRL mode | 50 | **16.7** ± 2.5 | 21 | 1 | 28 |
 | Random actions | MineRL mode | 50 | **0.2** ± 0.1 | 0 | 41 | 1 |
 

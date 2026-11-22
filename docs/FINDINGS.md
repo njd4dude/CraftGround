@@ -23,12 +23,12 @@ that doesn't include 0 counts as a real difference. Use 100 spots to compare mod
 the same mean but a ~1.6× wider range, since one episode on the same spot can differ by ~14
 logs between runs (Line 4c: 40.5 over 50 vs 41.2 over 100). Arena scores are over 50 episodes, out of 32.
 
-**Which model is which.** Every model named here ("Line 4c", "Impala PPO fine-tuned for 1M ticks"...)
+**Which model is which.** Every model named here ("Line 4c", "Impala BC→PPO fine-tuned for 1M ticks"...)
 has its model file listed in the **Models named here** table at the end of this page.
 
 ## Best agent so far
 
-**The MineRL Impala PPO, fine-tuned here for 2M ticks** (MineRL mode, wooded spawns = any biome with trees, one-hit axe):
+**The MineRL Impala BC→PPO, fine-tuned here for 2M ticks** (MineRL mode, wooded spawns = any biome with trees, one-hit axe):
 **44.7 logs** on the oak/birch spots and **38.5** on the all-biome spots. It beats Line 5 on both:
 +4.7 ± 3.9 and +6.9 ± 4.0. It levelled off after 1-1.5M ticks (43.4 at 1M).
 Model: `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip`
@@ -106,16 +106,16 @@ episodes of our pure-RL agents. Model: `runs/natural/line5_wooded-spawns/2026111
 
 Models trained in the MineRL project (behavioural cloning on VPT videos, then PPO) run here unchanged
 in "MineRL mode": their own 64×64 view with the hand, `[move, yaw, pitch]` actions, 4 ticks per
-decision. Details and every table: [MineRL transfer](experiments/minerl_transfer.md).
+decision. "BC→PPO" is a BC model plus 120k PPO steps in MineRL, so both kinds start from BC. Details and every table: [MineRL transfer](experiments/minerl_transfer.md).
 
 1. **They transfer.** With no training here they keep 75-91% of their MineRL score (scored MineRL's way),
-   but trail our agents under our rules: Impala PPO 29.4 vs Line 5's 40.0 (−10.6 ± 3.8).
-2. **Fine-tuned here, they beat pure RL, in a quarter of the game time.** Impala PPO: 44.7 oak/birch /
+   but trail our agents under our rules: Impala BC→PPO 29.4 vs Line 5's 40.0 (−10.6 ± 3.8).
+2. **Fine-tuned here, they beat pure RL, in a quarter of the game time.** Impala BC→PPO: 44.7 oak/birch /
    38.5 all-biome after 2M ticks (Line 5 after 4M: 40.0 / 31.6; +4.7 ± 3.9 and +6.9 ± 4.0). It levels off
    after 1-1.5M ticks; pure RL levelled off at ~41 after 3M.
 3. **MineRL's simulator isn't needed.** The BC-only model (never run in MineRL), fine-tuned for 1M
    ticks, ties Line 5 on the oak/birch spots (40.4, +0.4 ± 3.5) and beats it on the all-biome spots (37.5,
-   +5.8 ± 3.7). The MineRL PPO start is worth ~3 logs on the oak/birch spots.
+   +5.8 ± 3.7). The BC→PPO start (the same BC model plus 120k PPO steps in MineRL) is worth ~3 logs on the oak/birch spots.
 
 ## Not proven yet
 
@@ -170,10 +170,10 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 
 | Named here as | Score | Model file |
 | --- | --- | --- |
-| **MineRL Impala PPO, fine-tuned 2M ticks** (best) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
-| MineRL Impala PPO, fine-tuned 1M ticks | 43.4 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` |
+| **MineRL Impala BC→PPO, fine-tuned 2M ticks** (best) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
+| MineRL Impala BC→PPO, fine-tuned 1M ticks | 43.4 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` |
 | MineRL Impala BC, fine-tuned 1M ticks | 40.4 | `runs/minerl_finetuned/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` |
-| MineRL Impala PPO, no fine-tuning | 29.4 | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` |
+| MineRL Impala BC→PPO, no fine-tuning | 29.4 | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` |
 | MineRL Impala BC, no fine-tuning | 22.2 | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` |
 | **Line 5** (best pure RL) | 40.0 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` |
 | Line 5b | 38.6 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` |

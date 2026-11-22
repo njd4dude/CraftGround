@@ -5,7 +5,7 @@ Every agent in the one arena: superflat, stone-brick walls, 8 oaks of 4 logs (32
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-21 15:32._
+_Tables last updated 2026-11-21 16:05._
 
 ## Results
 
@@ -23,9 +23,9 @@ Every evaluated arena agent, best first: 1,000-tick episodes, the one-hit axe, a
 | `fixed_single_1tick_r3_20261117_221638` | single actions, 1 tick/step | 50 | **29.70** ± 0.41 | 27 | 32 |
 | `single_1tick_20261117_172920` | single actions, 1 tick/step, **ground not fixed** | 50 | **28.56** ± 0.47 | 24 | 32 |
 | `fixed_multi_4tick_20261118_144105` | multi actions, 4 ticks/step | 50 | **27.82** ± 0.47 | 24 | 31 |
-| MineRL Impala PPO | MineRL mode (64×64, 4 ticks/decision) | 50 | **27.76** ± 1.62 | 3 | 32 |
+| MineRL Impala BC→PPO | MineRL mode (64×64, 4 ticks/decision) | 50 | **27.76** ± 1.62 | 3 | 32 |
 | `multi_4tick_20261117_184506` | multi actions, 4 ticks/step, **ground not fixed** | 50 | **27.68** ± 0.46 | 24 | 31 |
-| MineRL NatureCNN PPO | MineRL mode (64×64, 4 ticks/decision) | 50 | **26.40** ± 0.95 | 16 | 30 |
+| MineRL NatureCNN BC→PPO | MineRL mode (64×64, 4 ticks/decision) | 50 | **26.40** ± 0.95 | 16 | 30 |
 | `chop_ppo_20261113_135620` | single actions, 1 tick/step, **ground not fixed** | 429 | **26.20** ± 0.17 | 18 | 31 |
 | `single_1tick_seed2_20261117_190806` | single actions, 1 tick/step, **ground not fixed** | 50 | **24.20** ± 2.79 | 2 | 32 |
 | `fixed_single_4tick_20261118_142327` | single actions, 4 ticks/step | 50 | **23.98** ± 0.25 | 21 | 26 |
