@@ -5,7 +5,7 @@ The main comparison: every agent on the same 100 spots in the natural world's oa
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 13:49._
+_Tables last updated 2026-11-22 14:17._
 
 ## Results
 
@@ -40,4 +40,5 @@ Every agent here played the same 100 oak/birch forest spots (`results/eval_spots
 | Scratch Impala (MineRL mode) + CG 1.0M, gentle PPO settings<br>`scratch_impala_20261121_193751` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 252,282 decisions = 1.01M ticks, from scratch (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **14.57** ± 1.38 | 15 | 5 | 30 | -25.4 ± 4.1 | **12.8×** |
 | Line 4 @ 260k<br>`20261118_124345` @ 259,974 steps | multi actions (move x turn x look x jump, attack held), linear LR, from scratch | 100 | **12.79** ± 1.38 | 13 | 8 | 27 | -27.2 ± 4.1 | **11.2×** |
 | Line 3 @ 257k<br>`20261115_235545` | jump, linear LR, from scratch | 100 | **12.35** ± 1.95 | 11 | 10 | 37 | -27.6 ± 3.9 | **10.8×** |
+| `fixed_multi_1tick_r2_20261117_220328`<br>`fixed_multi_1tick_r2_20261117_220328` | trained in the arena | 100 | **5.72** ± 1.39 | 3 | 31 | 28 | -34.3 ± 4.2 | **5.0×** |
 <!-- AUTO-GENERATED:END -->

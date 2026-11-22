@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 13:49._
+_Tables last updated 2026-11-22 14:17._
 
 ## Natural world
 
@@ -13,6 +13,7 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T14:17:41 | `runs/arena/fixed_multi_1tick_r2_20261117_220328/model.zip` | fixed, oak/birch | training | 100 | 5.72 | 0 | 28 | 3 | 9.3 | 224 |
 | 2026-11-21T20:57:52 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_259974_steps.zip` | fixed, oak/birch | training | 100 | 12.79 | 0 | 27 | 3 | 9.7 | 213 |
 | 2026-11-19T18:02:55 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | random, all tree biomes | training | 100 | 37.72 | 0 | 186 | 3 | 10.2 | 202 |
 | 2026-11-19T17:52:17 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | random, all tree biomes | training | 100 | 42.77 | 0 | 139 | 3 | 10.4 | 192 |
@@ -97,6 +98,7 @@ One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (Mi
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T13:57:55 | Impala BC→PPO + CG 2.0M | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | arena | arena | 1000 | – | instant | 50 | 29.92 | 4.3 | 150 |
 | 2026-11-21T23:53:05 | Scratch Impala (MineRL mode) + CG 1.0M, Line 4 PPO settings | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | natural | fixed spots in oak/birch forests | 1000 | – | instant | 100 | 18.95 | 10.1 | 51 |
 | 2026-11-21T23:42:44 | Scratch Impala (MineRL mode) + CG 1.0M, Line 4 PPO settings | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 18.45 | 12.3 | 43 |
 | 2026-11-21T20:09:01 | Scratch Impala (MineRL mode) + CG 1.0M, gentle PPO settings | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 14.28 | 11.8 | 43 |

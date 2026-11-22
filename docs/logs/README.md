@@ -5,7 +5,7 @@ Every evaluation and training run, newest first.
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 13:49._
+_Tables last updated 2026-11-22 14:17._
 
 - [Log: evaluation runs](evaluations.md): Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs in `results/`.
 - [Log: training runs](training.md): Every `train.py` run that ended normally, newest first. Stopped pieces are listed on the experiment pages.

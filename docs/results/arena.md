@@ -5,7 +5,7 @@ Every agent in the one arena: superflat, stone-brick walls, 8 oaks of 4 logs (32
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 13:49._
+_Tables last updated 2026-11-22 14:17._
 
 ## Results
 
@@ -20,6 +20,7 @@ Every evaluated arena agent, best first: 1,000-tick episodes, the one-hit axe, a
 | `fixed_multi_1tick_r1_20261117_213859` | multi actions, 1 tick/step | 50 | **30.90** ± 0.25 | 29 | 32 |
 | `multi_1tick_20261117_183147` | multi actions, 1 tick/step, **ground not fixed** | 50 | **30.80** ± 0.33 | 28 | 32 |
 | `fixed_single_1tick_r1_20261117_212824` | single actions, 1 tick/step | 50 | **30.60** ± 0.32 | 28 | 32 |
+| Impala BC→PPO + CG 2.0M | MineRL mode (64×64, 4 ticks/decision) | 50 | **29.92** ± 0.49 | 23 | 32 |
 | `fixed_single_1tick_r3_20261117_221638` | single actions, 1 tick/step | 50 | **29.70** ± 0.41 | 27 | 32 |
 | `single_1tick_20261117_172920` | single actions, 1 tick/step, **ground not fixed** | 50 | **28.56** ± 0.47 | 24 | 32 |
 | `fixed_multi_4tick_20261118_144105` | multi actions, 4 ticks/step | 50 | **27.82** ± 0.47 | 24 | 31 |
