@@ -17,6 +17,7 @@ from stable_baselines3.common.logger import HumanOutputFormat, Logger
 from stable_baselines3.common.save_util import load_from_zip_file
 
 from chop.envs import ENVS, common, minerl
+from chop.networks import ImpalaCNN
 from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, instance_ports, launch_vec_env
 from chop.paths import RUNS_DIR
 from chop.reports import update_report
@@ -69,6 +70,10 @@ def main():
     parser.add_argument("--axe", choices=["default", "iron", "instant"], default="default",
                         help="the axe the player holds: instant (one hit per log, every run before 2026-11-20) or "
                              "iron (MineRL's). Default: iron in MineRL mode, instant otherwise")
+    parser.add_argument("--network", choices=["nature", "impala"], default="nature",
+                        help="from-scratch runs only: nature (default) = SB3's NatureCNN; impala = the ImpalaCNN "
+                             "of the MineRL Impala models (chop/networks.py), so a from-scratch run in MineRL mode "
+                             "differs from their fine-tunes only in its starting weights. A resumed model keeps its own")
     parser.add_argument("--value-warmup", type=int, default=0, metavar="N",
                         help="train only the value head for the model's first N PPO updates, policy frozen: for "
                              "starting PPO from a behaviour-cloned model, whose value head was never trained "
@@ -98,6 +103,8 @@ def main():
     minerl.register_networks()  # MineRL models with the ImpalaCNN need it to load
     saved = load_from_zip_file(args.resume, load_data=True, device="cpu")[0] if args.resume else None
     use_minerl = args.actions == "minerl"
+    if saved and args.network != "nature":
+        parser.error("--network is for from-scratch runs; a resumed model keeps its own network")
     if saved:
         saved_minerl = (tuple(saved["observation_space"].shape) in ((3, minerl.OBS_H, minerl.OBS_W), minerl.OBS_SHAPE)
                         and list(getattr(saved["action_space"], "nvec", [])) == minerl.NVEC)
@@ -204,6 +211,7 @@ def main():
         "rollout_steps": steps_per_env * args.n_envs,
         "ppo": ppo_settings,
         "lr_schedule": args.lr_schedule,
+        **({} if saved else {"network": args.network}),
         "value_warmup_updates": args.value_warmup,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS.get(k), "used": v}  # target_kl has no default here
                                   for k, v in overrides.items() if v != PPO_SETTINGS.get(k)},
@@ -274,7 +282,8 @@ def main():
                     buffer.clear()
         print(f"Resumed from {args.resume}" + (f" with {overrides}" if overrides else ""))
     else:
-        model = PPO("CnnPolicy", env, device=device, verbose=1, **sb3_settings)
+        policy_kwargs = {"features_extractor_class": ImpalaCNN} if args.network == "impala" else None
+        model = PPO("CnnPolicy", env, device=device, verbose=1, policy_kwargs=policy_kwargs, **sb3_settings)
     model.set_logger(Logger(folder=str(run_dir), output_formats=[HumanOutputFormat(sys.stdout), WandbOutputFormat()]))
 
     chop_stats = LogsChoppedCallback(action_repeat)
