@@ -5,7 +5,7 @@ Every natural-world training line: what it tested, what it found, and its pieces
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 13:40._
+_Tables last updated 2026-11-22 13:49._
 
 ## Training lines
 

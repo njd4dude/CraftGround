@@ -60,13 +60,16 @@ def minerl_finetune(agent: str) -> dict | None:
     where = f"{env.get('world', '?')}, {env.get('spawn', 'forest')} spawns, "             f"{'one-hit' if 'diamond' in str(env.get('axe', '')) else 'iron'} axe"
     if base is None:
         # The folder goes under the label (label_with_folder), so the label names the network instead.
-        net = {"impala": "ImpalaCNN", "nature": "NatureCNN"}.get((first_cfg or {}).get("network", "nature"))
+        net = {"impala": "Impala", "nature": "NatureCNN"}.get((first_cfg or {}).get("network", "nature"))
+        ppo = (first_cfg or {}).get("ppo", {})
+        settings = "Line 4 PPO settings" if ppo.get("ent_coef") == 0.01 else "gentle PPO settings"
         trained = steps
-        label = f"PPO from scratch in MineRL mode, {net}" + (f" @ {short_steps(trained * 4)} ticks" if trained else "")
+        label = (f"Scratch {net} (MineRL mode)" + (f" + CG {short_steps(trained * 4)}" if trained else "")
+                 + f", {settings}")
     else:
         trained = steps - base.get("ppo_steps", 0) if steps is not None else None
-        # Game time trained here (4 ticks per decision), so it reads like our lines' step counts.
-        label = f"{base['label']} + fine-tune" + (f" @ {short_steps(trained * 4)} ticks" if trained else "")
+        # "CG": PPO in CraftGround, counted in game ticks (4 per decision) like our lines' steps.
+        label = f"{base['label']} + CG" + (f" {short_steps(trained * 4)}" if trained else "")
     about = (f"**MineRL mode**, trained here ({where})"
              + (f" for {trained:,} decisions = {trained * 4 / 1e6:.2f}M ticks" if trained else "")
              + (f", from {base['label']}" if base else ", from scratch"))
@@ -203,9 +206,12 @@ def model_label(agent: str, runs: list[dict]) -> str:
     """"Line 2b @ 1.0M" for a natural-world model, else the folder label."""
     if agent == "random":
         return "Random actions (baseline)"
-    mrl = minerl_model(agent) or minerl_finetune(agent)
+    mrl = minerl_model(agent)
     if mrl is not None:
-        return mrl["label"]
+        return mrl["label"] + ", zero-shot"
+    ft = minerl_finetune(agent)
+    if ft is not None:
+        return ft["label"]
     line = line_of_agent(agent)
     if line is None:
         return agent_label(agent)

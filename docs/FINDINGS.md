@@ -23,14 +23,14 @@ that doesn't include 0 counts as a real difference. Use 100 spots to compare mod
 the same mean but a ~1.6× wider range, since one episode on the same spot can differ by ~14
 logs between runs (Line 4c: 40.5 over 50 vs 41.2 over 100). Arena scores are over 50 episodes, out of 32.
 
-**Which model is which.** Every model named here ("Line 4c", "Impala BC→PPO fine-tuned for 1M ticks"...)
+**Which model is which.** Every model named here ("Line 4c", "Impala BC→PPO + CG 1M"...)
 has its model file listed in the **Models named here** table at the end of this page.
 
 ## Best agent so far
 
-**The MineRL Impala BC→PPO, fine-tuned here for 2M ticks** (MineRL mode, wooded spawns = any biome with trees, one-hit axe):
-**44.7 logs** on the oak/birch spots and **38.5** on the all-biome spots. It beats Line 5 on both:
-+4.7 ± 3.9 and +6.9 ± 4.0. It levelled off after 1-1.5M ticks (43.4 at 1M).
+**Impala BC→PPO + CG 2M**: the MineRL project's Impala BC→PPO model (BC on VPT videos, then 120k PPO steps in MineRL), trained here in CraftGround for 2M more ticks (MineRL mode, wooded spawns = any biome with trees, one-hit axe, gentle PPO settings; names explained under [MineRL models in CraftGround](#minerl-models-in-craftground)):
+**44.7 logs** on the oak/birch spots and **38.5** on the all-biome spots. Impala BC→PPO + CG 2M beats Line 5 on both:
++4.7 ± 3.9 and +6.9 ± 4.0. Impala BC→PPO + CG levelled off after 1-1.5M ticks (Impala BC→PPO + CG 1M: 43.4).
 Model: `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip`
 (a checkpoint: the run froze 10k steps before its end and never wrote `model.zip`; run it with
 `evaluate.py <model> --env natural --axe instant`).
@@ -104,25 +104,35 @@ episodes of our pure-RL agents. Model: `runs/natural/line5_wooded-spawns/2026111
 
 ## MineRL models in CraftGround
 
-Models trained in the MineRL project (behavioural cloning on VPT videos, then PPO) run here unchanged
-in "MineRL mode": their own 64×64 view with the hand, `[move, yaw, pitch]` actions, 4 ticks per
-decision. "BC→PPO" is a BC model plus 120k PPO steps in MineRL, so both kinds start from BC. Details and every table: [MineRL transfer](experiments/minerl_transfer.md).
+Models trained in the MineRL project run here in "MineRL mode": their own 64×64 view with the hand,
+`[move, yaw, pitch]` actions, 4 ticks per decision. Each model's name lists its training stages:
+**BC** = behavioural cloning on VPT videos (MineRL project, no simulator); **→PPO** = then 120k PPO
+steps in MineRL's simulator; **+ CG &lt;ticks&gt;** = then PPO here in CraftGround (MineRL mode, wooded
+spawns, one-hit axe); **zero-shot** = no CraftGround training; **Scratch** = random starting weights,
+CraftGround training only. Stage 3 used the **gentle PPO settings** (LR 1e-4, entropy 0.001, batch 64,
+10 epochs, target_kl 0.05) unless a name says **Line 4 PPO settings** (LR 2.5e-4, entropy 0.01, batch
+256, 4 epochs). The full name table and every result: [MineRL transfer](experiments/minerl_transfer.md).
 
-1. **They transfer.** With no training here they keep 75-91% of their MineRL score (scored MineRL's way),
-   but trail our agents under our rules: Impala BC→PPO 29.4 vs Line 5's 40.0 (−10.6 ± 3.8).
-2. **Fine-tuned here, they beat pure RL, in a quarter of the game time.** Impala BC→PPO: 44.7 oak/birch /
-   38.5 all-biome after 2M ticks (Line 5 after 4M: 40.0 / 31.6; +4.7 ± 3.9 and +6.9 ± 4.0). It levels off
-   after 1-1.5M ticks; pure RL levelled off at ~41 after 3M.
-3. **MineRL's simulator isn't needed.** The BC-only model (never run in MineRL), fine-tuned for 1M
-   ticks, ties Line 5 on the oak/birch spots (40.4, +0.4 ± 3.5) and beats it on the all-biome spots (37.5,
-   +5.8 ± 3.7). The BC→PPO start (the same BC model plus 120k PPO steps in MineRL) is worth ~3 logs on the oak/birch spots.
-4. **The pretraining is what makes them good.** PPO from scratch in MineRL mode (same ImpalaCNN, settings
-   and 1M ticks as the BC→PPO fine-tune, random weights) scores 14.6 oak/birch / 14.3 all-biome: −28.8 ± 2.9
-   and −22.9 ± 3.5 vs the fine-tune. That run kept the fine-tune's gentle PPO settings (LR 1e-4,
-   entropy 0.001); with Line 4's settings it scores 18.9 / 18.4 (+4.4 ± 1.9 / +4.2 ± 2.2), still ~21
-   behind the BC fine-tune. With settings matched, per decision MineRL's view and actions learn faster
-   than ours (Line 4 at the same ~250k decisions: 12.8, +6.2 ± 1.7); per game tick they are slower
-   (Line 4 at 1M ticks: 26.6, −7.7 ± 2.9), since MineRL mode decides once every 4 ticks.
+1. **The MineRL models transfer.** With no training here the three zero-shot models keep 75-91% of
+   their MineRL score (scored MineRL's way), but trail our agents under our rules: Impala BC→PPO,
+   zero-shot 29.4 vs Line 5's 40.0 (−10.6 ± 3.8).
+2. **Impala BC→PPO + CG beats pure RL, in a quarter of the game time.** Impala BC→PPO + CG 2M: 44.7
+   oak/birch / 38.5 all-biome (Line 5 after 4M ticks: 40.0 / 31.6; +4.7 ± 3.9 and +6.9 ± 4.0). Impala
+   BC→PPO + CG levels off after 1-1.5M ticks; pure RL levelled off at ~41 after 3M.
+3. **MineRL's simulator isn't needed.** Impala BC + CG 1M (never run in MineRL's simulator) ties Line 5
+   on the oak/birch spots (40.4, +0.4 ± 3.5) and beats Line 5 on the all-biome spots (37.5, +5.8 ± 3.7).
+   Stage 2 (120k PPO steps in MineRL) is worth ~3 logs on the oak/birch spots (Impala BC→PPO + CG 1M
+   43.4 vs Impala BC + CG 1M 40.4).
+4. **The pretraining (BC on VPT) is what makes the MineRL models good.** Scratch Impala (MineRL mode) +
+   CG 1M, gentle PPO settings (same network, PPO settings and 1M ticks as Impala BC→PPO + CG 1M, random
+   starting weights) scores 14.6 oak/birch / 14.3 all-biome: −28.8 ± 2.9 and −22.9 ± 3.5 vs Impala
+   BC→PPO + CG 1M. Scratch Impala (MineRL mode) + CG 1M, Line 4 PPO settings scores 18.9 / 18.4
+   (+4.4 ± 1.9 / +4.2 ± 2.2 over the gentle-settings Scratch run), still ~21 behind Impala BC + CG 1M.
+5. **MineRL mode learns faster than our setup per decision, slower per tick.** With Line 4's PPO
+   settings in both, Scratch Impala (MineRL mode) + CG 1M vs Line 4 (our view, actions and NatureCNN,
+   also from scratch): at the same ~250k decisions, 18.9 vs Line 4 @ 260k steps 12.8 (+6.2 ± 1.7); at
+   the same 1M game ticks, 18.9 vs Line 4 @ 1M steps 26.6 (−7.7 ± 2.9), since MineRL mode decides once
+   every 4 ticks.
 
 ## Not proven yet
 
@@ -157,7 +167,7 @@ decision. "BC→PPO" is a BC model plus 120k PPO steps in MineRL, so both kinds 
 
 - **Resumed runs recorded the wrong PPO settings** (fixed 2026-11-20). A resumed model keeps its own
 batch size, epochs, entropy and target_kl, but config.json recorded train.py's defaults. Training was
-never affected; the two MineRL fine-tune configs were corrected by hand (`config_note`).
+never affected; the two Impala BC→PPO + CG configs were corrected by hand (`config_note`).
 - **train.py crashed starting from a behaviour-cloned model** (fixed 2026-11-20): `--target-kl` had no
 default to record, and a never-trained model has no episode buffers to clear. Both crashed at launch,
 before any training.
@@ -177,18 +187,18 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 
 | Named here as | Score | Model file |
 | --- | --- | --- |
-| **MineRL Impala BC→PPO, fine-tuned 2M ticks** (best) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
-| MineRL Impala BC→PPO, fine-tuned 1M ticks | 43.4 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` |
-| MineRL Impala BC, fine-tuned 1M ticks | 40.4 | `runs/minerl_finetuned/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` |
-| MineRL Impala BC→PPO, no fine-tuning | 29.4 | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` |
-| PPO from scratch in MineRL mode (ImpalaCNN), 1M ticks, our PPO settings | 18.9 | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` |
-| PPO from scratch in MineRL mode (ImpalaCNN), 1M ticks, fine-tune PPO settings | 14.6 | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` |
-| MineRL Impala BC, no fine-tuning | 22.2 | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` |
+| **Impala BC→PPO + CG 2M** (best) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
+| Impala BC→PPO + CG 1M | 43.4 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` |
+| Impala BC + CG 1M | 40.4 | `runs/minerl_finetuned/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` |
+| Impala BC→PPO, zero-shot | 29.4 | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` |
+| Scratch Impala (MineRL mode) + CG 1M, Line 4 PPO settings | 18.9 | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` |
+| Scratch Impala (MineRL mode) + CG 1M, gentle PPO settings | 14.6 | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` |
+| Impala BC, zero-shot | 22.2 | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` |
 | **Line 5** (best pure RL) | 40.0 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` |
 | Line 5b | 38.6 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` |
 | Line 4d | 41.3 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` |
 | Line 4, 1M steps | 26.6 | `runs/natural/line4_multi-actions/20261118_124345/model.zip` |
-| Line 4 at 260k steps (same decisions as the from-scratch MineRL-mode run) | 12.8 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_259974_steps.zip` |
+| Line 4 @ 260k steps (same number of decisions as the Scratch Impala (MineRL mode) runs) | 12.8 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_259974_steps.zip` |
 | Line 4c | 41.2 | `runs/natural/line4c_resume-2M/20261118_183414/model.zip` |
 | Line 4b | 35.7 | `runs/natural/line4b_resume-1M/20261118_162138/model.zip` |
 | Line 4 | 26.6 | `runs/natural/line4_multi-actions/20261118_124345/model.zip` |

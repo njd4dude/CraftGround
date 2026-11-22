@@ -13,8 +13,8 @@ every biome with trees (taiga, snowy taiga, jungle, dark forest, swamp...):
 
 | Agent | Oak/birch forests | Every biome with trees |
 | --- | --- | --- |
-| MineRL Impala BC→PPO, fine-tuned here for 2M ticks | **44.7** | **38.5** |
-| MineRL Impala BC, fine-tuned here for 1M ticks | 40.4 | 37.5 |
+| Impala BC→PPO + CG 2M (MineRL project's BC + PPO model, then 2M ticks of PPO here) | **44.7** | **38.5** |
+| Impala BC + CG 1M (MineRL project's BC model, then 1M ticks of PPO here) | 40.4 | 37.5 |
 | Line 5: pure RL here, 4M ticks | 40.0 | 31.6 |
 
 What's behind these, and everything else learned so far: **[docs/FINDINGS.md](docs/FINDINGS.md)**.
