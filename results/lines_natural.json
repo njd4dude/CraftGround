@@ -91,6 +91,13 @@
    "name": "resume Line 5 @ 4.0M for 1M more, wooded spawns, linear LR from 1e-4",
    "tested": "Line 4d showed forest training levels off by 3M. Wooded spawns give the agent harder places it hasn't mastered (31.6 wooded vs 40.0 forest), so does Line 5 keep improving with 1M more steps?",
    "found": "No: wooded 31.3 vs Line 5's 31.6 (-0.3 +/- 4.5 spot by spot), forest 38.6 vs 40.0 (-1.4 +/- 4.5), both ties; 0-log spots 9 -> 7 wooded, 4 -> 6 forest. It keeps Line 5's lead over the forest-trained Line 4d on wooded spots (+5.7 +/- 4.7). Wooded training levels off by 4M too, so the remaining wooded-vs-forest gap (~8 logs) needs something other than more steps."
+  },
+  {
+   "folder": "line5c_anywhere-spawns",
+   "id": "5c",
+   "name": "resume Line 5 @ 4.0M for 1M more, spawns anywhere on land, linear LR from 1e-4",
+   "tested": "Wooded spawns halved the 0-log episodes (Line 5 vs Line 4d). Do spawns anywhere on land (plains, desert, savanna, mountains... where many spots have no tree in reach) teach the agent to search for trees and fail even less? Line 5b (same start, steps and LR, wooded spawns) is the control; scored on the oak/birch, wooded and new anywhere spot sets.",
+   "found": "No clear gain. Against its control Line 5b (same start, steps and LR, wooded spawns): anywhere spots 20.4 vs 21.1 (-0.7 +/- 4.5), oak/birch 36.6 vs 38.6 (-2.0 +/- 4.2), wooded 35.4 vs 31.3 (+4.0 +/- 4.7): all ties, the wooded one close. Against its start Line 5: wooded +3.7 +/- 3.5 (just significant), oak/birch -3.4 +/- 3.7, anywhere -1.1 +/- 4.3. 0-log episodes on the anywhere spots didn't move (Line 5c 36, Line 5b 37, Line 5 36); 28 of those spots are 0 for all three, probably no tree in reach. Trains as fast as wooded spawns (95 min for 1M)."
   }
  ],
  "piece_notes": {

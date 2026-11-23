@@ -34,14 +34,18 @@ def natural_setup_section() -> str:
         ["World", f"Normal generated world, fixed seed {ne.SEED} (held-out evaluation world: "
                   f"seed {ne.HELD_OUT_SEED}, never trained in)"],
         ["Evaluation", "100 fixed spots in oak/birch forests (`results/eval_spots_natural.json`, `make_eval_spots.py`), "
-                       "and 100 in every biome with trees (`results/eval_spots_natural_wooded.json`); "
+                       "100 in every biome with trees (`results/eval_spots_natural_wooded.json`), and 100 anywhere "
+                       "on land (`results/eval_spots_natural_anywhere.json`, [page](../results/natural_anywhere.md)); "
                        "`evaluate.py --random-spots` for random spawns. Held-out world (archived: "
                        "[held-out world](../results/archive/held_out.md)): `evaluate.py <model> --env natural "
                        "--held-out`. Every biome with trees: [Natural world: every biome with trees](../results/natural_all_tree_biomes.md)"],
         ["Spawn", f"A new spot every episode, on the ground in an oak/birch forest: first within "
                   f"{ne.HOP_RANGE} blocks of the last spot, else anywhere within ±{ne.FAR_RANGE:,}. "
                   f"`train.py --spawn wooded` (Line 5, since 2026-11-18): any biome with trees but savanna, "
-                  f"and a world-wide search after {ne.MAX_HOP_EPISODES['wooded']} episodes near one spot"],
+                  f"and a world-wide search after {ne.MAX_HOP_EPISODES['wooded']} episodes near one spot. "
+                  f"`train.py --spawn anywhere` (Line 5c, 2026-11-22): any land, plains, desert and savanna "
+                  f"included, never on leaves or logs; same world-wide search after "
+                  f"{ne.MAX_HOP_EPISODES['anywhere']} episodes"],
         ["Rebuilt each episode", "no: chopped trees stay chopped, so every episode moves to fresh forest"],
         ["Boundaries", "none; terrain loads as the agent walks"],
         ["Render distance", f"{ne.RENDER_DISTANCE} chunks, Minecraft heap {ne.JVM_MAX_MEMORY} "
@@ -93,10 +97,11 @@ def fixed_spots_section(evals: list[dict], runs: list[dict] | None = None) -> st
     )
 
 
-def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict] | None = None) -> str:
+def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict] | None = None,
+                   spot_set: str = "wooded") -> str:
     """Fixed-spot scores on the wooded spot set (any biome with trees: snowy taiga, taiga, jungle,
-    swamp...) next to the same agent's forest-spot score: the gap is how much it loses outside
-    oak/birch forests."""
+    swamp...), or with spot_set="anywhere" the anywhere-on-land set, next to the same agent's
+    forest-spot score: the gap is how much it loses outside oak/birch forests."""
     runs = runs or []
     by_agent = episodes_by_agent(wooded)
     if not by_agent:
@@ -114,14 +119,19 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
             f_cell, gap, f_zeros = "–", "–", "–"
         rows.append([label_with_folder(agent, runs), line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
                      vs_reference(agent, by_rows), f_cell, gap, sum(x == 0 for x in eps), f_zeros])
+    where = ("100 fixed spots anywhere on land (`results/eval_spots_natural_anywhere.json`, made with "
+             "`make_eval_spots.py --spawn anywhere`): plains, desert, savanna, mountains and forests alike, "
+             "so many spots have no tree nearby; same training world."
+             if spot_set == "anywhere" else
+             "100 fixed spots in every biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
+             "made with `make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and "
+             "more, same training world.")
     return (
         "## Results\n\n"
-        "100 fixed spots in every biome with trees except savanna (`results/eval_spots_natural_wooded.json`, "
-        "made with `make_eval_spots.py --spawn wooded`): snowy taiga, taiga, dark forest, jungle, swamp and more, "
-        "same training world. **Oak/birch mean** is the same agent's score on the "
+        + where + " **Oak/birch mean** is the same agent's score on the "
         "[oak and birch forests](natural_oak_birch_forests.md) page; the **gap** is how much it loses outside them. **0-log episodes** count the episodes "
         "that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with "
-        "`evaluate.py <model> --env natural --spots results/eval_spots_natural_wooded.json`.\n\n"
+        f"`evaluate.py <model> --env natural --spots results/eval_spots_natural_{spot_set}.json`.\n\n"
         + table(["Model", "Line", "Episodes", "Mean logs", f"vs {REFERENCE_NAME}", "Oak/birch mean", "Gap",
                  "0-log episodes (here)", "0-log episodes (oak/birch)"], rows)
     )

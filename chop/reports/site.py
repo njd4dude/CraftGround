@@ -17,7 +17,8 @@ from chop.paths import DOCS_DIR
 from chop.reports import arena, minerl, natural
 from chop.reports.agents import model_label
 from chop.reports.csvio import (EVAL_CSV, MINERL_EVAL_CSV, MINERL_TRAIN_CSV, NATURAL_EVAL_CSV, NATURAL_TRAIN_CSV,
-                                TRAIN_CSV, is_fixed, is_held_out, is_standard_natural, is_wooded, read_rows)
+                                TRAIN_CSV, is_anywhere, is_fixed, is_held_out, is_standard_natural, is_wooded,
+                                read_rows)
 from chop.reports.markdown import END, START, body, write_report
 from chop.reports.sections import evals_section, training_section
 
@@ -65,9 +66,10 @@ def update(stamp: str | None = None) -> None:
     minerl_arena = [r for r in minerl_evals if r.get("env") == "arena" and r.get("axe") == "instant"
                     and str(r.get("episode_ticks")) == "1000"]
     training_world = [r for r in natural_evals if not is_held_out(r)]
-    forest = [r for r in training_world + minerl_natural if is_fixed(r) and not is_wooded(r)]
+    forest = [r for r in training_world + minerl_natural if is_fixed(r) and not is_wooded(r) and not is_anywhere(r)]
+    anywhere = [r for r in training_world + minerl_natural if is_anywhere(r)]
     wooded = [r for r in training_world + minerl_natural if is_wooded(r)]
-    random_forest = [r for r in training_world if not is_fixed(r) and r.get("spots") != "random_wooded"]
+    random_forest = [r for r in training_world if not is_fixed(r) and r.get("spots") not in ("random_wooded", "random_anywhere")]
     random_wooded = [r for r in training_world if r.get("spots") == "random_wooded"]
     arena_runs = arena.Runs()
 
@@ -84,6 +86,12 @@ def update(stamp: str | None = None) -> None:
          "swamp, cherry grove...; no savanna; `results/eval_spots_natural_wooded.json`), next to its "
          "oak/birch forest score.",
          natural.wooded_section(wooded, forest, natural_runs)),
+        ("results/natural_anywhere.md", "Natural world: anywhere on land (100 fixed spots)",
+         "Every agent on 100 spots anywhere on land: plains, desert, savanna, mountains and forests alike, so "
+         "many spots have no tree nearby (`results/eval_spots_natural_anywhere.json`), next to its oak/birch "
+         "forest score.",
+         natural.wooded_section(anywhere, forest, natural_runs, spot_set="anywhere")
+         or "## Results\n\n_None yet._"),
         ("results/arena.md", "Arena: walled flat arena with 8 oaks",
          "Every agent in the one arena: superflat, stone-brick walls, 8 oaks of 4 logs (32 logs at most), "
          "rebuilt every episode. Only the agents' actions differ between runs.",

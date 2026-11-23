@@ -114,6 +114,13 @@ episodes of our pure-RL agents. Model: `runs/natural/line5_wooded-spawns/2026111
    10.8 in the natural world untrained, against 5.7 for `fixed_multi_1tick_r2` without jump, though
    the jump agent scores less in the arena (28.0 vs 31.7; one run each).
    [Line 6](experiments/natural_lines.md), [Oak/birch spots](results/natural_oak_birch_forests.md)
+6. **Spawning anywhere on land instead of only where trees grow.** Line 5c (Line 5 + 1M steps with
+   spawns anywhere on land: plains, desert, savanna, mountains... included) tied its control Line 5b
+   (Line 5 + 1M steps, wooded spawns) on all three spot sets: anywhere-on-land 20.4 vs 21.1
+   (−0.7 ± 4.5), oak/birch 36.6 vs 38.6 (−2.0 ± 4.2), all-biome 35.4 vs 31.3 (+4.0 ± 4.7, close).
+   Line 5c didn't reduce 0-log episodes on the anywhere-on-land spots (Line 5c 36, Line 5b 37,
+   Line 5 36 of 100); 28 of those spots are 0 for all three agents, probably with no tree in reach.
+   [Line 5c](experiments/natural_lines.md), [Anywhere-on-land spots](results/natural_anywhere.md)
 
 ## MineRL models in CraftGround
 

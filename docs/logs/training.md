@@ -5,7 +5,7 @@ Every `train.py` run that ended normally, newest first. Stopped pieces are liste
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 16:50._
+_Tables last updated 2026-11-22 19:37._
 
 ## Natural world
 
@@ -13,6 +13,7 @@ One row per `train.py` run, newest first.
 
 | Started | Steps | Episodes | Minutes | Last-20 avg logs | Best episode | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T18:01:59 | 5000820 | 1001 | 95.4 | 20.15 | 203 | completed | `runs/natural/line5c_anywhere-spawns/20261122_180159/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2lhz2cti) |
 | 2026-11-22T15:08:32 | 1201002 | 1002 | 102.0 | 22.35 | 129 | completed | `runs/natural/line6_arena-pretrained/20261122_150832/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/l33oauly) |
 | 2026-11-19T16:18:18 | 5002338 | 181 | 18.0 | 45.85 | 176 | completed | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/7ozb4sir) |
 | 2026-11-19T11:28:30 | 4001976 | 1002 | 90.5 | 41.2 | 131 | completed | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/m7mtph3f) |

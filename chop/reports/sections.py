@@ -1,6 +1,6 @@
 """Report sections both worlds use: one row per evaluation run, one row per training run."""
 
-from chop.reports.csvio import is_fixed, is_held_out, is_wooded
+from chop.reports.csvio import is_anywhere, is_fixed, is_held_out, is_wooded
 from chop.reports.markdown import table
 
 
@@ -10,7 +10,8 @@ def evals_section(evals: list[dict]) -> str:
     with_spots = any(r.get("spots") for r in evals)  # natural world: fixed or random spawns
     with_world = any(is_held_out(r) for r in evals)  # natural world: training or held-out world
     rows = [[r["timestamp"], f"`{r['agent']}`",
-             *([("fixed, all tree biomes" if is_wooded(r) else "fixed, oak/birch" if is_fixed(r)
+             *([("fixed, all tree biomes" if is_wooded(r) else "fixed, anywhere" if is_anywhere(r)
+               else "fixed, oak/birch" if is_fixed(r)
                else "random, all tree biomes" if r.get("spots") == "random_wooded" else "random, oak/birch")]
                if with_spots else []),
              *([("held-out" if is_held_out(r) else "training")] if with_world else []),

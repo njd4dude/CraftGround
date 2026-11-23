@@ -82,6 +82,12 @@ def is_wooded(row: dict) -> bool:
     return is_fixed(row) and (row.get("spots") or "").endswith("_wooded.json")
 
 
+def is_anywhere(row: dict) -> bool:
+    """Played the spot set anywhere on land (eval_spots_natural_anywhere.json, made with
+    make_eval_spots.py --spawn anywhere): plains, desert, mountains... included. Its own page."""
+    return is_fixed(row) and (row.get("spots") or "").endswith("_anywhere.json")
+
+
 def is_held_out(row: dict) -> bool:
     """Played in a world other than the training one (blank = older rows, all in the training world)."""
     return (row.get("world_seed") or natural_env.SEED) != natural_env.SEED

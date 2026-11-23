@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 17:41._
+_Tables last updated 2026-11-22 20:35._
 
 ## Natural world
 
@@ -13,6 +13,11 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T20:35:47 | `runs/natural/line5c_anywhere-spawns/20261122_180159/model.zip` | fixed, all tree biomes | training | 100 | 35.37 | 0 | 129 | 3 | 10.8 | 190 |
+| 2026-11-22T20:24:14 | `runs/natural/line5c_anywhere-spawns/20261122_180159/model.zip` | fixed, oak/birch | training | 100 | 36.59 | 0 | 83 | 3 | 9.4 | 225 |
+| 2026-11-22T20:14:22 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | fixed, anywhere | training | 100 | 21.56 | 0 | 92 | 3 | 11.4 | 173 |
+| 2026-11-22T20:02:32 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | fixed, anywhere | training | 100 | 21.08 | 0 | 90 | 3 | 11.7 | 167 |
+| 2026-11-22T19:50:20 | `runs/natural/line5c_anywhere-spawns/20261122_180159/model.zip` | fixed, anywhere | training | 100 | 20.43 | 0 | 161 | 3 | 11.5 | 171 |
 | 2026-11-22T17:41:33 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_499950_steps.zip` | fixed, oak/birch | training | 100 | 13.07 | 0 | 33 | 3 | 9.8 | 214 |
 | 2026-11-22T17:31:34 | `runs/natural/line6_arena-pretrained/20261122_150832/model.zip` | fixed, oak/birch | training | 100 | 25.38 | 0 | 65 | 3 | 10.0 | 208 |
 | 2026-11-22T17:21:23 | `runs/natural/line6_arena-pretrained/20261122_150832/checkpoints/ppo_chop_700458_steps.zip` | fixed, oak/birch | training | 100 | 17.83 | 0 | 52 | 3 | 10.6 | 194 |

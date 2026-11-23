@@ -5,7 +5,7 @@ The main comparison: every agent on the same 100 spots in the natural world's oa
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 17:41._
+_Tables last updated 2026-11-22 20:24._
 
 ## Results
 
@@ -24,6 +24,7 @@ Every agent here played the same 100 oak/birch forest spots (`results/eval_spots
 | Line 5b @ 5.0M<br>`20261119_161818` | resume Line 5 @ 4.0M for 1M more, wooded spawns, linear LR from 1e-4 | 100 | **38.64** ± 4.61 | 39 | 6 | 94 | -1.4 ± 4.5 | **33.9×** |
 | Impala BC→PPO + CG 480k<br>`ft_impala-ppo_wooded_one-hit-axe_20261120_124557` @ 242,874 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 119,994 decisions = 0.48M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **38.48** ± 3.03 | 42 | 3 | 68 | -1.5 ± 3.7 | **33.8×** |
 | Impala BC + CG 480k<br>`ft_impala-bc_wooded_one-hit-axe_20261120_193516` @ 120,000 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 120,000 decisions = 0.48M ticks, from Impala BC (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **37.17** ± 2.95 | 38 | 4 | 60 | -2.8 ± 3.7 | **32.6×** |
+| Line 5c @ 5.0M<br>`20261122_180159` | resume Line 5 @ 4.0M for 1M more, spawns anywhere on land, linear LR from 1e-4 | 100 | **36.59** ± 3.95 | 37 | 6 | 83 | -3.4 ± 3.7 | **32.1×** |
 | Line 4b @ 2.0M<br>`20261118_162138` | resume Line 4 @ 1.0M for 1M more, linear LR from 1e-4 | 100 | **35.73** ± 4.68 | 37 | 10 | 97 | -4.3 ± 4.3 | **31.3×** |
 | Impala BC→PPO, zero-shot<br>`model_20261112_130747_ppo_bc_impala_all_kl05` | **MineRL mode** (64×64 view, 4 ticks per decision; see [MineRL transfer](../experiments/minerl_transfer.md)): ImpalaCNN BC on all VPT versions, then 120k PPO steps (target_kl 0.05) | 100 | **29.41** ± 2.44 | 32 | 3 | 49 | -10.6 ± 3.8 | **25.8×** |
 | Line 4 @ 1.0M<br>`20261118_124345` | multi actions (move x turn x look x jump, attack held), linear LR, from scratch | 100 | **26.60** ± 3.42 | 28 | 9 | 67 | -13.4 ± 4.0 | **23.3×** |

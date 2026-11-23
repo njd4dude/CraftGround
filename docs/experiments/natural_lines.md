@@ -5,7 +5,7 @@ Every natural-world training line: what it tested, what it found, and its pieces
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 17:41._
+_Tables last updated 2026-11-22 20:36._
 
 ## Training lines
 
@@ -178,6 +178,18 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261119_143552` | branch from Line 5 | 4.0M → ~4.8M | 3 | linear | – | no record (killed or hung) | – | hung at ~4.82M: instance 8033's Minecraft client crashed mid-reset and deadlocked with its built-in server (thread dump in launch_logs/hang_line5b/); stopped by hand | – |
 | `20261119_161818` | continued | 4.8M → 5.0M | 3 | linear | 18.0 | completed | **38.6** @ 5.0M | resumed from the 4.82M checkpoint with --learning-rate 1.80082e-5 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/7ozb4sir) |
+
+### Line 5c
+
+**resume Line 5 @ 4.0M for 1M more, spawns anywhere on land, linear LR from 1e-4** · `runs/natural/line5c_anywhere-spawns/`
+
+**Question:** Wooded spawns halved the 0-log episodes (Line 5 vs Line 4d). Do spawns anywhere on land (plains, desert, savanna, mountains... where many spots have no tree in reach) teach the agent to search for trees and fail even less? Line 5b (same start, steps and LR, wooded spawns) is the control; scored on the oak/birch, wooded and new anywhere spot sets.
+
+**Found:** No clear gain. Against its control Line 5b (same start, steps and LR, wooded spawns): anywhere spots 20.4 vs 21.1 (-0.7 +/- 4.5), oak/birch 36.6 vs 38.6 (-2.0 +/- 4.2), wooded 35.4 vs 31.3 (+4.0 +/- 4.7): all ties, the wooded one close. Against its start Line 5: wooded +3.7 +/- 3.5 (just significant), oak/birch -3.4 +/- 3.7, anywhere -1.1 +/- 4.3. 0-log episodes on the anywhere spots didn't move (Line 5c 36, Line 5b 37, Line 5 36); 28 of those spots are 0 for all three, probably no tree in reach. Trains as fast as wooded spawns (95 min for 1M).
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261122_180159` | branch from Line 5 | 4.0M → 5.0M | 3 | linear | 95.4 | completed | **36.6** @ 5.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2lhz2cti) |
 
 ### Line 6
 

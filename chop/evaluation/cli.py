@@ -61,7 +61,7 @@ def parse_args() -> argparse.Namespace:
                         help="natural world: random spawns instead of the fixed evaluation spots")
     parser.add_argument("--spawn", choices=natural_env.SPAWNS, default="forest",
                         help="natural world, with --random-spots: the spawn rule random spawns must pass "
-                             "(forest = oak/birch, wooded = any biome with trees; see natural.SPAWN_CHECKS)")
+                             "(forest = oak/birch, wooded = any biome with trees, anywhere = any land; see natural.SPAWN_CHECKS)")
     parser.add_argument("--spots", type=Path, default=None,
                         help="natural world: fixed spot file (default: the world's own, "
                              "results/eval_spots_natural.json for the training world)")
@@ -117,7 +117,7 @@ def video_folder(stamp: str, spot_label: str) -> str:
     ..._random_wooded_spawns, or just the time in the arena."""
     if spot_label.startswith("fixed:"):
         stem = Path(spot_label.removeprefix("fixed:")).stem  # eval_spots_natural[_seed<seed>][_wooded]
-        kind = "wooded" if stem.endswith("_wooded") else "forest"
+        kind = next((k for k in ("wooded", "anywhere") if stem.endswith(f"_{k}")), "forest")
         seed = re.search(r"_seed(\d+)", stem)
         return f"{stamp}_fixed_{kind}_spawns" + (f"_seed{seed.group(1)}" if seed else "")
     if spot_label == "random":

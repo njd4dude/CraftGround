@@ -15,7 +15,8 @@ HOP_RANGE blocks of the last good spot, since forests are contiguous; later
 anywhere within FAR_RANGE) and keeps the first landing that is
   - in an oak/birch forest biome (FOREST_CHECK), and
   - on dirt/grass, i.e. under the trees rather than on top of the canopy
-(or, with spawn="wooded", in any biome with trees and not on leaves or logs; see SPAWN_CHECKS).
+(or, with spawn="wooded", in any biome with trees and not on leaves or logs; with spawn="anywhere",
+anywhere on land and not on leaves or logs; see SPAWN_CHECKS).
 
 How: CraftGround runs a reset's extra_commands in no reliable order, so the
 search instead sends one command per step (env.add_command) and waits for that
@@ -65,6 +66,9 @@ FOREST_CHECK = ("if biome ~ ~ ~ #minecraft:is_forest "
 #     jungle, swamps, cherry grove, windswept forest), standing on anything but leaves or logs
 #     (snow and stone are fine; leaves would mean the canopy). Not savanna: its acacias are
 #     sparse, and with it 4 of 5 world-wide finds were savanna (tools/check_natural.py, 2026-11-18).
+#   anywhere: any landing spreadplayers accepts (it already refuses water and lava), in any biome
+#     (plains, desert, savanna, mountains... included), standing on anything but leaves or logs.
+#     Many such spots have no tree in reach, so an episode can teach searching rather than chopping.
 NOT_CANOPY = "unless block ~ ~-1 ~ #minecraft:leaves unless block ~ ~-1 ~ #minecraft:logs"
 WOODED_BIOMES = ["#minecraft:is_forest", "#minecraft:is_taiga", "#minecraft:is_jungle",
                  "minecraft:windswept_forest", "minecraft:swamp", "minecraft:mangrove_swamp",
@@ -72,6 +76,7 @@ WOODED_BIOMES = ["#minecraft:is_forest", "#minecraft:is_taiga", "#minecraft:is_j
 SPAWN_CHECKS = {
     "forest": [f"if block ~ ~-1 ~ #minecraft:dirt {FOREST_CHECK}"],
     "wooded": [f"if biome ~ ~ ~ {b} {NOT_CANOPY}" for b in WOODED_BIOMES],
+    "anywhere": [NOT_CANOPY],
 }
 SPAWNS = tuple(SPAWN_CHECKS)
 LOG_KEYS = ["oak_log", "birch_log", "spruce_log", "dark_oak_log",
@@ -84,7 +89,7 @@ HOP_TRIES = 12        # landings near the last spot before searching the whole w
 # region (12 resets in a row in one savanna, tools/check_natural.py, 2026-11-18). After this many
 # episodes near one far-found spot, the next reset searches the whole world. Forest spawns keep
 # hopping without a limit (unchanged, so runs before 2026-11-18 stay comparable).
-MAX_HOP_EPISODES = {"forest": None, "wooded": 4}
+MAX_HOP_EPISODES = {"forest": None, "wooded": 4, "anywhere": 4}
 FAR_RANGE = 25_000    # then: anywhere in this square around 0, 0
 MAX_TRIES = 60
 REPLY_TIMEOUT_S = 60.0  # wall-clock wait for one command's reply (new terrain is slow)
@@ -174,7 +179,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         spots: play these spots ({x, y, z, yaw}) in order, one per reset, instead of searching
         (evaluate.py's fixed evaluation set); once they run out, resets search as usual.
         seed: the world to generate. Training always uses SEED; HELD_OUT_SEED is for evaluation.
-        spawn: where resets search for a spot, "forest" (default) or "wooded" (see SPAWN_CHECKS).
+        spawn: where resets search for a spot, "forest" (default), "wooded" or "anywhere" (see SPAWN_CHECKS).
         actions="minerl": the MineRL project's view and actions (chop/envs/minerl.py), 4 ticks per step
         with the turn split over them, so MineRL-trained models run unchanged (jump is ignored: its
         move choice has forward+jump).
@@ -426,7 +431,7 @@ def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = 
     actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation).
-    spawn: "forest" (default) or "wooded" (see SPAWN_CHECKS).
+    spawn: "forest" (default), "wooded" or "anywhere" (see SPAWN_CHECKS).
     actions="minerl", axe, episode_ticks, log_cap, tick_frames: see NaturalChopTreesEnv."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
