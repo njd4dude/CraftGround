@@ -25,7 +25,7 @@ PPO_SETTINGS = dict(
 
 def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False, jump: bool = False,
                 multi: bool = False, action_repeat: int = 1, spawn: str = "forest", use_minerl: bool = False,
-                axe: str | None = None):
+                axe: str | None = None, stuck_penalty: float = 0.0):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker.
     jump: use the 13 actions with jump instead of 11 (natural world default; arena with --jump).
     multi: (move, turn, look) every step with attack held (common.MULTI_SETTINGS); jump adds a
@@ -33,7 +33,8 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
     action_repeat: arena only, game ticks per agent step (arena.ChopTreesEnv).
     spawn: natural only, where resets drop the player (natural.SPAWN_CHECKS).
     use_minerl: the MineRL project's view and actions (chop/envs/minerl.py); jump / action_repeat don't apply.
-    axe: the item the player holds (None: the env's default, the one-hit axe, or iron in MineRL mode)."""
+    axe: the item the player holds (None: the env's default, the one-hit axe, or iron in MineRL mode).
+    stuck_penalty: natural only, reward off per stuck tick (natural.STUCK_WINDOW)."""
     def _make():
         make_env = ENVS[env_name].make_env
         actions = "minerl" if use_minerl else "multi" if multi else "single"
@@ -44,13 +45,16 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
                       else {"actions": actions, "action_repeat": action_repeat, "jump": jump})
         if axe:
             kwargs["axe"] = axe
+        if stuck_penalty:
+            kwargs["stuck_penalty"] = stuck_penalty
         return Monitor(make_env(port=port, env_path=game_folder(port, shared_folder), **kwargs), filename=monitor_file,
-                       info_keywords=("logs_chopped",))
+                       info_keywords=("logs_chopped", "stuck_ticks") if env_name == "natural" else ("logs_chopped",))
     return _make
 
 
 def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_repeat: int = 1,
-                 spawn: str = "forest", use_minerl: bool = False, axe: str | None = None) -> dict:
+                 spawn: str = "forest", use_minerl: bool = False, axe: str | None = None,
+                 stuck_penalty: float = 0.0) -> dict:
     """The environment's settings, saved in config.json (and W&B), so runs can be compared later."""
     shared = {
         "world": env_name,
@@ -79,6 +83,9 @@ def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_
             "far_range": natural_env.FAR_RANGE,
             "render_distance": natural_env.RENDER_DISTANCE,
             "jvm_max_memory": natural_env.JVM_MAX_MEMORY,
+            # Only runs with the penalty record it, so earlier configs stay as they were.
+            **({"stuck_penalty": stuck_penalty, "stuck_window_ticks": natural_env.STUCK_WINDOW,
+                "stuck_distance": natural_env.STUCK_DISTANCE} if stuck_penalty else {}),
         }
     return {
         **shared,

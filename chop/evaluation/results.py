@@ -12,7 +12,7 @@ from chop.reports.csvio import EVAL_CSV, MINERL_EVAL_CSV, NATURAL_EVAL_CSV, appe
 # and their own tables (docs/results/).
 FIELDS = ["timestamp", "agent", "episodes", "episode_steps", "mean_logs", "min_logs", "max_logs", "per_episode",
           "n_envs", "minutes", "launch_minutes", "steps_per_s", "reset_share", "spots", "spot_per_episode",
-          "world_seed"]
+          "world_seed", "stuck_per_episode"]
 # MineRL-mode evaluations (evaluate.py --actions minerl, or a MineRL-trained model) go to their own CSV:
 # the same model is scored with different axes and episode lengths, which the reports (one row per
 # agent path) would otherwise average together.
@@ -21,11 +21,13 @@ MINERL_FIELDS = FIELDS + ["env", "axe", "episode_ticks", "log_cap"]
 
 def save_results(agent: str, results: list[int], timestamp: str | None = None, env: str = "arena",
                  timing: dict | None = None, spots: str = "", spot_per_episode: list | None = None,
-                 world_seed: str = "", minerl: dict | None = None) -> None:
+                 world_seed: str = "", minerl: dict | None = None,
+                 stuck_per_episode: list | None = None) -> None:
     """spots: "fixed:<file>" for a fixed-spot natural evaluation, "random" for random spawns
     (blank in rows from before fixed spots existed, which were all random).
     world_seed: natural world only (blank in older rows, which all used the training world).
-    minerl: {"axe", "episode_ticks"} for a MineRL-mode evaluation, saved to MINERL_EVAL_CSV instead."""
+    minerl: {"axe", "episode_ticks"} for a MineRL-mode evaluation, saved to MINERL_EVAL_CSV instead.
+    stuck_per_episode: stuck game ticks in each episode (natural.STUCK_WINDOW), in per_episode's order."""
     csv_path = MINERL_EVAL_CSV if minerl else NATURAL_EVAL_CSV if env == "natural" else EVAL_CSV
     append_row(csv_path, MINERL_FIELDS if minerl else FIELDS, {
         **(timing or {}),
@@ -33,6 +35,7 @@ def save_results(agent: str, results: list[int], timestamp: str | None = None, e
         "spots": spots,
         "world_seed": world_seed,
         "spot_per_episode": " ".join(map(str, spot_per_episode)) if spot_per_episode else "",
+        "stuck_per_episode": " ".join(map(str, stuck_per_episode)) if stuck_per_episode else "",
         "timestamp": timestamp or datetime.now().isoformat(timespec="seconds"),
         "agent": agent,
         "episodes": len(results),

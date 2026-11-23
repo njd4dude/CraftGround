@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 20:35._
+_Tables last updated 2026-11-23 01:10._
 
 ## Natural world
 
@@ -13,6 +13,12 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-23T01:10:58 | `runs/natural/line5d_stuck-penalty/20261122_223446/model.zip` | fixed, oak/birch | training | 100 | 41.97 | 0 | 98 | 3 | 9.8 | 212 |
+| 2026-11-23T01:00:42 | `runs/natural/line5d_stuck-penalty/20261122_223446/model.zip` | fixed, all tree biomes | training | 100 | 39.27 | 0 | 184 | 3 | 10.4 | 199 |
+| 2026-11-23T00:49:50 | `runs/natural/line5d_stuck-penalty/20261122_223446/model.zip` | fixed, anywhere | training | 100 | 23.38 | 0 | 141 | 3 | 11.8 | 169 |
+| 2026-11-22T22:20:51 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | fixed, oak/birch | training | 100 | 38.76 | 0 | 115 | 3 | 10.5 | 193 |
+| 2026-11-22T22:09:50 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | fixed, all tree biomes | training | 100 | 31.05 | 0 | 150 | 3 | 10.9 | 185 |
+| 2026-11-22T21:58:24 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | fixed, anywhere | training | 100 | 20.85 | 0 | 88 | 3 | 11.2 | 182 |
 | 2026-11-22T20:35:47 | `runs/natural/line5c_anywhere-spawns/20261122_180159/model.zip` | fixed, all tree biomes | training | 100 | 35.37 | 0 | 129 | 3 | 10.8 | 190 |
 | 2026-11-22T20:24:14 | `runs/natural/line5c_anywhere-spawns/20261122_180159/model.zip` | fixed, oak/birch | training | 100 | 36.59 | 0 | 83 | 3 | 9.4 | 225 |
 | 2026-11-22T20:14:22 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | fixed, anywhere | training | 100 | 21.56 | 0 | 92 | 3 | 11.4 | 173 |
@@ -110,6 +116,7 @@ One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (Mi
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T22:33:54 | Impala BC→PPO + CG 2.0M | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 42.51 | 12.6 | 40 |
 | 2026-11-22T13:57:55 | Impala BC→PPO + CG 2.0M | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | arena | arena | 1000 | – | instant | 50 | 29.92 | 4.3 | 150 |
 | 2026-11-21T23:53:05 | Scratch Impala (MineRL mode) + CG 1.0M, Line 4 PPO settings | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | natural | fixed spots in oak/birch forests | 1000 | – | instant | 100 | 18.95 | 10.1 | 51 |
 | 2026-11-21T23:42:44 | Scratch Impala (MineRL mode) + CG 1.0M, Line 4 PPO settings | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 18.45 | 12.3 | 43 |

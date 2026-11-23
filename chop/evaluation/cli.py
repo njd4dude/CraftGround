@@ -230,6 +230,7 @@ def main():
         episode_id[i], next_id = next_id, next_id + 1
     steps = [0] * n_envs
     results: dict[int, int] = {}
+    stuck: dict[int, int] = {}  # episode -> stuck ticks (natural world)
     spot_of: dict[int, int | None] = {}  # episode -> fixed spot it played (from reset_infos)
     env_steps = resets = 0
     reset_s = 0.0
@@ -265,6 +266,8 @@ def main():
                     continue
                 logs = infos[i]["logs_chopped"]
                 results[ep] = logs
+                if "stuck_ticks" in infos[i]:
+                    stuck[ep] = infos[i]["stuck_ticks"]
                 done_count[i] += 1
                 print(f"episode {ep + 1} (instance {i}): {logs}{f' / {max_logs}' if max_logs else ''} logs "
                       f"[{len(results)}/{args.episodes} done]")
@@ -289,7 +292,8 @@ def main():
     timing = timing_summary(n_envs, launch_s=t_play - t_launch, play_s=t_end - t_play,
                             total_s=t_end - t_launch, env_steps=env_steps, resets=resets, reset_s=reset_s)
     save_results(agent, scores, env=args.env, timing=timing, spots=spot_label, spot_per_episode=spots_played,
-                 world_seed=args.seed if args.env == "natural" else "", minerl=minerl_info)
+                 world_seed=args.seed if args.env == "natural" else "", minerl=minerl_info,
+                 stuck_per_episode=[stuck[k] for k in episodes_done] if len(stuck) == len(results) else None)
     print(f"\n{agent} [{args.env}]: {np.mean(scores):.1f} logs per episode on average "
           f"(min {min(scores)}, max {max(scores)}, {len(scores)} episodes)")
     recorder.encode(results, args.record)

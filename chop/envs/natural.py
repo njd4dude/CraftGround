@@ -33,6 +33,7 @@ import math
 import os
 import random
 import time
+from collections import deque
 from pathlib import Path
 from typing import Any, Optional
 
@@ -82,6 +83,13 @@ SPAWNS = tuple(SPAWN_CHECKS)
 LOG_KEYS = ["oak_log", "birch_log", "spruce_log", "dark_oak_log",
             "jungle_log", "acacia_log", "mangrove_log", "cherry_log"]
 REWARD = "+1 per log chopped (any wood type)"
+# "Stuck": the player's horizontal position moved less than STUCK_DISTANCE blocks over the last
+# STUCK_WINDOW ticks, and no log was chopped in that time (chopping excuses standing still). Typical
+# case: jumping at a wall too high to climb. Every episode counts its stuck ticks (info["stuck_ticks"],
+# saved per episode by evaluate.py); with stuck_penalty > 0 each stuck tick also costs that much reward.
+# Turning on the spot for 2 s without chopping counts as stuck too.
+STUCK_WINDOW = 40      # ticks = 2 s
+STUCK_DISTANCE = 1.0   # blocks
 
 HOP_RANGE = 150       # first landings: within this many blocks of the last good spot
 HOP_TRIES = 12        # landings near the last spot before searching the whole world
@@ -170,7 +178,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
                  jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
                  seed: str = SEED, actions: str = "single", spawn: str = "forest",
                  axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS, log_cap: Optional[int] = None,
-                 tick_frames: bool = False):
+                 tick_frames: bool = False, stuck_penalty: float = 0.0):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15).
@@ -187,7 +195,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
         episode_ticks: game ticks per episode (MineRL's own evaluation ran 4000).
         log_cap: end the episode once this many logs are chopped (MineRL's: 64). Default: no cap.
         tick_frames: also return every tick's frame, not just the last one, as info["tick_frames"]:
-        a list of (image, logs chopped so far) per tick, so videos can play at 20 fps (evaluate.py)."""
+        a list of (image, logs chopped so far) per tick, so videos can play at 20 fps (evaluate.py).
+        stuck_penalty: reward taken off per stuck tick (see STUCK_WINDOW). Default 0: stuck ticks are
+        only counted."""
         if actions not in ("single", "multi", "minerl"):
             raise ValueError(f"actions must be 'single', 'multi' or 'minerl', not {actions!r}")
         if spawn not in SPAWN_CHECKS:
@@ -201,6 +211,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self.tick_frames = tick_frames
         self.episode_ticks = episode_ticks
         self.log_cap = log_cap
+        self.stuck_penalty = stuck_penalty
         self.axe = axe or (minerl.IRON_AXE if self.minerl else AXE)
         # Multi / MineRL actions turn by exact degrees, which needs CraftGround's V2 action format.
         self.v2 = self.multi or self.minerl
@@ -244,6 +255,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self._ticks = 0
         self._logs_at_start = 0
         self._logs_chopped = 0
+        self._positions: deque = deque(maxlen=STUCK_WINDOW + 1)  # (x, z) of the last ticks
+        self._last_log_tick = 0
+        self._stuck_ticks = 0
         self.spot: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.found = False  # whether the last reset found a forest spot
         self._spots = list(spots or [])
@@ -374,6 +388,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
         # Minecraft stats never reset, so count logs relative to the episode start.
         self._logs_at_start = self._logs_mined_total(obs)
         self._logs_chopped = 0
+        self._positions.clear()
+        self._last_log_tick = 0
+        self._stuck_ticks = 0
         # Where the reset's time went (benchmark.py logs these per reset).
         timing = {
             "reset_seconds": time.perf_counter() - start,
@@ -393,6 +410,15 @@ class NaturalChopTreesEnv(gym.Wrapper):
             return minerl.tick_action(action, self.ticks_per_step)
         return to_craftground_multi(action) if self.multi else to_craftground_action(int(action))
 
+    def _stuck_now(self, obs) -> bool:
+        """Record this tick's position; True if the player is stuck (see STUCK_WINDOW)."""
+        f = obs["full"]
+        self._positions.append((f.x, f.z))
+        if len(self._positions) <= STUCK_WINDOW or self._ticks - self._last_log_tick < STUCK_WINDOW:
+            return False
+        (x0, z0), (x1, z1) = self._positions[0], self._positions[-1]
+        return math.hypot(x1 - x0, z1 - z0) < STUCK_DISTANCE
+
     def step(self, action):
         # One tick per step, except MineRL actions: FRAME_SKIP ticks, logs added up over them.
         reward = 0.0
@@ -403,8 +429,13 @@ class NaturalChopTreesEnv(gym.Wrapper):
             obs, _, _, _, _ = self.env.step(dict(act) if self.v2 else list(act))
             self._ticks += 1
             logs_now = self._logs_mined_total(obs) - self._logs_at_start
+            if logs_now > self._logs_chopped:
+                self._last_log_tick = self._ticks
             reward += float(logs_now - self._logs_chopped)
             self._logs_chopped = logs_now
+            if self._stuck_now(obs):
+                self._stuck_ticks += 1
+                reward -= self.stuck_penalty
             if self.tick_frames:
                 frames.append((self._image(obs), logs_now))
             terminated = bool(obs["full"].is_dead)
@@ -413,7 +444,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
                 break
 
         truncated = self._ticks >= self.episode_ticks or capped
-        info: dict[str, Any] = {"logs_chopped": self._logs_chopped}
+        info: dict[str, Any] = {"logs_chopped": self._logs_chopped, "stuck_ticks": self._stuck_ticks}
         if self.tick_frames:
             info["tick_frames"] = frames
             return frames[-1][0], reward, terminated, truncated, info
@@ -425,18 +456,19 @@ def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = 
              jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
              seed: str = SEED, actions: str = "single", spawn: str = "forest",
              axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS,
-             log_cap: Optional[int] = None, tick_frames: bool = False) -> NaturalChopTreesEnv:
+             log_cap: Optional[int] = None, tick_frames: bool = False,
+             stuck_penalty: float = 0.0) -> NaturalChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
     actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation).
     spawn: "forest" (default), "wooded" or "anywhere" (see SPAWN_CHECKS).
-    actions="minerl", axe, episode_ticks, log_cap, tick_frames: see NaturalChopTreesEnv."""
+    actions="minerl", axe, episode_ticks, log_cap, tick_frames, stuck_penalty: see NaturalChopTreesEnv."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
                                seed=seed, actions=actions, spawn=spawn, axe=axe, episode_ticks=episode_ticks,
-                               log_cap=log_cap, tick_frames=tick_frames)
+                               log_cap=log_cap, tick_frames=tick_frames, stuck_penalty=stuck_penalty)
 
 
 def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:

@@ -46,6 +46,11 @@ def natural_setup_section() -> str:
                   f"`train.py --spawn anywhere` (Line 5c, 2026-11-22): any land, plains, desert and savanna "
                   f"included, never on leaves or logs; same world-wide search after "
                   f"{ne.MAX_HOP_EPISODES['anywhere']} episodes"],
+        ["Stuck ticks", f"A tick is stuck when the player moved < {ne.STUCK_DISTANCE:g} block over the last "
+                        f"{ne.STUCK_WINDOW} ticks ({ne.STUCK_WINDOW / 20:g} s) without chopping a log (e.g. "
+                        "jumping at a wall too high to climb). Counted in every episode since 2026-11-22 "
+                        "(`stuck_per_episode` in the evaluation CSV); `train.py --stuck-penalty X` also takes X "
+                        "reward off per stuck tick (Line 5d: 0.01)"],
         ["Rebuilt each episode", "no: chopped trees stay chopped, so every episode moves to fresh forest"],
         ["Boundaries", "none; terrain loads as the agent walks"],
         ["Render distance", f"{ne.RENDER_DISTANCE} chunks, Minecraft heap {ne.JVM_MAX_MEMORY} "

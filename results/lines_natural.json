@@ -100,6 +100,13 @@
    "found": "No clear gain. Against its control Line 5b (same start, steps and LR, wooded spawns): anywhere spots 20.4 vs 21.1 (-0.7 +/- 4.5), oak/birch 36.6 vs 38.6 (-2.0 +/- 4.2), wooded 35.4 vs 31.3 (+4.0 +/- 4.7): all ties, the wooded one close. Against its start Line 5: wooded +3.7 +/- 3.5 (just significant), oak/birch -3.4 +/- 3.7, anywhere -1.1 +/- 4.3. 0-log episodes on the anywhere spots didn't move (Line 5c 36, Line 5b 37, Line 5 36); 28 of those spots are 0 for all three, probably no tree in reach. Trains as fast as wooded spawns (95 min for 1M)."
   },
   {
+   "folder": "line5d_stuck-penalty",
+   "id": "5d",
+   "name": "resume Line 5 @ 4.0M for 1M more, wooded spawns, stuck penalty 0.01 per stuck tick, linear LR from 1e-4",
+   "tested": "Agents often stand still, e.g. jumping at a wall too high to climb. A tick is 'stuck' when the player moved < 1 block over the last 40 ticks (2 s) without chopping a log; Line 5b spent 26-31% of its ticks stuck, and stuck time goes with fewer logs (correlation -0.5 to -0.76). Does taking 0.01 reward off per stuck tick (train.py --stuck-penalty 0.01) teach the agent to walk away? Line 5b (same start, steps, LR and wooded spawns, no penalty) is the control.",
+   "found": "Yes. Against its control Line 5b: stuck ticks 23% vs 26-31% on every spot set, episodes with >= 50% stuck 14 vs 23 (anywhere), 11 vs 23 (wooded), 19 vs 17 (oak/birch); score wooded 39.3 vs 31.1 (+8.2 +/- 4.5), oak/birch 42.0 vs 38.8 (+3.2 +/- 4.5, a tie), anywhere 23.4 vs 20.9 (+2.5 +/- 3.6, a tie). Against Line 5: wooded +7.6 +/- 4.4, oak/birch +2.0 +/- 4.5. Best pure-RL agent; on the wooded spots it ties Impala BC->PPO + CG 2M (-1.3 +/- 4.0). 0-log episodes didn't fall (anywhere 40 vs 33, wooded 6 vs 8, oak/birch 8 vs 5). In training, stuck share went 25% -> 21%: the penalty is small (~2.5 logs' worth per episode), so a bigger one may do more."
+  },
+  {
    "folder": "line6_arena-pretrained",
    "id": "7",
    "name": "arena-pretrained start (multi actions + jump, 200k arena steps), then Line 4's natural setup for 1M (forest spawns, linear LR from 2.5e-4)",

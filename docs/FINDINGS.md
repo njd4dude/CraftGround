@@ -38,10 +38,15 @@ Model: `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/
 
 The best pure-RL agent:
 
-**Line 5**, multi actions, 4M steps (Line 4c + 1M with wooded spawns): **40.0 logs** per
-episode on the oak/birch spots (tied with Line 4c's 41.2 and Line 4d's 41.3) and **31.6** on
-the all-biome spots, where it beats the forest-trained Line 4d by +6.0 ± 4.8. Fewest 0-log
-episodes of our pure-RL agents. Model: `runs/natural/line5_wooded-spawns/20261119_005447/model.zip`.
+**Line 5d**, multi actions, 5M steps (Line 5 + 1M with wooded spawns and a penalty for being
+stuck, finding 10 below): **42.0 logs** per episode on the oak/birch spots (Line 5: 40.0, +2.0 ± 4.5,
+a tie) and **39.3** on the all-biome spots, where it beats Line 5 by +7.6 ± 4.4 and ties
+Impala BC→PPO + CG 2M (−1.3 ± 4.0, both of that model's all-biome evaluations averaged).
+Model: `runs/natural/line5d_stuck-penalty/20261122_223446/model.zip`.
+
+The best pure-RL agent before the stuck penalty was **Line 5**, 4M steps (Line 4c + 1M with wooded
+spawns): **40.0** oak/birch, **31.6** all-biome, beating the forest-trained Line 4d there by +6.0 ± 4.8.
+Model: `runs/natural/line5_wooded-spawns/20261119_005447/model.zip`.
 [Oak/birch spots](results/natural_oak_birch_forests.md), [All-biome spots](results/natural_all_tree_biomes.md)
 
 ## What works
@@ -84,6 +89,16 @@ episodes of our pure-RL agents. Model: `runs/natural/line5_wooded-spawns/2026111
 9. **Fixed evaluation spots make comparisons possible.** With random spawns, a model's mean
    moves by ±3–4 logs from spawn luck alone; every model now plays the same 100 spots.
    [Oak/birch spots](results/natural_oak_birch_forests.md)
+10. **A small penalty for being stuck.** A tick is "stuck" when the player moved < 1 block over the
+   last 2 s (40 ticks) without chopping, e.g. jumping at a wall too high to climb. Line 5b spent
+   26–31% of its ticks stuck, and the more stuck ticks an episode has, the fewer logs (correlation
+   −0.5 to −0.76). Line 5d (Line 5 + 1M steps, wooded spawns, 0.01 reward off per stuck tick;
+   `train.py --stuck-penalty 0.01`) against its control Line 5b (same without the penalty): stuck
+   23% of ticks on every spot set, and on the all-biome spots 39.3 vs 31.1 logs (+8.2 ± 4.5) with
+   half as many episodes stuck ≥ 50% of the time (11 vs 23). Oak/birch 42.0 vs 38.8 (+3.2 ± 4.5)
+   and anywhere 23.4 vs 20.9 (+2.5 ± 3.6) are ties. 0-log episodes didn't fall: those spots
+   mostly have no tree in reach. The penalty is small (~2.5 logs' worth per episode); a bigger one
+   is untested. [Line 5d](experiments/natural_lines.md)
 
 ## What doesn't work
 
@@ -214,8 +229,9 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 | Scratch Impala (MineRL mode) + CG 1M, Line 4 PPO settings | 18.9 | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` |
 | Scratch Impala (MineRL mode) + CG 1M, gentle PPO settings | 14.6 | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` |
 | Impala BC, zero-shot | 22.2 | `runs/minerl/model_20261112_101203_bc_impala_6xx-1763_7xx-2256_8xx-1971_9xx-832_10xx-777_cont/final.zip` |
-| **Line 5** (best pure RL) | 40.0 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` |
-| Line 5b | 38.6 | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` |
+| **Line 5d** (best pure RL; stuck penalty) | 42.0 | `runs/natural/line5d_stuck-penalty/20261122_223446/model.zip` |
+| Line 5 | 40.0 | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` |
+| Line 5b | 38.6 (38.8 re-run with stuck ticks) | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` |
 | Line 4d | 41.3 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` |
 | Line 4, 1M steps | 26.6 | `runs/natural/line4_multi-actions/20261118_124345/model.zip` |
 | Line 4 @ 260k steps (same number of decisions as the Scratch Impala (MineRL mode) runs) | 12.8 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_259974_steps.zip` |

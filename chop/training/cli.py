@@ -88,6 +88,9 @@ def main():
     parser.add_argument("--spawn", choices=sorted(ENVS["natural"].SPAWNS), default="forest",
                         help="natural world: where resets drop the player. forest (default): oak/birch "
                              "forests; wooded: any biome with trees, snowy ones included")
+    parser.add_argument("--stuck-penalty", type=float, default=0.0,
+                        help="natural world: reward taken off per tick the player is stuck (moved < 1 block "
+                             "in 2 s without chopping; chop/envs/natural.py STUCK_WINDOW). Default 0 = off")
     parser.add_argument("--lr-schedule", choices=["linear", "constant"], default="linear",
                         help="linear (default): --learning-rate falls to 0 by the end of this run; "
                              "constant: stays fixed (all runs before 2026-11-15)")
@@ -156,6 +159,8 @@ def main():
         parser.error("--jump is for the arena; the natural world has jump unless --no-jump")
     if args.no_jump and args.env != "natural":
         parser.error("--no-jump is for the natural world; the arena has no jump unless --jump")
+    if args.stuck_penalty and args.env != "natural":
+        parser.error("--stuck-penalty is for the natural world")
     if args.spawn != "forest" and args.env != "natural":
         parser.error("--spawn is for the natural world")
     jump = args.jump if args.env == "arena" else not args.no_jump
@@ -215,7 +220,7 @@ def main():
         "value_warmup_updates": args.value_warmup,
         "changed_from_defaults": {k: {"default": PPO_SETTINGS.get(k), "used": v}  # target_kl has no default here
                                   for k, v in overrides.items() if v != PPO_SETTINGS.get(k)},
-        "env": env_settings(args.env, jump, multi, action_repeat, args.spawn, use_minerl, axe),
+        "env": env_settings(args.env, jump, multi, action_repeat, args.spawn, use_minerl, axe, args.stuck_penalty),
     }
     (run_dir / "config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
@@ -240,7 +245,7 @@ def main():
             "actions": "minerl" if use_minerl else "multi" if multi else "single",
             **ppo_settings,
             **{f"env/{k}": v for k, v in env_settings(args.env, jump, multi, action_repeat, args.spawn,
-                                                      use_minerl, axe).items()},
+                                                      use_minerl, axe, args.stuck_penalty).items()},
         },
     )
     # Plot everything against training steps.
@@ -255,7 +260,7 @@ def main():
 
     ports = instance_ports(args.port, args.n_envs)
     factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump, multi,
-                             1 if use_minerl else action_repeat, args.spawn, use_minerl, axe)
+                             1 if use_minerl else action_repeat, args.spawn, use_minerl, axe, args.stuck_penalty)
                  for i, port in enumerate(ports)]
     step_timer = StepTimer(launch_vec_env(factories, ports, args.shared_folder))
     env = step_timer

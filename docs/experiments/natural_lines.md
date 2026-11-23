@@ -5,7 +5,7 @@ Every natural-world training line: what it tested, what it found, and its pieces
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 21:15._
+_Tables last updated 2026-11-23 01:12._
 
 ## Training lines
 
@@ -177,7 +177,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261119_143552` | branch from Line 5 | 4.0M → ~4.8M | 3 | linear | – | no record (killed or hung) | – | hung at ~4.82M: instance 8033's Minecraft client crashed mid-reset and deadlocked with its built-in server (thread dump in launch_logs/hang_line5b/); stopped by hand | – |
-| `20261119_161818` | continued | 4.8M → 5.0M | 3 | linear | 18.0 | completed | **38.6** @ 5.0M | resumed from the 4.82M checkpoint with --learning-rate 1.80082e-5 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/7ozb4sir) |
+| `20261119_161818` | continued | 4.8M → 5.0M | 3 | linear | 18.0 | completed | **38.7** @ 5.0M | resumed from the 4.82M checkpoint with --learning-rate 1.80082e-5 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/7ozb4sir) |
 
 ### Line 5c
 
@@ -190,6 +190,18 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261122_180159` | branch from Line 5 | 4.0M → 5.0M | 3 | linear | 95.4 | completed | **36.6** @ 5.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2lhz2cti) |
+
+### Line 5d
+
+**resume Line 5 @ 4.0M for 1M more, wooded spawns, stuck penalty 0.01 per stuck tick, linear LR from 1e-4** · `runs/natural/line5d_stuck-penalty/`
+
+**Question:** Agents often stand still, e.g. jumping at a wall too high to climb. A tick is 'stuck' when the player moved < 1 block over the last 40 ticks (2 s) without chopping a log; Line 5b spent 26-31% of its ticks stuck, and stuck time goes with fewer logs (correlation -0.5 to -0.76). Does taking 0.01 reward off per stuck tick (train.py --stuck-penalty 0.01) teach the agent to walk away? Line 5b (same start, steps, LR and wooded spawns, no penalty) is the control.
+
+**Found:** Yes. Against its control Line 5b: stuck ticks 23% vs 26-31% on every spot set, episodes with >= 50% stuck 14 vs 23 (anywhere), 11 vs 23 (wooded), 19 vs 17 (oak/birch); score wooded 39.3 vs 31.1 (+8.2 +/- 4.5), oak/birch 42.0 vs 38.8 (+3.2 +/- 4.5, a tie), anywhere 23.4 vs 20.9 (+2.5 +/- 3.6, a tie). Against Line 5: wooded +7.6 +/- 4.4, oak/birch +2.0 +/- 4.5. Best pure-RL agent; on the wooded spots it ties Impala BC->PPO + CG 2M (-1.3 +/- 4.0). 0-log episodes didn't fall (anywhere 40 vs 33, wooded 6 vs 8, oak/birch 8 vs 5). In training, stuck share went 25% -> 21%: the penalty is small (~2.5 logs' worth per episode), so a bigger one may do more.
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261122_223446` | branch from Line 5 | 4.0M → 5.0M | 3 | linear | 122.1 | completed | **42.0** @ 5.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/w577yw63) |
 
 ### Line 7
 
