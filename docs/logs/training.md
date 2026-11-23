@@ -5,7 +5,7 @@ Every `train.py` run that ended normally, newest first. Stopped pieces are liste
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 14:17._
+_Tables last updated 2026-11-22 16:50._
 
 ## Natural world
 
@@ -13,6 +13,7 @@ One row per `train.py` run, newest first.
 
 | Started | Steps | Episodes | Minutes | Last-20 avg logs | Best episode | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T15:08:32 | 1201002 | 1002 | 102.0 | 22.35 | 129 | completed | `runs/natural/line6_arena-pretrained/20261122_150832/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/l33oauly) |
 | 2026-11-19T16:18:18 | 5002338 | 181 | 18.0 | 45.85 | 176 | completed | `runs/natural/line5b_resume-4M/20261119_161818/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/7ozb4sir) |
 | 2026-11-19T11:28:30 | 4001976 | 1002 | 90.5 | 41.2 | 131 | completed | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/m7mtph3f) |
 | 2026-11-19T00:54:47 | 4000326 | 218 | 23.2 | 26.1 | 191 | completed | `runs/natural/line5_wooded-spawns/20261119_005447/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/1v3paa89) |
@@ -36,6 +37,8 @@ One row per `train.py` run, newest first.
 
 | Started | Steps | Episodes | Minutes | Last-20 avg logs | Best episode | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T14:54:51 | 200508 | 198 | 9.4 | 27.9 | 31 | completed | `runs/arena/arena_pretrain_multi_jump_3envs_20261122_145451/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/mwo394os) |
+| 2026-11-22T14:42:37 | 200508 | 198 | 7.6 | 25.15 | 31 | completed | `runs/arena/arena_pretrain_multi_jump_20261122_144237/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/xlvlepg9) |
 | 2026-11-18T14:41:05 | 200508 | 801 | 17.2 | 27.1 | 32 | completed | `runs/arena/fixed_multi_4tick_20261118_144105/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wny7ar7h) |
 | 2026-11-18T14:23:27 | 200508 | 801 | 14.6 | 24.05 | 27 | completed | `runs/arena/fixed_single_4tick_20261118_142327/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/zisdrew4) |
 | 2026-11-18T11:47:25 | 202488 | 25 | 3.1 | 31.35 | 32 | completed | `runs/arena/fixed_multi_1tick_r3_resumed_20261118_114725/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/17qszxj3) |

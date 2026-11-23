@@ -5,7 +5,7 @@ Every natural-world training line: what it tested, what it found, and its pieces
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 14:17._
+_Tables last updated 2026-11-22 17:41._
 
 ## Training lines
 
@@ -102,7 +102,7 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261118_121806` | from scratch | 0 → ~? | 3 | linear | – | no record (killed or hung) | – | killed for low memory at ~8k steps, before any checkpoint; restarted from scratch | – |
-| `20261118_124345` | from scratch | 0 → 1.0M | 3 | linear | 88.8 | completed | **12.8** @ 260k, **26.6** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/hg4felig) |
+| `20261118_124345` | from scratch | 0 → 1.0M | 3 | linear | 88.8 | completed | **12.8** @ 260k, **13.1** @ 500k, **26.6** @ 1.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/hg4felig) |
 
 ### Line 4b
 
@@ -178,4 +178,14 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261119_143552` | branch from Line 5 | 4.0M → ~4.8M | 3 | linear | – | no record (killed or hung) | – | hung at ~4.82M: instance 8033's Minecraft client crashed mid-reset and deadlocked with its built-in server (thread dump in launch_logs/hang_line5b/); stopped by hand | – |
 | `20261119_161818` | continued | 4.8M → 5.0M | 3 | linear | 18.0 | completed | **38.6** @ 5.0M | resumed from the 4.82M checkpoint with --learning-rate 1.80082e-5 | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/7ozb4sir) |
+
+### Line 6
+
+**arena pretrained (describe it in results/lines_natural.json)** · `runs/natural/line6_arena-pretrained/`
+
+**Found:** _not yet (add `found` in `results/lines_natural.json`)_
+
+| Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `20261122_150832` | from an arena model | 200k → 1.2M | 3 | linear | 102.0 | completed | **10.7** @ 460k, **17.8** @ 700k, **25.4** @ 1.2M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/l33oauly) |
 <!-- AUTO-GENERATED:END -->

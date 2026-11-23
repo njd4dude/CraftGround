@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 14:17._
+_Tables last updated 2026-11-22 17:41._
 
 ## Natural world
 
@@ -13,6 +13,11 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Spots | World | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T17:41:33 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_499950_steps.zip` | fixed, oak/birch | training | 100 | 13.07 | 0 | 33 | 3 | 9.8 | 214 |
+| 2026-11-22T17:31:34 | `runs/natural/line6_arena-pretrained/20261122_150832/model.zip` | fixed, oak/birch | training | 100 | 25.38 | 0 | 65 | 3 | 10.0 | 208 |
+| 2026-11-22T17:21:23 | `runs/natural/line6_arena-pretrained/20261122_150832/checkpoints/ppo_chop_700458_steps.zip` | fixed, oak/birch | training | 100 | 17.83 | 0 | 52 | 3 | 10.6 | 194 |
+| 2026-11-22T17:10:35 | `runs/natural/line6_arena-pretrained/20261122_150832/checkpoints/ppo_chop_460482_steps.zip` | fixed, oak/birch | training | 100 | 10.69 | 0 | 29 | 3 | 9.4 | 225 |
+| 2026-11-22T17:01:01 | `runs/arena/arena_pretrain_multi_jump_3envs_20261122_145451/model.zip` | fixed, oak/birch | training | 100 | 10.83 | 0 | 27 | 3 | 9.8 | 220 |
 | 2026-11-22T14:17:41 | `runs/arena/fixed_multi_1tick_r2_20261117_220328/model.zip` | fixed, oak/birch | training | 100 | 5.72 | 0 | 28 | 3 | 9.3 | 224 |
 | 2026-11-21T20:57:52 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_259974_steps.zip` | fixed, oak/birch | training | 100 | 12.79 | 0 | 27 | 3 | 9.7 | 213 |
 | 2026-11-19T18:02:55 | `runs/natural/line4d_resume-3M/20261119_112830/model.zip` | random, all tree biomes | training | 100 | 37.72 | 0 | 186 | 3 | 10.2 | 202 |
@@ -61,6 +66,8 @@ One row per `evaluate.py` run, newest first. **Minutes** includes launching Mine
 
 | When | Agent | Episodes | Mean logs | Min | Max | Instances | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22T15:08:06 | `runs/arena/arena_pretrain_multi_jump_3envs_20261122_145451/model.zip` | 50 | 28.02 | 24 | 31 | 6 | 3.4 | 696 |
+| 2026-11-22T14:54:21 | `runs/arena/arena_pretrain_multi_jump_20261122_144237/model.zip` | 50 | 25.04 | 22 | 30 | 6 | 3.4 | 686 |
 | 2026-11-18T15:01:16 | `runs/arena/fixed_multi_4tick_20261118_144105/model.zip` | 50 | 27.82 | 24 | 31 | 3 | 2.6 | 186 |
 | 2026-11-18T14:40:58 | `runs/arena/fixed_single_4tick_20261118_142327/model.zip` | 50 | 23.98 | 21 | 26 | 3 | 2.4 | 200 |
 | 2026-11-18T11:54:37 | `runs/arena/fixed_multi_1tick_r3_resumed_20261118_114725/model.zip` | 50 | 31.38 | 29 | 32 | 3 | 3.3 | 532 |
