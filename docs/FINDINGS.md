@@ -105,15 +105,15 @@ episodes of our pure-RL agents. Model: `runs/natural/line5_wooded-spawns/2026111
    trained on wooded spawns and never in the arena, scores 29.9 of 32 there (min 23), above every
    4-tick arena agent (27.8) and Impala BC→PPO, zero-shot (27.8, min 3).
    [Oak/birch spots](results/natural_oak_birch_forests.md), [Arena](results/arena.md)
-5. **Pretraining in the arena, then training in the natural world.** Line 6 started from an arena
+5. **Pretraining in the arena, then training in the natural world.** Line 7 started from an arena
    agent (multi actions with jump, 200k steps, 9 minutes, 28.0 in the arena) and trained with Line 4's
    exact setup; only the starting weights differ. Spot by spot vs Line 4 at the same natural steps:
    260k −2.1 ± 1.2 (10.7 vs 12.8), 500k +4.8 ± 2.1 (17.8 vs 13.1), 1M −1.2 ± 2.7 (25.4 vs 26.6, a
-   tie). Line 6's head start (10.8 with no natural training) was gone by 260k: Line 6 stayed at ~11
+   tie). Line 7's head start (10.8 with no natural training) was gone by 260k: Line 7 stayed at ~11
    while unlearning arena habits, and Line 4 caught up. Side result: with jump, the arena agent scores
    10.8 in the natural world untrained, against 5.7 for `fixed_multi_1tick_r2` without jump, though
    the jump agent scores less in the arena (28.0 vs 31.7; one run each).
-   [Line 6](experiments/natural_lines.md), [Oak/birch spots](results/natural_oak_birch_forests.md)
+   [Line 7](experiments/natural_lines.md), [Oak/birch spots](results/natural_oak_birch_forests.md)
 6. **Spawning anywhere on land instead of only where trees grow.** Line 5c (Line 5 + 1M steps with
    spawns anywhere on land: plains, desert, savanna, mountains... included) tied its control Line 5b
    (Line 5 + 1M steps, wooded spawns) on all three spot sets: anywhere-on-land 20.4 vs 21.1
@@ -231,9 +231,9 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 | Line 2 at ~500k (random spawns, finding 4) | 18.0* | `runs/natural/line2_jump-constant-lr/20261115_173930/model.zip` |
 | Line 1 (random spawns, finding 4) | 9.7* | `runs/natural/line1_no-jump/20261115_161832/model.zip` |
 | `fixed_multi_1tick_r2` (best arena agent; arena 31.7) | 5.7 | `runs/arena/fixed_multi_1tick_r2_20261117_220328/model.zip` |
-| Line 6, 1M natural steps (arena-pretrained) | 25.4 | `runs/natural/line6_arena-pretrained/20261122_150832/model.zip` |
-| Line 6 @ 500k / 260k natural steps | 17.8 / 10.7 | `runs/natural/line6_arena-pretrained/20261122_150832/checkpoints/ppo_chop_700458_steps.zip` / `ppo_chop_460482_steps.zip` (the step count includes the 200,508 arena steps) |
-| Line 6's arena start (multi + jump, 3 instances; arena 28.0) | 10.8 | `runs/arena/arena_pretrain_multi_jump_3envs_20261122_145451/model.zip` |
+| Line 7, 1M natural steps (arena-pretrained) | 25.4 | `runs/natural/line6_arena-pretrained/20261122_150832/model.zip` |
+| Line 7 @ 500k / 260k natural steps | 17.8 / 10.7 | `runs/natural/line6_arena-pretrained/20261122_150832/checkpoints/ppo_chop_700458_steps.zip` / `ppo_chop_460482_steps.zip` (the step count includes the 200,508 arena steps) |
+| Line 7's arena start (multi + jump, 3 instances; arena 28.0) | 10.8 | `runs/arena/arena_pretrain_multi_jump_3envs_20261122_145451/model.zip` |
 | Same with 6 instances (arena 25.0; not run in the natural world) | – | `runs/arena/arena_pretrain_multi_jump_20261122_144237/model.zip` |
 | Line 4 @ 500k steps | 13.1 | `runs/natural/line4_multi-actions/20261118_124345/checkpoints/ppo_chop_499950_steps.zip` |
 

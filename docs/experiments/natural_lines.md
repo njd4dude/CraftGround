@@ -5,7 +5,7 @@ Every natural-world training line: what it tested, what it found, and its pieces
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-22 20:36._
+_Tables last updated 2026-11-22 21:15._
 
 ## Training lines
 
@@ -191,11 +191,13 @@ Each line is one training history in its own folder (`runs/natural/<line>/`); it
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `20261122_180159` | branch from Line 5 | 4.0M → 5.0M | 3 | linear | 95.4 | completed | **36.6** @ 5.0M |  | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/2lhz2cti) |
 
-### Line 6
+### Line 7
 
-**arena pretrained (describe it in results/lines_natural.json)** · `runs/natural/line6_arena-pretrained/`
+**arena-pretrained start (multi actions + jump, 200k arena steps), then Line 4's natural setup for 1M (forest spawns, linear LR from 2.5e-4)** · `runs/natural/line6_arena-pretrained/`
 
-**Found:** _not yet (add `found` in `results/lines_natural.json`)_
+**Question:** Does pretraining in the arena (9 minutes, 28.0 of 32 there) give a head start in the natural world? Same setup as Line 4; only the starting weights differ. Compared with Line 4 at equal natural steps. (Folder line6_...: named before Line 6, wooded spawns from scratch, was noticed; displayed as Line 7.)
+
+**Found:** No lasting gain. Spot by spot vs Line 4 at the same natural steps: 260k -2.1 +/- 1.2 (10.7 vs 12.8), 500k +4.8 +/- 2.1 (17.8 vs 13.1), 1M -1.2 +/- 2.7 (25.4 vs 26.6, a tie). The head start (10.8 with no natural training) was gone by 260k while the agent unlearned arena habits. Step counts include the 200k arena steps (Line 7 @ 1.2M = 1M natural steps).
 
 | Run | Start | Steps | Instances | LR | Minutes | Status | Eval (logs) | Notes | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
