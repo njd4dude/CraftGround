@@ -178,7 +178,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
                  jvm_max_memory: str = JVM_MAX_MEMORY, spots: Optional[list[dict]] = None,
                  seed: str = SEED, actions: str = "single", spawn: str = "forest",
                  axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS, log_cap: Optional[int] = None,
-                 tick_frames: bool = False, stuck_penalty: float = 0.0):
+                 tick_frames: bool = False, stuck_penalty: float = 0.0, render_wait: bool = True):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15).
@@ -197,7 +197,10 @@ class NaturalChopTreesEnv(gym.Wrapper):
         tick_frames: also return every tick's frame, not just the last one, as info["tick_frames"]:
         a list of (image, logs chopped so far) per tick, so videos can play at 20 fps (evaluate.py).
         stuck_penalty: reward taken off per stuck tick (see STUCK_WINDOW). Default 0: stuck ticks are
-        only counted."""
+        only counted.
+        render_wait: after the teleport, idle until the terrain has finished drawing (RENDER_STABLE_S).
+        False starts the episode at once, terrain still appearing (evaluate.py --no-render-wait, a test
+        of whether the wait matters)."""
         if actions not in ("single", "multi", "minerl"):
             raise ValueError(f"actions must be 'single', 'multi' or 'minerl', not {actions!r}")
         if spawn not in SPAWN_CHECKS:
@@ -212,6 +215,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self.episode_ticks = episode_ticks
         self.log_cap = log_cap
         self.stuck_penalty = stuck_penalty
+        self.render_wait = render_wait
         self.axe = axe or (minerl.IRON_AXE if self.minerl else AXE)
         # Multi / MineRL actions turn by exact degrees, which needs CraftGround's V2 action format.
         self.v2 = self.multi or self.minerl
@@ -376,7 +380,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
             obs = minerl.unlock_all_recipes(self.env.unwrapped, self._noop)  # no toasts (MineRL had none)
             self._recipes_unlocked = True
         t_setup = time.perf_counter()
-        obs = self._wait_for_render(obs)
+        if self.render_wait:
+            obs = self._wait_for_render(obs)
         t_render = time.perf_counter()
 
         full = obs["full"]
@@ -457,18 +462,19 @@ def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = 
              seed: str = SEED, actions: str = "single", spawn: str = "forest",
              axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS,
              log_cap: Optional[int] = None, tick_frames: bool = False,
-             stuck_penalty: float = 0.0) -> NaturalChopTreesEnv:
+             stuck_penalty: float = 0.0, render_wait: bool = True) -> NaturalChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
     actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation).
     spawn: "forest" (default), "wooded" or "anywhere" (see SPAWN_CHECKS).
-    actions="minerl", axe, episode_ticks, log_cap, tick_frames, stuck_penalty: see NaturalChopTreesEnv."""
+    actions="minerl", axe, episode_ticks, log_cap, tick_frames, stuck_penalty, render_wait: see NaturalChopTreesEnv."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
                                seed=seed, actions=actions, spawn=spawn, axe=axe, episode_ticks=episode_ticks,
-                               log_cap=log_cap, tick_frames=tick_frames, stuck_penalty=stuck_penalty)
+                               log_cap=log_cap, tick_frames=tick_frames, stuck_penalty=stuck_penalty,
+                               render_wait=render_wait)
 
 
 def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:

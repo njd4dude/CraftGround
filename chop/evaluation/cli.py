@@ -17,7 +17,11 @@ from chop.evaluation.results import episode_shares, save_results, timing_summary
 from chop.evaluation.video import RECORD_PER_GROUP, VIDEO_FPS, EpisodeRecorder
 from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, game_folder, instance_ports, launch_vec_env
 from chop.reports.agents import run_action_repeat
+from chop.paths import RESULTS_DIR
 from chop.reports.csvio import normalize_agent
+
+# --no-render-wait evaluations: a one-off test, kept out of the reports.
+RENDER_WAIT_TEST_CSV = RESULTS_DIR / "eval_results_render_wait_test.csv"
 
 
 def parse_args() -> argparse.Namespace:
@@ -67,6 +71,10 @@ def parse_args() -> argparse.Namespace:
                              "results/eval_spots_natural.json for the training world)")
     parser.add_argument("--seed", default=natural_env.SEED,
                         help=f"natural world: world seed (default: the training world, {natural_env.SEED})")
+    parser.add_argument("--no-render-wait", action="store_true",
+                        help="natural world: start each episode right after the teleport, without waiting for "
+                             "the terrain to finish drawing (a test of whether the wait matters; saved to "
+                             f"{RENDER_WAIT_TEST_CSV.as_posix()}, not the reports)")
     parser.add_argument("--held-out", action="store_true",
                         help=f"natural world: play the held-out world training never sees "
                              f"(seed {natural_env.HELD_OUT_SEED})")
@@ -180,6 +188,10 @@ def main():
                   {"actions": actions, "action_repeat": 1 if use_minerl else action_repeat, "jump": jump})
     if tick_frames:
         env_kwargs["tick_frames"] = True
+    if args.no_render_wait:
+        if args.env != "natural":
+            args.error("--no-render-wait is for the natural world")
+        env_kwargs["render_wait"] = False
     # MineRL mode, or MineRL-style scoring of one of our models (another axe, episode length or log cap):
     # these rows go to the MineRL CSV, so they're never averaged with the reports' standard evaluations.
     minerl_info = None
@@ -293,7 +305,8 @@ def main():
                             total_s=t_end - t_launch, env_steps=env_steps, resets=resets, reset_s=reset_s)
     save_results(agent, scores, env=args.env, timing=timing, spots=spot_label, spot_per_episode=spots_played,
                  world_seed=args.seed if args.env == "natural" else "", minerl=minerl_info,
-                 stuck_per_episode=[stuck[k] for k in episodes_done] if len(stuck) == len(results) else None)
+                 stuck_per_episode=[stuck[k] for k in episodes_done] if len(stuck) == len(results) else None,
+                 test_csv=RENDER_WAIT_TEST_CSV if args.no_render_wait else None)
     print(f"\n{agent} [{args.env}]: {np.mean(scores):.1f} logs per episode on average "
           f"(min {min(scores)}, max {max(scores)}, {len(scores)} episodes)")
     recorder.encode(results, args.record)

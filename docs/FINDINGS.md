@@ -197,6 +197,13 @@ CraftGround training only. Stage 3 used the **gentle PPO settings** (LR 1e-4, en
    during a training run; nothing was logged and the trainer waited 80 minutes. Long runs since then go
    through a watchdog script that kills a run whose log is silent for 20 minutes and resumes it from the
    latest checkpoint (saved every 20k steps).
+5. **Waiting for the terrain to draw after a teleport matters.** After each reset's teleport the
+   natural env idles until the view has stopped changing for 1.5 s (`_wait_for_render`, chop/envs/natural.py);
+   in a third of resets terrain is still appearing 0.5–3.5 s after the teleport. Line 5d evaluated without
+   the wait (`evaluate.py --no-render-wait`, 2026-11-23; rows in `results/eval_results_render_wait_test.csv`,
+   kept out of the reports) scored lower on both spot sets: oak/birch 37.2 vs 42.0 (−4.8 ± 4.6), all-biome
+   35.4 vs 39.3 (−3.9 ± 3.7), with more stuck ticks (27% vs 23%). The wait is most of a fixed-spot reset
+   (resets took 39% of evaluation time with it, 15% without), but it stays.
 
 ## Bugs found, and what they affected
 

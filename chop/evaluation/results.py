@@ -22,13 +22,14 @@ MINERL_FIELDS = FIELDS + ["env", "axe", "episode_ticks", "log_cap"]
 def save_results(agent: str, results: list[int], timestamp: str | None = None, env: str = "arena",
                  timing: dict | None = None, spots: str = "", spot_per_episode: list | None = None,
                  world_seed: str = "", minerl: dict | None = None,
-                 stuck_per_episode: list | None = None) -> None:
+                 stuck_per_episode: list | None = None, test_csv=None) -> None:
     """spots: "fixed:<file>" for a fixed-spot natural evaluation, "random" for random spawns
     (blank in rows from before fixed spots existed, which were all random).
     world_seed: natural world only (blank in older rows, which all used the training world).
     minerl: {"axe", "episode_ticks"} for a MineRL-mode evaluation, saved to MINERL_EVAL_CSV instead.
-    stuck_per_episode: stuck game ticks in each episode (natural.STUCK_WINDOW), in per_episode's order."""
-    csv_path = MINERL_EVAL_CSV if minerl else NATURAL_EVAL_CSV if env == "natural" else EVAL_CSV
+    stuck_per_episode: stuck game ticks in each episode (natural.STUCK_WINDOW), in per_episode's order.
+    test_csv: save here instead, outside the reports (a one-off test such as --no-render-wait)."""
+    csv_path = test_csv or (MINERL_EVAL_CSV if minerl else NATURAL_EVAL_CSV if env == "natural" else EVAL_CSV)
     append_row(csv_path, MINERL_FIELDS if minerl else FIELDS, {
         **(timing or {}),
         **({"env": env, **minerl} if minerl else {}),
@@ -46,6 +47,8 @@ def save_results(agent: str, results: list[int], timestamp: str | None = None, e
         "per_episode": " ".join(map(str, results)),
     })
     print(f"Saved to {csv_path}")
+    if test_csv:
+        return
     update_report("minerl" if minerl else env)
 
 
