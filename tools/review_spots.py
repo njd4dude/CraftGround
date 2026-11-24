@@ -10,7 +10,7 @@ the right, behind and to the left, a top-down view from 50 blocks up (spectator 
 biome. Pictures go to check_frames/spot_review/<set>/ (not in git); open
 check_frames/spot_review/index.html. Each spot card also shows what some agents chopped there in
 their latest evaluation (logs, and stuck ticks if recorded), and has a notes box saved in the
-browser, with a button to export all notes as JSON.
+browser, with a button to export all notes as JSON; notes in results/spot_notes.json show by default.
 
 Spots already pictured are skipped, so an interrupted run continues where it stopped.
 """
@@ -188,11 +188,16 @@ img.small { width:224px; } img.top { width:256px; height:256px; object-fit:cover
 select, button { font:inherit; }
 """
 
-TAGS = ["no tree in reach", "trees far", "wall / cliff", "water", "fine"]
+TAGS = ["no tree in reach", "trees far", "needs to turn around", "cave", "ravine", "wall / cliff",
+        "ice / water", "unfair", "fine"]
+# Committed review notes (per set: spot -> {tags, text}); the pages start from these, and notes
+# typed in the browser override them spot by spot.
+NOTES_FILE = Path("results/spot_notes.json")
 
 PAGE_JS = """
 const SET = document.body.dataset.set, KEY = 'spot-notes-' + SET;
-let notes = {}; try { notes = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+let notes = JSON.parse(document.getElementById('saved-notes').textContent);
+try { Object.assign(notes, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(notes)); } catch (e) {} count(); }
 function count() { document.getElementById('reviewed').textContent =
   Object.values(notes).filter(n => (n.tags && n.tags.length) || n.text).length; }
@@ -239,6 +244,8 @@ def build_page(name: str, spots_file: str) -> int:
         return 0
     meta = json.loads(meta_path.read_text())
     scores = agent_scores(spots_file)
+    saved = json.loads(NOTES_FILE.read_text(encoding="utf-8")).get(name, {}) if NOTES_FILE.exists() else {}
+    saved_notes = json.dumps(saved).replace("</", "<\/")
     cards = []
     for idx in sorted(meta, key=int):
         m, i = meta[idx], int(idx)
@@ -283,7 +290,8 @@ def build_page(name: str, spots_file: str) -> int:
 <label>Show <select id="filter"><option value="all">all</option><option value="zero">0 logs for every agent</option>
 <option value="anyzero">0 logs for some agent</option><option value="unreviewed">not reviewed yet</option></select></label>
 <span><b id="reviewed">0</b> reviewed</span><button id="export">Export notes (JSON)</button></header>
-<main>{''.join(cards)}</main><div id="zoom"><img alt=""></div><script>{PAGE_JS}</script></body></html>"""
+<main>{''.join(cards)}</main><div id="zoom"><img alt=""></div><script type="application/json" id="saved-notes">{saved_notes}</script>
+<script>{PAGE_JS}</script></body></html>"""
     (OUT / f"{name}.html").write_text(page, encoding="utf-8")
     return len(cards)
 

@@ -1,0 +1,8 @@
+{
+ "about": "Hand review of the fixed evaluation spots (tools/review_spots.py pages). Per spot set, spot index -> tags and a note. 'unfair' = no agent can be expected to chop here with the current actions and training.",
+ "wooded": {
+  "5": {"tags": ["cave", "unfair"], "text": "Starts right in front of a cave drop: a few steps forward and the agent falls in, and it has never learned to climb out of a cave. Every agent 0 logs."},
+  "27": {"tags": ["ravine", "unfair"], "text": "Starts at the bottom of a ravine (water, dirt walls). Getting out needs pillaring or digging stairs; the actions have no block placing and training never teaches escaping. Every agent 0 logs."},
+  "56": {"tags": ["ice / water", "needs to turn around"], "text": "Starts on sea ice facing open ice. Trees and a way up are behind the agent, but it never turns around to see them and gets lost on the ice. Every agent 0 logs."}
+ }
+}
