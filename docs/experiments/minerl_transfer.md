@@ -143,6 +143,8 @@ Decisions are counted from the start of stage 3; 1 decision = 4 ticks. The Scrat
 | Impala BC→PPO + CG | `ft_impala-ppo_wooded_one-hit-axe_20261120_115737` | Impala BC→PPO, zero-shot, LR 1e-4 | 0 → 60k | stopped at low memory |
 | | `ft_impala-ppo_wooded_one-hit-axe_20261120_124557` | its 60k checkpoint | 60k → 252k | completed: **Impala BC→PPO + CG 1M** (`model.zip`) |
 | | `ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` | Impala BC→PPO + CG 1M, LR 1e-4 again | 252k → 492k | froze 10k decisions from the end; **Impala BC→PPO + CG 2M** is `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
+| Impala BC→PPO + CG, stuck penalty | `ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_162809` | Impala BC→PPO + CG 2M (615k checkpoint), stuck penalty 0.01, LR 1e-4 | 492k → 656k | an instance froze; resumed from its 775k checkpoint |
+| | `ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405` | its 775k checkpoint, LR 3.6e-5 (where the schedule was) | 652k → 742k | completed: **Impala BC→PPO + CG 3M, stuck penalty** (`model.zip`) |
 | Impala BC + CG | `ft_impala-bc_wooded_one-hit-axe_20261120_193516` | Impala BC, zero-shot, LR 1e-4, 5-update value warm-up | 0 → 188k | paused by hand |
 | | `ft_impala-bc_wooded_one-hit-axe_20261120_220917` | its 180k checkpoint | 180k → 254k | completed: **Impala BC + CG 1M** (`model.zip`) |
 | Scratch Impala (MineRL mode) + CG, gentle PPO settings | `scratch_impala_20261121_170105` | random weights, LR 1e-4 | 0 → 241k | an instance froze; a watchdog killed it after 20 silent minutes |

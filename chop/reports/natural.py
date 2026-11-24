@@ -2,6 +2,7 @@
 
 chop/reports/site.py decides which page each one goes on."""
 
+import json
 from pathlib import Path
 
 from chop.envs import common
@@ -11,6 +12,7 @@ from chop.reports.agents import (label_with_folder, line_folders, line_meta, lin
                                  start_of)
 from chop.reports.compare import REFERENCE, REFERENCE_NAME, paired, per_spot
 from chop.reports.csvio import episodes_by_agent, normalize_agent
+from chop.paths import ROOT
 from chop.reports.markdown import mean_ci, table
 
 
@@ -19,6 +21,27 @@ def rows_by_agent(evals: list[dict]) -> dict[str, list[dict]]:
     for r in evals:
         out.setdefault(normalize_agent(r["agent"]), []).append(r)
     return out
+
+
+def unfair_spots(spot_set: str) -> set[int]:
+    """Spots of a fixed set tagged "unfair" in results/spot_notes.json (hand review, tools/review_spots.py):
+    no agent can be expected to chop there with the current actions."""
+    path = ROOT / "results" / "spot_notes.json"
+    if not path.exists():
+        return set()
+    notes = json.loads(path.read_text(encoding="utf-8")).get(spot_set, {})
+    return {int(s) for s, n in notes.items() if "unfair" in n.get("tags", [])}
+
+
+def fair_mean(rows: list[dict], unfair: set[int]) -> str:
+    """Mean logs over the episodes not played on an unfair spot, with its 95% range."""
+    eps = [int(x) for r in rows
+           for s, x in zip((r.get("spot_per_episode") or "").split(), r["per_episode"].split())
+           if s.isdigit() and int(s) not in unfair]
+    if len(eps) < 2:
+        return "–"
+    mean, ci = mean_ci(eps)
+    return f"{mean:.2f} ± {ci:.2f}"
 
 
 def vs_reference(agent: str, by_rows: dict[str, list[dict]]) -> str:
@@ -113,6 +136,7 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
         return ""
     forest = episodes_by_agent(forest_fixed)
     by_rows = rows_by_agent(wooded)
+    unfair = unfair_spots(spot_set)
     rows = []
     for agent, eps in sorted(by_agent.items(), key=lambda kv: (kv[0] != "random", -sum(kv[1]) / len(kv[1]))):
         mean, ci = mean_ci(eps)
@@ -123,7 +147,12 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
         else:
             f_cell, gap, f_zeros = "–", "–", "–"
         rows.append([label_with_folder(agent, runs), line_note(agent), len(eps), f"**{mean:.2f}** ± {ci:.2f}",
+                     *([fair_mean(by_rows[agent], unfair)] if unfair else []),
                      vs_reference(agent, by_rows), f_cell, gap, sum(x == 0 for x in eps), f_zeros])
+    fair_note = (f" **Fair spots** is the mean without the {len(unfair)} spots tagged unfair in "
+                 f"`results/spot_notes.json` (spots {', '.join(map(str, sorted(unfair)))}: no agent can chop "
+                 "there with the current actions, e.g. a ravine floor that needs block placing to leave)."
+                 if unfair else "")
     where = ("100 fixed spots anywhere on land (`results/eval_spots_natural_anywhere.json`, made with "
              "`make_eval_spots.py --spawn anywhere`): plains, desert, savanna, mountains and forests alike, "
              "so many spots have no tree nearby; same training world."
@@ -136,8 +165,9 @@ def wooded_section(wooded: list[dict], forest_fixed: list[dict], runs: list[dict
         + where + " **Oak/birch mean** is the same agent's score on the "
         "[oak and birch forests](natural_oak_birch_forests.md) page; the **gap** is how much it loses outside them. **0-log episodes** count the episodes "
         "that chopped nothing on each set (out of 100: the agent got stuck, lost or never found a tree). Run with "
-        f"`evaluate.py <model> --env natural --spots results/eval_spots_natural_{spot_set}.json`.\n\n"
-        + table(["Model", "Line", "Episodes", "Mean logs", f"vs {REFERENCE_NAME}", "Oak/birch mean", "Gap",
+        f"`evaluate.py <model> --env natural --spots results/eval_spots_natural_{spot_set}.json`." + fair_note + "\n\n"
+        + table(["Model", "Line", "Episodes", "Mean logs", *(["Fair spots"] if unfair else []),
+                 f"vs {REFERENCE_NAME}", "Oak/birch mean", "Gap",
                  "0-log episodes (here)", "0-log episodes (oak/birch)"], rows)
     )
 

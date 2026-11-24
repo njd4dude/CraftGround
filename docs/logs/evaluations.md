@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-23 01:10._
+_Tables last updated 2026-11-23 19:56._
 
 ## Natural world
 
@@ -116,6 +116,8 @@ One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (Mi
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-23T19:40:05 | Impala BC→PPO + CG 3.0M | `runs/minerl_finetuned/ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 39.59 | 10.8 | 48 |
+| 2026-11-23T19:28:50 | Impala BC→PPO + CG 3.0M | `runs/minerl_finetuned/ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 42.34 | 11.3 | 46 |
 | 2026-11-22T22:33:54 | Impala BC→PPO + CG 2.0M | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 42.51 | 12.6 | 40 |
 | 2026-11-22T13:57:55 | Impala BC→PPO + CG 2.0M | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` | arena | arena | 1000 | – | instant | 50 | 29.92 | 4.3 | 150 |
 | 2026-11-21T23:53:05 | Scratch Impala (MineRL mode) + CG 1.0M, Line 4 PPO settings | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | natural | fixed spots in oak/birch forests | 1000 | – | instant | 100 | 18.95 | 10.1 | 51 |

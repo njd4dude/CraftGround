@@ -13,7 +13,7 @@ several Minecraft instances
 - [logs/](logs/README.md): every evaluation and training run
 
 This file is written by hand: update it when a result changes a statement.
-_Last updated 2026-11-22._
+_Last updated 2026-11-23._
 
 **How to read the numbers.** Scores are logs chopped per 1000-tick episode. Natural-world
 scores are over the same 100 fixed spots for every model, either in oak and birch forests ("oak/birch
@@ -168,6 +168,15 @@ CraftGround training only. Stage 3 used the **gentle PPO settings** (LR 1e-4, en
    also from scratch): at the same ~250k decisions, 18.9 vs Line 4 @ 260k steps 12.8 (+6.2 ± 1.7); at
    the same 1M game ticks, 18.9 vs Line 4 @ 1M steps 26.6 (−7.7 ± 2.9), since MineRL mode decides once
    every 4 ticks.
+6. **The stuck penalty doesn't help Impala BC→PPO + CG.** Impala BC→PPO + CG 3M, stuck penalty (Impala
+   BC→PPO + CG 2M + 1M ticks with Line 5d's 0.01 per stuck tick) ties Impala BC→PPO + CG 2M on the
+   all-biome spots: 41.0 vs 40.5, +0.4 ± 3.1 spot by spot (better at 50 spots, worse at 45; 200 episodes
+   each). Impala BC→PPO + CG 2M was already stuck only ~120 ticks per episode (Impala BC→PPO + CG 3M,
+   stuck penalty: 113), so the penalty had little to fix. Its 0-log episodes (15 of 200, against 11) are
+   the same few spots every time: all-biome spots 5, 27 and 56 score 0 for every agent (`results/spot_notes.json`:
+   a cave drop and a ravine floor, both tagged unfair because the actions can't place or dig blocks; and
+   sea ice with the trees behind the agent). Without the two unfair spots the scores are 41.8 and 41.4.
+   [All-biome spots](results/natural_all_tree_biomes.md)
 
 ## Not proven yet
 
@@ -230,6 +239,7 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 | Named here as | Score | Model file |
 | --- | --- | --- |
 | **Impala BC→PPO + CG 2M** (best) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
+| Impala BC→PPO + CG 3M, stuck penalty | 41.0 (all-biome spots; not run on oak/birch) | `runs/minerl_finetuned/ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405/model.zip` |
 | Impala BC→PPO + CG 1M | 43.4 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` |
 | Impala BC + CG 1M | 40.4 | `runs/minerl_finetuned/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` |
 | Impala BC→PPO, zero-shot | 29.4 | `runs/minerl/model_20261112_130747_ppo_bc_impala_all_kl05/final.zip` |
