@@ -5,7 +5,7 @@ Every agent on 100 spots spread over every biome with trees (taiga, snowy taiga,
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-24 01:11._
+_Tables last updated 2026-11-24 15:25._
 
 ## Results
 
@@ -13,6 +13,7 @@ _Tables last updated 2026-11-24 01:11._
 
 | Model | Line | Episodes | Mean logs | Fair spots | vs Line 5 | Oak/birch mean | Gap | 0-log episodes (here) | 0-log episodes (oak/birch) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Impala BC→PPO + CG 3.5M, 1 tick per decision, target_kl 0.02<br>`ft5_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_131835` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 1,975,974 decisions = 3.45M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 200 | **47.73** ± 3.95 | 48.70 ± 3.91 | +16.1 ± 4.6 | – | – | 12 | – |
 | Impala BC→PPO + CG 2.9M, 1 tick per decision<br>`ft4_impala-ppo_wooded_one-hit-axe_1tick_20261123_212345` @ 1,595,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 1,472,412 decisions = 2.95M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 200 | **42.72** ± 3.50 | 43.59 ± 3.46 | +11.1 ± 4.3 | – | – | 12 | – |
 | Impala BC→PPO + CG 3.0M, stuck penalty<br>`ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 742,480 decisions = 2.97M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 200 | **40.97** ± 3.61 | 41.80 ± 3.59 | +9.3 ± 3.5 | – | – | 15 | – |
 | Impala BC→PPO + CG 2.0M<br>`ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` @ 615,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 492,412 decisions = 1.97M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 200 | **40.52** ± 3.48 | 41.35 ± 3.45 | +8.9 ± 3.7 | 44.66 ± 3.73 | -4.13 | 11 | 2 |

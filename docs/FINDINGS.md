@@ -28,6 +28,17 @@ has its model file listed in the **Models named here** table at the end of this 
 
 ## Best agent so far
 
+**Impala BC→PPO + CG 3.5M, 1 tick per decision, target_kl 0.02** (Impala BC→PPO + CG 2.9M, 1 tick per
+decision + 500k ticks with smaller policy updates; findings 7 and 8 under
+[MineRL models in CraftGround](#minerl-models-in-craftground)): **47.7 logs** on the all-biome spots
+(48.7 without the unfair spots; median episode 51.5), +7.2 ± 3.9 over Impala BC→PPO + CG 2M. Not run on
+the oak/birch spots yet.
+Model: `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_131835/model.zip`
+(run it with `evaluate.py <model> --env natural --axe instant`; 1 tick per decision comes from its config).
+[All-biome spots](results/natural_all_tree_biomes.md), [MineRL transfer](experiments/minerl_transfer.md)
+
+The best model before 2026-11-24, and the best on the oak/birch spots:
+
 **Impala BC→PPO + CG 2M**: the MineRL project's Impala BC→PPO model (BC on VPT videos, then 120k PPO steps in MineRL), trained here in CraftGround for 2M more ticks (MineRL mode, wooded spawns = any biome with trees, one-hit axe, gentle PPO settings; names explained under [MineRL models in CraftGround](#minerl-models-in-craftground)):
 **44.7 logs** on the oak/birch spots and **38.5** on the all-biome spots. Impala BC→PPO + CG 2M beats Line 5 on both:
 +4.7 ± 3.9 and +6.9 ± 4.0. Impala BC→PPO + CG levelled off after 1-1.5M ticks (Impala BC→PPO + CG 1M: 43.4).
@@ -187,6 +198,20 @@ CraftGround training only. Stage 3 used the **gentle PPO settings** (LR 1e-4, en
    collapsed (spot 85: 74/68 → 0/5). Typical spots got faster; the failures didn't change. Training at
    1 tick runs at about the same ticks per second per instance as at 4: the game, not PPO, sets the speed.
    [All-biome spots](results/natural_all_tree_biomes.md)
+8. **Smaller policy updates: +5 logs in 500k ticks.** In stage 3 the KL early stop (`target_kl`), not the
+   learning rate, set how far each PPO update moved the policy: Adam moves every weight by about the
+   learning rate per step, so the pretrained network passed the stop (1.5 × 0.05) within the first of
+   its 10 epochs in many updates (211 of 243 updates of Impala BC→PPO + CG 2.9M, 1 tick per decision
+   stopped early; approx_kl 0.03-0.05, clip fraction 0.15-0.35). Lowering the learning rate from 1e-4 to
+   3e-5 alone left approx_kl the same (0.02-0.05 over 6 updates). A check before any update found the
+   stored and recomputed log-probabilities equal, so the large KL is real, not a bookkeeping bug.
+   Impala BC→PPO + CG 3.5M, 1 tick per decision, target_kl 0.02 (Impala BC→PPO + CG 2.9M, 1 tick per
+   decision + 500k ticks, target_kl 0.02, linear LR from 3e-5, 4 epochs; approx_kl ~0.011, clip ~0.10)
+   scores 47.7 all-biome: +5.0 ± 3.5 over Impala BC→PPO + CG 2.9M, 1 tick per decision (better at 57
+   spots, worse at 37; 200 episodes each), with the median episode at 51.5. Its 0-log episodes didn't
+   change (12 of 200). The three settings changed together; target_kl is the one that binds (106 of
+   122 updates still stopped early).
+   [All-biome spots](results/natural_all_tree_biomes.md)
 
 ## Not proven yet
 
@@ -248,7 +273,8 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 
 | Named here as | Score | Model file |
 | --- | --- | --- |
-| **Impala BC→PPO + CG 2M** (best) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
+| **Impala BC→PPO + CG 3.5M, 1 tick per decision, target_kl 0.02** (best) | 47.7 (all-biome spots; not run on oak/birch) | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_131835/model.zip` |
+| **Impala BC→PPO + CG 2M** (best on oak/birch) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
 | Impala BC→PPO + CG 2.9M, 1 tick per decision | 42.7 (all-biome spots; not run on oak/birch) | `runs/minerl_finetuned/ft4_impala-ppo_wooded_one-hit-axe_1tick_20261123_212345/checkpoints/ppo_chop_1595292_steps.zip` |
 | Impala BC→PPO + CG 3M, stuck penalty | 41.0 (all-biome spots; not run on oak/birch) | `runs/minerl_finetuned/ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405/model.zip` |
 | Impala BC→PPO + CG 1M | 43.4 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` |

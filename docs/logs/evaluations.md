@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-24 01:11._
+_Tables last updated 2026-11-24 15:25._
 
 ## Natural world
 
@@ -116,6 +116,8 @@ One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (Mi
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24T15:06:46 | Impala BC→PPO + CG 3.5M, 1 tick per decision, target_kl 0.02 | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_131835/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 49.29 | 14.2 | 138 |
+| 2026-11-24T14:52:11 | Impala BC→PPO + CG 3.5M, 1 tick per decision, target_kl 0.02 | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_131835/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 46.16 | 12.9 | 158 |
 | 2026-11-24T01:11:08 | Impala BC→PPO + CG 2.9M, 1 tick per decision | `runs/minerl_finetuned/ft4_impala-ppo_wooded_one-hit-axe_1tick_20261123_212345/checkpoints/ppo_chop_1595292_steps.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 43.05 | 13.5 | 146 |
 | 2026-11-24T00:57:17 | Impala BC→PPO + CG 2.9M, 1 tick per decision | `runs/minerl_finetuned/ft4_impala-ppo_wooded_one-hit-axe_1tick_20261123_212345/checkpoints/ppo_chop_1595292_steps.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 42.39 | 14.4 | 134 |
 | 2026-11-23T19:40:05 | Impala BC→PPO + CG 3.0M, stuck penalty | `runs/minerl_finetuned/ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 39.59 | 10.8 | 48 |

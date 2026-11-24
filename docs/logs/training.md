@@ -5,7 +5,7 @@ Every `train.py` run that ended normally, newest first. Stopped pieces are liste
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-23 19:02._
+_Tables last updated 2026-11-24 14:37._
 
 ## Natural world
 
@@ -65,6 +65,7 @@ One row per MineRL-mode `train.py` run, newest first. **Steps** are decisions (4
 
 | Started | From | Steps | Episodes | Minutes | Last-20 avg logs | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24T13:18:35 | `runs/minerl_finetuned/ft4_impala-ppo_wooded_one-hit-axe_1tick_20261123_212345/checkpoints/ppo_chop_1595292_steps.zip` | 2098854 | 504 | 78.9 | 52.75 | completed | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_131835/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/3yb0gfkf) |
 | 2026-11-23T18:14:05 | `runs/minerl_finetuned/ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_162809/checkpoints/ppo_chop_775292_steps.zip` | 865360 | 362 | 47.6 | 39.6 | completed | `runs/minerl_finetuned/ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wzss9wmg) |
 | 2026-11-21T23:15:45 | `runs\minerl_finetuned\scratch_impala_rl-settings_20261121_210129\checkpoints\ppo_chop_220000_steps.zip` | 250720 | 122 | 13.8 | 14.5 | completed | `runs/minerl_finetuned/scratch_impala_rl-settings_20261121_231545/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/qxs6tzi2) |
 | 2026-11-21T19:37:51 | `runs\minerl_finetuned\scratch_impala_20261121_170105\checkpoints\ppo_chop_240000_steps.zip` | 252282 | 49 | 7.2 | 12.45 | completed | `runs/minerl_finetuned/scratch_impala_20261121_193751/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/fb4wpq7m) |
