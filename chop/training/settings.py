@@ -30,9 +30,10 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
     jump: use the 13 actions with jump instead of 11 (natural world default; arena with --jump).
     multi: (move, turn, look) every step with attack held (common.MULTI_SETTINGS); jump adds a
     jump choice.
-    action_repeat: arena only, game ticks per agent step (arena.ChopTreesEnv).
+    action_repeat: arena: game ticks per agent step (arena.ChopTreesEnv); MineRL mode: ticks per decision
+    (natural.NaturalChopTreesEnv's minerl_ticks, default minerl.FRAME_SKIP).
     spawn: natural only, where resets drop the player (natural.SPAWN_CHECKS).
-    use_minerl: the MineRL project's view and actions (chop/envs/minerl.py); jump / action_repeat don't apply.
+    use_minerl: the MineRL project's view and actions (chop/envs/minerl.py); jump doesn't apply.
     axe: the item the player holds (None: the env's default, the one-hit axe, or iron in MineRL mode).
     stuck_penalty: natural only, reward off per stuck tick (natural.STUCK_WINDOW)."""
     def _make():
@@ -40,6 +41,8 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
         actions = "minerl" if use_minerl else "multi" if multi else "single"
         if use_minerl:
             kwargs = {"actions": actions, **({"spawn": spawn} if env_name == "natural" else {})}
+            if action_repeat != minerl.FRAME_SKIP:
+                kwargs["minerl_ticks"] = action_repeat  # natural only (train.py checks)
         else:
             kwargs = ({"jump": jump, "actions": actions, "spawn": spawn} if env_name == "natural"
                       else {"actions": actions, "action_repeat": action_repeat, "jump": jump})
@@ -64,10 +67,13 @@ def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_
                     else common.ACTION_NAMES_JUMP if jump else common.ACTION_NAMES),
     }
     if use_minerl:
-        # episode_steps stays in game ticks; an agent step is minerl.FRAME_SKIP of them.
+        # episode_steps stays in game ticks; an agent step is action_repeat of them (MineRL's 4 by default).
+        # actions.frame_skip records it (chop.reports.agents.minerl_ticks reads it back).
+        actions = dict(minerl.SETTINGS, frame_skip=action_repeat)
+        if action_repeat != minerl.FRAME_SKIP:
+            actions["turn_per_tick"] = f"yaw / pitch degrees / {minerl.FRAME_SKIP} (MineRL's turning speed)"
         shared.update(image=f"{minerl.OBS_W}x{minerl.OBS_H} (320x180 with hand, HUD cropped)",
-                      actions=minerl.SETTINGS, mode="minerl", axe=axe or minerl.IRON_AXE)
-        action_repeat = minerl.FRAME_SKIP
+                      actions=actions, mode="minerl", axe=axe or minerl.IRON_AXE)
     elif axe:
         shared["axe"] = axe
     if env_name == "natural":

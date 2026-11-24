@@ -13,7 +13,7 @@ several Minecraft instances
 - [logs/](logs/README.md): every evaluation and training run
 
 This file is written by hand: update it when a result changes a statement.
-_Last updated 2026-11-23._
+_Last updated 2026-11-24._
 
 **How to read the numbers.** Scores are logs chopped per 1000-tick episode. Natural-world
 scores are over the same 100 fixed spots for every model, either in oak and birch forests ("oak/birch
@@ -177,6 +177,16 @@ CraftGround training only. Stage 3 used the **gentle PPO settings** (LR 1e-4, en
    a cave drop and a ravine floor, both tagged unfair because the actions can't place or dig blocks; and
    sea ice with the trees behind the agent). Without the two unfair spots the scores are 41.8 and 41.4.
    [All-biome spots](results/natural_all_tree_biomes.md)
+7. **One tick per decision is a small, unproven gain.** Impala BC→PPO + CG 2M switched to 1 tick per
+   decision (each decision turns a quarter as far, so turning speed per tick stays MineRL's) loses
+   nothing with no training (40.6 all-biome, 100 episodes). Impala BC→PPO + CG 2.9M, 1 tick per decision
+   (+1M decisions = 1M ticks at 1 tick, gamma 0.9975 = 0.99 per 4 ticks) scores 42.7 all-biome (43.6
+   without the unfair spots): +2.2 ± 3.5 over Impala BC→PPO + CG 2M (better at 57 spots, worse at 40;
+   200 episodes each), the highest all-biome score so far but within noise. The median episode rose
+   from 42 to 48 logs, while 0-log episodes stayed the same (12 of 200, against 11) and a few spots
+   collapsed (spot 85: 74/68 → 0/5). Typical spots got faster; the failures didn't change. Training at
+   1 tick runs at about the same ticks per second per instance as at 4: the game, not PPO, sets the speed.
+   [All-biome spots](results/natural_all_tree_biomes.md)
 
 ## Not proven yet
 
@@ -239,6 +249,7 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 | Named here as | Score | Model file |
 | --- | --- | --- |
 | **Impala BC→PPO + CG 2M** (best) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |
+| Impala BC→PPO + CG 2.9M, 1 tick per decision | 42.7 (all-biome spots; not run on oak/birch) | `runs/minerl_finetuned/ft4_impala-ppo_wooded_one-hit-axe_1tick_20261123_212345/checkpoints/ppo_chop_1595292_steps.zip` |
 | Impala BC→PPO + CG 3M, stuck penalty | 41.0 (all-biome spots; not run on oak/birch) | `runs/minerl_finetuned/ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405/model.zip` |
 | Impala BC→PPO + CG 1M | 43.4 | `runs/minerl_finetuned/ft_impala-ppo_wooded_one-hit-axe_20261120_124557/model.zip` |
 | Impala BC + CG 1M | 40.4 | `runs/minerl_finetuned/ft_impala-bc_wooded_one-hit-axe_20261120_220917/model.zip` |

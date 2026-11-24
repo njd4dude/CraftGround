@@ -16,12 +16,15 @@ from chop.envs.common import ACTION_NAMES, AXE, EPISODE_STEPS, MULTI_NVEC_JUMP, 
 from chop.evaluation.results import episode_shares, save_results, timing_summary
 from chop.evaluation.video import RECORD_PER_GROUP, VIDEO_FPS, EpisodeRecorder
 from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, game_folder, instance_ports, launch_vec_env
-from chop.reports.agents import run_action_repeat
+from chop.reports.agents import minerl_ticks, run_action_repeat
 from chop.paths import RESULTS_DIR
 from chop.reports.csvio import normalize_agent
 
 # --no-render-wait evaluations: a one-off test, kept out of the reports.
 RENDER_WAIT_TEST_CSV = RESULTS_DIR / "eval_results_render_wait_test.csv"
+# A MineRL-mode model played at other ticks per decision than it trained with (--minerl-ticks): kept out
+# of the reports, which would average it with the model's normal evaluations (one row per model path).
+MINERL_TICKS_TEST_CSV = RESULTS_DIR / "eval_results_minerl_ticks_test.csv"
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,6 +49,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--action-repeat", type=int, default=None,
                         help="arena: game ticks per agent step (default: the model's own from its run's "
                              "config.json; 1 for --random)")
+    parser.add_argument("--minerl-ticks", type=int, default=None, metavar="N",
+                        help="MineRL mode, natural world: game ticks per decision (default: the model's own "
+                             "from its run's config.json, else MineRL's 4). Playing a model at other ticks "
+                             f"than it trained with saves to {MINERL_TICKS_TEST_CSV.as_posix()}, not the reports")
     parser.add_argument("--episodes", type=int, default=50, help="episodes to run (default 50: mean within about ±0.5 logs; use 100 to separate close agents)")
     parser.add_argument("--port", type=int, default=8023, help="first instance's port (others go up by 10)")
     parser.add_argument("--n-envs", type=int, default=None,
@@ -172,8 +179,12 @@ def main():
         names = action_names(n_actions)
         jump = n_actions != len(ACTION_NAMES)
         label = lambda action: names[int(action)]  # noqa: E731
+    own_ticks = None
+    if args.minerl_ticks is not None and (not use_minerl or args.env != "natural"):
+        args.error("--minerl-ticks is for MineRL mode in the natural world")
     if use_minerl:
-        action_repeat = minerl.FRAME_SKIP  # built into the env's MineRL mode, not an env setting
+        own_ticks = minerl.FRAME_SKIP if model is None else minerl_ticks(args.model)
+        action_repeat = args.minerl_ticks or own_ticks
     else:
         action_repeat = args.action_repeat or (1 if model is None else run_action_repeat(args.model))
     if action_repeat > 1 and args.env != "arena" and not use_minerl:
@@ -186,6 +197,9 @@ def main():
     env_kwargs = ({"jump": jump, "seed": args.seed, "actions": actions, "spawn": args.spawn}
                   if args.env == "natural" else
                   {"actions": actions, "action_repeat": 1 if use_minerl else action_repeat, "jump": jump})
+    if use_minerl and args.env == "natural" and action_repeat != minerl.FRAME_SKIP:
+        env_kwargs["minerl_ticks"] = action_repeat
+    ticks_test = use_minerl and action_repeat != own_ticks
     if tick_frames:
         env_kwargs["tick_frames"] = True
     if args.no_render_wait:
@@ -202,7 +216,7 @@ def main():
                           **({"log_cap": args.log_cap} if args.log_cap else {}))
         minerl_info = {"axe": "iron" if iron else "instant", "episode_ticks": args.episode_ticks,
                        "log_cap": args.log_cap or ""}
-        mode = (f"MineRL mode: 64x64 view, MultiDiscrete([3, 11, 9]), {minerl.FRAME_SKIP} ticks per step, "
+        mode = (f"MineRL mode: 64x64 view, MultiDiscrete([3, 11, 9]), {action_repeat} tick(s) per step, "
                 if use_minerl else "Our own view and actions, ")
         print(mode + f"{minerl_info['axe']} axe, {args.episode_ticks}-tick episodes"
               + (f", ending at {args.log_cap} logs" if args.log_cap else ""))
@@ -229,7 +243,8 @@ def main():
     agent = random_name if args.random else normalize_agent(args.model)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     video_dir = videos_base(args.model, random_name if args.random else None) / "videos" / args.env / (
-        video_folder(stamp, spot_label) + checkpoint_suffix(args.model))
+        video_folder(stamp, spot_label) + checkpoint_suffix(args.model)
+        + (f"_ticks{action_repeat}" if ticks_test else ""))
     recorder = EpisodeRecorder(video_dir, stamp, list(dict.fromkeys(args.video_fps)), label, max_logs, n_envs,
                                step_ticks=1 if tick_frames else action_repeat,
                                enabled=record)
@@ -303,10 +318,12 @@ def main():
     spots_played = [spot_of.get(k) for k in episodes_done] if fixed else None
     timing = timing_summary(n_envs, launch_s=t_play - t_launch, play_s=t_end - t_play,
                             total_s=t_end - t_launch, env_steps=env_steps, resets=resets, reset_s=reset_s)
-    save_results(agent, scores, env=args.env, timing=timing, spots=spot_label, spot_per_episode=spots_played,
+    test_csv = MINERL_TICKS_TEST_CSV if ticks_test else RENDER_WAIT_TEST_CSV if args.no_render_wait else None
+    save_results(agent + (f" [minerl_ticks={action_repeat}]" if ticks_test else ""), scores, env=args.env,
+                 timing=timing, spots=spot_label, spot_per_episode=spots_played,
                  world_seed=args.seed if args.env == "natural" else "", minerl=minerl_info,
                  stuck_per_episode=[stuck[k] for k in episodes_done] if len(stuck) == len(results) else None,
-                 test_csv=RENDER_WAIT_TEST_CSV if args.no_render_wait else None)
+                 test_csv=test_csv)
     print(f"\n{agent} [{args.env}]: {np.mean(scores):.1f} logs per episode on average "
           f"(min {min(scores)}, max {max(scores)}, {len(scores)} episodes)")
     recorder.encode(results, args.record)

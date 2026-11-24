@@ -5,7 +5,7 @@ Every agent on 100 spots spread over every biome with trees (taiga, snowy taiga,
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-23 19:56._
+_Tables last updated 2026-11-24 01:11._
 
 ## Results
 
@@ -13,7 +13,8 @@ _Tables last updated 2026-11-23 19:56._
 
 | Model | Line | Episodes | Mean logs | Fair spots | vs Line 5 | Oak/birch mean | Gap | 0-log episodes (here) | 0-log episodes (oak/birch) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Impala BC→PPO + CG 3.0M<br>`ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 742,480 decisions = 2.97M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 200 | **40.97** ± 3.61 | 41.80 ± 3.59 | +9.3 ± 3.5 | – | – | 15 | – |
+| Impala BC→PPO + CG 2.9M, 1 tick per decision<br>`ft4_impala-ppo_wooded_one-hit-axe_1tick_20261123_212345` @ 1,595,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 1,472,412 decisions = 2.95M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 200 | **42.72** ± 3.50 | 43.59 ± 3.46 | +11.1 ± 4.3 | – | – | 12 | – |
+| Impala BC→PPO + CG 3.0M, stuck penalty<br>`ft3_impala-ppo_wooded_one-hit-axe_stuck-penalty_20261123_181405` | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 742,480 decisions = 2.97M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 200 | **40.97** ± 3.61 | 41.80 ± 3.59 | +9.3 ± 3.5 | – | – | 15 | – |
 | Impala BC→PPO + CG 2.0M<br>`ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` @ 615,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 492,412 decisions = 1.97M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 200 | **40.52** ± 3.48 | 41.35 ± 3.45 | +8.9 ± 3.7 | 44.66 ± 3.73 | -4.13 | 11 | 2 |
 | Line 5d @ 5.0M<br>`20261122_223446` | resume Line 5 @ 4.0M for 1M more, wooded spawns, stuck penalty 0.01 per stuck tick, linear LR from 1e-4 | 100 | **39.27** ± 6.11 | 40.07 ± 6.13 | +7.6 ± 4.4 | 41.97 ± 4.99 | -2.70 | 6 | 8 |
 | Impala BC→PPO + CG 1.5M<br>`ft2_impala-ppo_wooded_one-hit-axe_20261120_153415` @ 495,292 steps | **MineRL mode**, trained here (natural, wooded spawns, one-hit axe) for 372,412 decisions = 1.49M ticks, from Impala BC→PPO (see [MineRL transfer](../experiments/minerl_transfer.md)) | 100 | **39.01** ± 4.77 | 39.76 ± 4.76 | +7.4 ± 4.0 | 44.54 ± 3.61 | -5.53 | 7 | 3 |

@@ -21,7 +21,7 @@ from chop.networks import ImpalaCNN
 from chop.infra.vec import DEFAULT_N_ENVS, close_vec_env, instance_ports, launch_vec_env
 from chop.paths import RUNS_DIR
 from chop.reports import update_report
-from chop.reports.agents import run_action_repeat
+from chop.reports.agents import minerl_ticks, run_action_repeat
 from chop.reports.csvio import MINERL_TRAIN_CSV, NATURAL_TRAIN_CSV, TRAIN_CSV, append_row
 from chop.training.callbacks import LogsChoppedCallback, SpeedCallback, StepTimer, ValueWarmup, WandbOutputFormat
 from chop.training.lineage import group_of, history, lineage_tag, tag_runs
@@ -85,6 +85,10 @@ def main():
     parser.add_argument("--action-repeat", type=int, default=None,
                         help="arena only: game ticks per agent step (default 1; 4 lets each step show its own "
                              "action, see tools/check_timing.py). A resumed model keeps its own unless given")
+    parser.add_argument("--minerl-ticks", type=int, default=None, metavar="N",
+                        help="MineRL mode, natural world: game ticks per decision (default: the resumed model's "
+                             "own, else MineRL's 4). Each tick still turns MineRL's degrees / 4, so 1 keeps the "
+                             "turning speed and decides every tick")
     parser.add_argument("--spawn", choices=sorted(ENVS["natural"].SPAWNS), default="forest",
                         help="natural world: where resets drop the player. forest (default): oak/birch "
                              "forests; wooded: any biome with trees, snowy ones included")
@@ -119,7 +123,7 @@ def main():
     # None for a normal run with the default axe, so its config.json stays as before.
     axe = (minerl.IRON_AXE if iron else common.AXE) if (use_minerl or args.axe != "default") else None
     if use_minerl and (args.jump or args.no_jump or args.action_repeat):
-        parser.error("MineRL mode has its own jump (forward+jump) and 4-tick frame skip")
+        parser.error("MineRL mode has its own jump (forward+jump); set its ticks per decision with --minerl-ticks")
     if use_minerl and saved and "learning_rate" not in overrides:
         # The linear schedule starts from the model's own rate (MineRL fine-tunes: 1e-4), not ours.
         ppo_settings["learning_rate"] = float(saved["learning_rate"]) if isinstance(
@@ -146,8 +150,14 @@ def main():
             parser.error(f"--actions {args.actions}: the --resume model uses "
                          f"{'multi' if saved_multi else 'single'} actions")
         multi = saved_multi
-    action_repeat = (minerl.FRAME_SKIP if use_minerl
-                     else args.action_repeat or (run_action_repeat(args.resume) if args.resume else 1))
+    if args.minerl_ticks is not None and not use_minerl:
+        parser.error("--minerl-ticks is for MineRL mode (--actions minerl or a MineRL model)")
+    if args.minerl_ticks is not None and args.env != "natural":
+        parser.error("--minerl-ticks is for the natural world")
+    if use_minerl:
+        action_repeat = args.minerl_ticks or (minerl_ticks(args.resume) if args.resume else minerl.FRAME_SKIP)
+    else:
+        action_repeat = args.action_repeat or (run_action_repeat(args.resume) if args.resume else 1)
     if action_repeat < 1:
         parser.error("--action-repeat must be at least 1")
     if action_repeat > 1 and args.env != "arena" and not use_minerl:
@@ -260,7 +270,7 @@ def main():
 
     ports = instance_ports(args.port, args.n_envs)
     factories = [env_factory(args.env, port, str(run_dir / f"monitor_{i}"), args.shared_folder, jump, multi,
-                             1 if use_minerl else action_repeat, args.spawn, use_minerl, axe, args.stuck_penalty)
+                             action_repeat, args.spawn, use_minerl, axe, args.stuck_penalty)
                  for i, port in enumerate(ports)]
     step_timer = StepTimer(launch_vec_env(factories, ports, args.shared_folder))
     env = step_timer

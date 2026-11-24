@@ -38,24 +38,43 @@ def minerl_finetune(agent: str) -> dict | None:
     if not agent.startswith("runs/minerl_finetuned/"):
         return None
     from chop.reports.csvio import MINERL_TRAIN_CSV, read_rows  # noqa: PLC0415 (csvio imports nothing from here)
-    path = Path(agent)
-    if path.parent.name == "checkpoints":
-        s = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
-        steps = int(s) if s.isdigit() else None
-    else:
-        row = next((r for r in read_rows(MINERL_TRAIN_CSV) if normalize_agent(r["model"]) == agent), None)
-        steps = int(row["timesteps_done"]) if row and str(row["timesteps_done"]).isdigit() else None
-    first_cfg, base, cur = None, None, agent
+    train_rows = read_rows(MINERL_TRAIN_CSV)
+
+    def steps_of(model: str) -> int | None:
+        """Decisions a model had trained (PPO's num_timesteps): from a checkpoint's name or the training CSV."""
+        path = Path(model)
+        if path.parent.name == "checkpoints":
+            s = path.stem.removeprefix("ppo_chop_").removesuffix("_steps")
+            return int(s) if s.isdigit() else None
+        row = next((r for r in train_rows if normalize_agent(r["model"]) == model), None)
+        return int(row["timesteps_done"]) if row and str(row["timesteps_done"]).isdigit() else None
+
+    # Walk the pieces back to the start, adding up the game ticks each trained: a piece's decisions
+    # times its ticks per decision (4 unless the run set another, e.g. 1-tick fine-tunes).
+    steps = steps_of(agent)
+    first_cfg, base, cur, end = None, None, agent, steps
+    ticks, tick_settings, stuck = 0, set(), False
     for _ in range(20):
         cfg = run_config(run_dir_of(cur)) or {}
         first_cfg = cfg if cfg else first_cfg
+        stuck = stuck or bool(cfg.get("env", {}).get("stuck_penalty"))
         src = normalize_agent(cfg.get("resumed_from") or "")
-        if not src:
-            break
         if src.startswith("runs/minerl/"):
             base = minerl_model(src)
+            start = base.get("ppo_steps", 0)
+        else:
+            start = steps_of(src) if src else 0
+        if end is not None and start is not None:
+            ticks += (end - start) * minerl_ticks(cur)
+            tick_settings.add(minerl_ticks(cur))
+        else:
+            ticks = None
+        if not src or base is not None or ticks is None:
             break
-        cur = src
+        cur, end = src, start
+    variant = (", stuck penalty" if stuck else "") + (
+        f", {min(tick_settings)} tick{'s' if min(tick_settings) > 1 else ''} per decision"
+        if tick_settings and tick_settings != {4} else "")
     env = (first_cfg or {}).get("env", {})
     where = f"{env.get('world', '?')}, {env.get('spawn', 'forest')} spawns, "             f"{'one-hit' if 'diamond' in str(env.get('axe', '')) else 'iron'} axe"
     if base is None:
@@ -64,14 +83,15 @@ def minerl_finetune(agent: str) -> dict | None:
         ppo = (first_cfg or {}).get("ppo", {})
         settings = "Line 4 PPO settings" if ppo.get("ent_coef") == 0.01 else "gentle PPO settings"
         trained = steps
-        label = (f"Scratch {net} (MineRL mode)" + (f" + CG {short_steps(trained * 4)}" if trained else "")
-                 + f", {settings}")
+        label = (f"Scratch {net} (MineRL mode)" + (f" + CG {short_steps(ticks)}" if trained and ticks else "")
+                 + f", {settings}" + variant)
     else:
         trained = steps - base.get("ppo_steps", 0) if steps is not None else None
-        # "CG": PPO in CraftGround, counted in game ticks (4 per decision) like our lines' steps.
-        label = f"{base['label']} + CG" + (f" {short_steps(trained * 4)}" if trained else "")
+        # "CG": PPO in CraftGround, counted in game ticks (4 per decision unless a piece set another)
+        # like our lines' steps.
+        label = f"{base['label']} + CG" + (f" {short_steps(ticks)}" if trained and ticks else "") + variant
     about = (f"**MineRL mode**, trained here ({where})"
-             + (f" for {trained:,} decisions = {trained * 4 / 1e6:.2f}M ticks" if trained else "")
+             + (f" for {trained:,} decisions = {ticks / 1e6:.2f}M ticks" if trained and ticks else "")
              + (f", from {base['label']}" if base else ", from scratch"))
     return {"label": label, "about": about}
 
@@ -80,6 +100,14 @@ def run_dir_of(agent: str) -> Path:
     """The run folder a model path belongs to (model.zip or checkpoints/ppo_chop_N_steps.zip)."""
     parent = Path(agent).parent
     return parent.parent if parent.name == "checkpoints" else parent
+
+
+def minerl_ticks(agent: str) -> int:
+    """Game ticks per decision a MineRL-mode model was trained with: its run's config.json
+    (env.actions.frame_skip), else MineRL's 4 (models copied from the MineRL project have no config)."""
+    from chop.envs.minerl import FRAME_SKIP  # noqa: PLC0415
+    actions = (run_config(run_dir_of(agent)) or {}).get("env", {}).get("actions", {})
+    return int(actions.get("frame_skip", FRAME_SKIP)) if isinstance(actions, dict) else FRAME_SKIP
 
 
 def run_action_repeat(agent: str) -> int:
