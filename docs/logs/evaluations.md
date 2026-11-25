@@ -5,7 +5,7 @@ Every `evaluate.py` run, newest first. Each run's every episode is in the CSVs i
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-24 21:20._
+_Tables last updated 2026-11-24 23:04._
 
 ## Natural world
 
@@ -116,6 +116,8 @@ One row per `evaluate.py` run that went to `results/eval_results_minerl.csv` (Mi
 
 | When | Model | Path | World | Spots | Ticks | Log cap | Axe | Episodes | Mean logs | Minutes | Steps/s |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24T23:04:47 | Impala BC→PPO + CG 4.5M, hard-spawn replay, 1 tick per decision, LR 3e-5, target_kl 0.02 | `runs/minerl_finetuned/ft7_impala-ppo_wooded_one-hit-axe_1tick_small-updates_replay_20261124_212335/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 46.85 | 14.6 | 134 |
+| 2026-11-24T22:49:47 | Impala BC→PPO + CG 4.5M, hard-spawn replay, 1 tick per decision, LR 3e-5, target_kl 0.02 | `runs/minerl_finetuned/ft7_impala-ppo_wooded_one-hit-axe_1tick_small-updates_replay_20261124_212335/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 48.92 | 12.2 | 165 |
 | 2026-11-24T21:18:06 | Impala BC→PPO + CG 4.5M, 1 tick per decision, LR 3e-5, target_kl 0.02 | `runs/minerl_finetuned/ft7_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_193100/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 46.58 | 12.7 | 157 |
 | 2026-11-24T21:04:59 | Impala BC→PPO + CG 4.5M, 1 tick per decision, LR 3e-5, target_kl 0.02 | `runs/minerl_finetuned/ft7_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_193100/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 49.06 | 14.0 | 140 |
 | 2026-11-24T19:05:46 | Impala BC→PPO + CG 3.5M, 1 tick per decision, LR 3e-5 | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_lr3e-5_kl0.05_20261124_171812/model.zip` | natural | fixed spots in every biome with trees | 1000 | – | instant | 100 | 45.16 | 12.1 | 168 |

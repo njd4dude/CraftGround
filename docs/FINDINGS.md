@@ -221,6 +221,14 @@ CraftGround training only. Stage 3 used the **gentle PPO settings** (LR 1e-4, en
    (−0.6 ± 4.0 vs 4.0M; median episode 54, 14 0-log episodes). Typical episodes are above 50; the mean
    stays at ~48 because of 0-log episodes and spots that collapse in one pass (spot 85: 72/76 → 37/0).
    [All-biome spots](results/natural_all_tree_biomes.md)
+9. **Hard-spawn replay doesn't help.** `--replay 0.3`: a training spawn that scores under 20 logs is
+   saved, and 30% of resets go back to a saved spawn (dropped after it reaches 20 logs or 3 tries;
+   never within 32 blocks of an evaluation spot). Impala BC→PPO + CG 4.5M, hard-spawn replay, 1 tick
+   per decision, LR 3e-5, target_kl 0.02 (same start and settings as the 4.5M piece, plus replay)
+   scores 47.9: +0.1 ± 4.2 vs the 4.5M piece without replay, −0.6 ± 4.1 vs 4.0M, with the same 14
+   0-log episodes. In training, replayed spawns rose from 15.3 to 19.5 logs, but 51 of 118 replays
+   scored 0 (many saved spawns look unsolvable), and normal spawns didn't gain.
+   [All-biome spots](results/natural_all_tree_biomes.md)
 
 ## Not proven yet
 
@@ -284,6 +292,7 @@ The model file behind each agent this page names. Score: mean logs on the 100 oa
 | --- | --- | --- |
 | **Impala BC→PPO + CG 4.0M, 1 tick per decision, LR 3e-5, target_kl 0.02** (best) | 48.4 (all-biome spots; not run on oak/birch) | `runs/minerl_finetuned/ft6_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_152623/model.zip` |
 | Impala BC→PPO + CG 4.5M, 1 tick per decision, LR 3e-5, target_kl 0.02 | 47.8 (all-biome spots) | `runs/minerl_finetuned/ft7_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_193100/model.zip` |
+| Impala BC→PPO + CG 4.5M, hard-spawn replay, 1 tick per decision, LR 3e-5, target_kl 0.02 | 47.9 (all-biome spots) | `runs/minerl_finetuned/ft7_impala-ppo_wooded_one-hit-axe_1tick_small-updates_replay_20261124_212335/model.zip` |
 | Impala BC→PPO + CG 3.5M, 1 tick per decision, LR 3e-5, target_kl 0.02 | 47.7 (all-biome spots) | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_131835/model.zip` |
 | Impala BC→PPO + CG 3.5M, 1 tick per decision, LR 3e-5 | 45.4 (all-biome spots) | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_lr3e-5_kl0.05_20261124_171812/model.zip` |
 | **Impala BC→PPO + CG 2M** (best on oak/birch) | 44.7 | `runs/minerl_finetuned/ft2_impala-ppo_wooded_one-hit-axe_20261120_153415/checkpoints/ppo_chop_615292_steps.zip` |

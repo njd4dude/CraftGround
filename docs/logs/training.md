@@ -5,7 +5,7 @@ Every `train.py` run that ended normally, newest first. Stopped pieces are liste
 [← Project README](../../README.md) · [Findings](../FINDINGS.md)
 
 <!-- AUTO-GENERATED:START (rebuilt by experiments.py, edits here are overwritten) -->
-_Tables last updated 2026-11-24 20:50._
+_Tables last updated 2026-11-24 22:36._
 
 ## Natural world
 
@@ -65,6 +65,7 @@ One row per MineRL-mode `train.py` run, newest first. **Steps** are decisions (4
 
 | Started | From | Steps | Episodes | Minutes | Last-20 avg logs | Status | Saved model | W&B |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24T21:23:35 | `runs/minerl_finetuned/ft6_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_152623/model.zip` | 3105978 | 512 | 72.2 | 34.95 | completed | `runs/minerl_finetuned/ft7_impala-ppo_wooded_one-hit-axe_1tick_small-updates_replay_20261124_212335/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/t0ggicab) |
 | 2026-11-24T19:31:00 | `runs/minerl_finetuned/ft6_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_152623/model.zip` | 3105978 | 509 | 78.8 | 50.7 | completed | `runs/minerl_finetuned/ft7_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_193100/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/wgidlrtz) |
 | 2026-11-24T17:18:12 | `runs/minerl_finetuned/ft4_impala-ppo_wooded_one-hit-axe_1tick_20261123_212345/checkpoints/ppo_chop_1595292_steps.zip` | 2098854 | 505 | 78.1 | 60.75 | completed | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_lr3e-5_kl0.05_20261124_171812/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/409fauqp) |
 | 2026-11-24T15:26:23 | `runs/minerl_finetuned/ft5_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_131835/model.zip` | 2602416 | 505 | 75.2 | 63.35 | completed | `runs/minerl_finetuned/ft6_impala-ppo_wooded_one-hit-axe_1tick_small-updates_20261124_152623/model.zip` | [open](https://forge.coreweave.com/wandb/njdevstech0100-personal/craftground-chop-trees/runs/ltzreesw) |

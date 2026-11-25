@@ -90,6 +90,18 @@ REWARD = "+1 per log chopped (any wood type)"
 # Turning on the spot for 2 s without chopping counts as stuck too.
 STUCK_WINDOW = 40      # ticks = 2 s
 STUCK_DISTANCE = 1.0   # blocks
+# Hard-spawn replay (replay > 0, from 2026-11-24): a simple form of prioritized level replay. A
+# training episode that chops fewer than REPLAY_LOGS logs saves its spawn (position and facing);
+# with probability `replay` a reset drops the player back at one of the saved spawns instead of
+# searching. A spawn leaves the list once the agent chops REPLAY_LOGS there, or after REPLAY_MAX_TRIES
+# replays (spots no agent can solve, like a ravine floor, shouldn't take over training). Spawns
+# within REPLAY_EXCLUDE_RADIUS blocks of any evaluation spot in the training world are never saved.
+# Chopped trees don't grow back, but a spawn is only saved when few logs were chopped there.
+# Each instance keeps its own list.
+REPLAY_LOGS = 20             # ~18% of training episodes of Impala BC->PPO + CG 4.5M score below this
+REPLAY_MAX_TRIES = 3
+REPLAY_BUFFER = 200          # saved spawns per instance; the oldest go first
+REPLAY_EXCLUDE_RADIUS = 32   # blocks
 
 HOP_RANGE = 150       # first landings: within this many blocks of the last good spot
 HOP_TRIES = 12        # landings near the last spot before searching the whole world
@@ -116,6 +128,16 @@ DEBUG = False
 # Fixed evaluation spots (make_eval_spots.py): the same forest spots for every model, so
 # evaluations differ by the agent, not by which forests it happened to land in.
 EVAL_SPOTS = ROOT / "results" / "eval_spots_natural.json"
+
+
+def _eval_spot_xz(seed: str = SEED) -> list[tuple[float, float]]:
+    """(x, z) of every evaluation spot made in this world, from every results/eval_spots_natural*.json."""
+    xz = []
+    for path in sorted((ROOT / "results").glob("eval_spots_natural*.json")):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if str(data.get("world_seed")) == str(seed):
+            xz += [(s["x"], s["z"]) for s in data["spots"]]
+    return xz
 
 
 def eval_spots_path(seed: str = SEED) -> Path:
@@ -179,7 +201,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
                  seed: str = SEED, actions: str = "single", spawn: str = "forest",
                  axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS, log_cap: Optional[int] = None,
                  tick_frames: bool = False, stuck_penalty: float = 0.0, render_wait: bool = True,
-                 minerl_ticks: int = minerl.FRAME_SKIP):
+                 minerl_ticks: int = minerl.FRAME_SKIP, replay: float = 0.0):
         """jump: offer the 13 actions with jump / forward_jump (default) instead of the arena's 11.
         Hills and 1-block ledges are common here; without jump the agent can only walk around them.
         Use jump=False to run models trained before jump was added (2026-11-15).
@@ -204,7 +226,9 @@ class NaturalChopTreesEnv(gym.Wrapper):
         of whether the wait matters).
         minerl_ticks: actions="minerl" only, game ticks per decision (default MineRL's FRAME_SKIP = 4).
         Every tick turns YAW_DEGREES / FRAME_SKIP whatever this is, so the turning speed per tick stays
-        MineRL's: with 1, a "yaw +40" decision turns 10 degrees and lasts one tick."""
+        MineRL's: with 1, a "yaw +40" decision turns 10 degrees and lasts one tick.
+        replay: probability that a reset replays a saved hard spawn (see REPLAY_LOGS). Default 0: never.
+        Not with fixed spots (evaluation)."""
         if actions not in ("single", "multi", "minerl"):
             raise ValueError(f"actions must be 'single', 'multi' or 'minerl', not {actions!r}")
         if spawn not in SPAWN_CHECKS:
@@ -272,6 +296,16 @@ class NaturalChopTreesEnv(gym.Wrapper):
         self.found = False  # whether the last reset found a forest spot
         self._spots = list(spots or [])
         self.spot_index: Optional[int] = None  # which fixed spot the current episode plays
+        if not 0.0 <= replay <= 1.0:
+            raise ValueError(f"replay must be a probability, not {replay}")
+        if replay and spots:
+            raise ValueError("replay is for training; fixed spots (evaluation) play every spot as given")
+        self.replay = replay
+        self._replay_spawns: deque = deque(maxlen=REPLAY_BUFFER)  # {x, y, z, yaw, tries}
+        self._replaying: Optional[dict] = None  # the saved spawn this episode replays
+        self._spawn: Optional[dict] = None  # this episode's spawn, {x, y, z, yaw}
+        self._episode_recorded = False
+        self._no_replay_xz = _eval_spot_xz(seed) if replay else []
 
     # --- running commands one at a time ---------------------------------------
 
@@ -352,11 +386,18 @@ class NaturalChopTreesEnv(gym.Wrapper):
         near_tries = far_tries = 0
         self.spot_index = None
         fixed = self._spots.pop(0) if self._spots else None
+        self._replaying = None
+        if fixed is None and self._replay_spawns and self._rng.random() < self.replay:
+            self._replaying = self._rng.choice(self._replay_spawns)
+            fixed = self._replaying  # teleported to like a fixed spot; the search's anchor stays as it was
+            print(f"[natural] replaying a hard spawn at ({fixed['x']:.0f}, {fixed['z']:.0f}), "
+                  f"try {fixed['tries'] + 1} ({len(self._replay_spawns)} saved)")
         max_hops = MAX_HOP_EPISODES[self.spawn]
         if max_hops is not None and self._hop_episodes >= max_hops:
             self._anchor = None  # time for a new region
         if fixed is not None:
-            # A fixed evaluation spot: teleport there (same seed, so same terrain) and skip the search.
+            # A fixed evaluation spot (or a replayed spawn): teleport there (same seed, so same
+            # terrain) and skip the search.
             self.spot_index = fixed.get("index")
             obs, reply = self._command(f"tp @p {fixed['x']} {ground_y(fixed['y'])} {fixed['z']} {fixed['yaw']} 0",
                                        ("Teleported",))
@@ -392,6 +433,8 @@ class NaturalChopTreesEnv(gym.Wrapper):
 
         full = obs["full"]
         self.spot = (full.x, full.y, full.z)
+        self._spawn = {"x": round(full.x, 2), "y": ground_y(full.y), "z": round(full.z, 2), "yaw": yaw}
+        self._episode_recorded = False
         if self.found and fixed is None:
             self._anchor = (int(full.x), int(full.z))
             self._hop_episodes = 0 if far_tries else self._hop_episodes + 1
@@ -413,6 +456,7 @@ class NaturalChopTreesEnv(gym.Wrapper):
             "far_tries": far_tries,
             "found": self.found,
             "spot_index": self.spot_index,
+            "replay": int(self._replaying is not None),
         }
         return self._image(obs), {"logs_chopped": 0, **timing}
 
@@ -430,6 +474,21 @@ class NaturalChopTreesEnv(gym.Wrapper):
             return False
         (x0, z0), (x1, z1) = self._positions[0], self._positions[-1]
         return math.hypot(x1 - x0, z1 - z0) < STUCK_DISTANCE
+
+    def _record_spawn(self):
+        """At an episode's end (replay only): update the replay list with how this spawn went."""
+        if self._episode_recorded:
+            return
+        self._episode_recorded = True
+        hard = self._logs_chopped < REPLAY_LOGS
+        if self._replaying is not None:
+            self._replaying["tries"] += 1
+            if (not hard or self._replaying["tries"] >= REPLAY_MAX_TRIES) and self._replaying in self._replay_spawns:
+                self._replay_spawns.remove(self._replaying)
+        elif hard and self.found and self._spawn is not None and not any(
+                math.hypot(self._spawn["x"] - x, self._spawn["z"] - z) < REPLAY_EXCLUDE_RADIUS
+                for x, z in self._no_replay_xz):
+            self._replay_spawns.append({**self._spawn, "tries": 0})
 
     def step(self, action):
         # One tick per step, except MineRL actions: minerl_ticks ticks (default 4), logs added up over them.
@@ -456,7 +515,10 @@ class NaturalChopTreesEnv(gym.Wrapper):
                 break
 
         truncated = self._ticks >= self.episode_ticks or capped
-        info: dict[str, Any] = {"logs_chopped": self._logs_chopped, "stuck_ticks": self._stuck_ticks}
+        if (terminated or truncated) and self.replay:
+            self._record_spawn()
+        info: dict[str, Any] = {"logs_chopped": self._logs_chopped, "stuck_ticks": self._stuck_ticks,
+                                "replay": int(self._replaying is not None)}
         if self.tick_frames:
             info["tick_frames"] = frames
             return frames[-1][0], reward, terminated, truncated, info
@@ -470,20 +532,20 @@ def make_env(port: int = 8023, verbose: bool = False, env_path: Optional[str] = 
              axe: Optional[str] = None, episode_ticks: int = EPISODE_STEPS,
              log_cap: Optional[int] = None, tick_frames: bool = False,
              stuck_penalty: float = 0.0, render_wait: bool = True,
-             minerl_ticks: int = minerl.FRAME_SKIP) -> NaturalChopTreesEnv:
+             minerl_ticks: int = minerl.FRAME_SKIP, replay: float = 0.0) -> NaturalChopTreesEnv:
     """env_path: game folder to run from (chop.infra.instances.env_path_for(port)); None = CraftGround's shared one.
     jump: 13 actions with jump (default) or the arena's 11 (for older models).
     actions: "single" or "multi" (see NaturalChopTreesEnv).
     spots: fixed spots to play in order (see load_eval_spots).
     seed: world seed (SEED for training; HELD_OUT_SEED for the held-out evaluation).
     spawn: "forest" (default), "wooded" or "anywhere" (see SPAWN_CHECKS).
-    actions="minerl", axe, episode_ticks, log_cap, tick_frames, stuck_penalty, render_wait, minerl_ticks:
-    see NaturalChopTreesEnv."""
+    actions="minerl", axe, episode_ticks, log_cap, tick_frames, stuck_penalty, render_wait, minerl_ticks,
+    replay: see NaturalChopTreesEnv."""
     return NaturalChopTreesEnv(port=port, verbose=verbose, env_path=env_path, jump=jump,
                                render_distance=render_distance, jvm_max_memory=jvm_max_memory, spots=spots,
                                seed=seed, actions=actions, spawn=spawn, axe=axe, episode_ticks=episode_ticks,
                                log_cap=log_cap, tick_frames=tick_frames, stuck_penalty=stuck_penalty,
-                               render_wait=render_wait, minerl_ticks=minerl_ticks)
+                               render_wait=render_wait, minerl_ticks=minerl_ticks, replay=replay)
 
 
 def load_eval_spots(path: Path = EVAL_SPOTS, seed: Optional[str] = None) -> list[dict]:

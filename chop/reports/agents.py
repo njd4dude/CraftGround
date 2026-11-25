@@ -53,11 +53,12 @@ def minerl_finetune(agent: str) -> dict | None:
     # times its ticks per decision (4 unless the run set another, e.g. 1-tick fine-tunes).
     steps = steps_of(agent)
     first_cfg, base, cur, end = None, None, agent, steps
-    ticks, tick_settings, stuck, kls, lrs = 0, set(), False, set(), set()
+    ticks, tick_settings, stuck, kls, lrs, replay = 0, set(), False, set(), set(), False
     for _ in range(20):
         cfg = run_config(run_dir_of(cur)) or {}
         first_cfg = cfg if cfg else first_cfg
         stuck = stuck or bool(cfg.get("env", {}).get("stuck_penalty"))
+        replay = replay or bool(cfg.get("env", {}).get("replay"))
         # A tighter KL brake than the gentle settings' 0.05 (smaller policy updates, from 2026-11-24).
         if (cfg.get("ppo", {}).get("target_kl") or 0.05) < 0.05:
             kls.add(cfg["ppo"]["target_kl"])
@@ -82,7 +83,7 @@ def minerl_finetune(agent: str) -> dict | None:
         if not src or base is not None or ticks is None:
             break
         cur, end = src, start
-    variant = (", stuck penalty" if stuck else "") + (
+    variant = (", stuck penalty" if stuck else "") + (", hard-spawn replay" if replay else "") + (
         f", {min(tick_settings)} tick{'s' if min(tick_settings) > 1 else ''} per decision"
         if tick_settings and tick_settings != {4} else "") + (f", LR {min(lrs):.0e}".replace("e-0", "e-") if lrs else "") + (
         f", target_kl {min(kls):g}" if kls else "")

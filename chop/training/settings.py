@@ -25,7 +25,7 @@ PPO_SETTINGS = dict(
 
 def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool = False, jump: bool = False,
                 multi: bool = False, action_repeat: int = 1, spawn: str = "forest", use_minerl: bool = False,
-                axe: str | None = None, stuck_penalty: float = 0.0):
+                axe: str | None = None, stuck_penalty: float = 0.0, replay: float = 0.0):
     """Builds one Monitor-wrapped env. Called inside each SubprocVecEnv worker.
     jump: use the 13 actions with jump instead of 11 (natural world default; arena with --jump).
     multi: (move, turn, look) every step with attack held (common.MULTI_SETTINGS); jump adds a
@@ -35,7 +35,8 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
     spawn: natural only, where resets drop the player (natural.SPAWN_CHECKS).
     use_minerl: the MineRL project's view and actions (chop/envs/minerl.py); jump doesn't apply.
     axe: the item the player holds (None: the env's default, the one-hit axe, or iron in MineRL mode).
-    stuck_penalty: natural only, reward off per stuck tick (natural.STUCK_WINDOW)."""
+    stuck_penalty: natural only, reward off per stuck tick (natural.STUCK_WINDOW).
+    replay: natural only, the share of resets that replay a saved hard spawn (natural.REPLAY_LOGS)."""
     def _make():
         make_env = ENVS[env_name].make_env
         actions = "minerl" if use_minerl else "multi" if multi else "single"
@@ -50,14 +51,19 @@ def env_factory(env_name: str, port: int, monitor_file: str, shared_folder: bool
             kwargs["axe"] = axe
         if stuck_penalty:
             kwargs["stuck_penalty"] = stuck_penalty
+        if replay:
+            kwargs["replay"] = replay
+        # Replay runs also log whether each episode was a replayed spawn.
+        keys = (("logs_chopped", "stuck_ticks") + (("replay",) if replay else ())
+                if env_name == "natural" else ("logs_chopped",))
         return Monitor(make_env(port=port, env_path=game_folder(port, shared_folder), **kwargs), filename=monitor_file,
-                       info_keywords=("logs_chopped", "stuck_ticks") if env_name == "natural" else ("logs_chopped",))
+                       info_keywords=keys)
     return _make
 
 
 def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_repeat: int = 1,
                  spawn: str = "forest", use_minerl: bool = False, axe: str | None = None,
-                 stuck_penalty: float = 0.0) -> dict:
+                 stuck_penalty: float = 0.0, replay: float = 0.0) -> dict:
     """The environment's settings, saved in config.json (and W&B), so runs can be compared later."""
     shared = {
         "world": env_name,
@@ -92,6 +98,9 @@ def env_settings(env_name: str, jump: bool = False, multi: bool = False, action_
             # Only runs with the penalty record it, so earlier configs stay as they were.
             **({"stuck_penalty": stuck_penalty, "stuck_window_ticks": natural_env.STUCK_WINDOW,
                 "stuck_distance": natural_env.STUCK_DISTANCE} if stuck_penalty else {}),
+            **({"replay": replay, "replay_logs_below": natural_env.REPLAY_LOGS,
+                "replay_max_tries": natural_env.REPLAY_MAX_TRIES, "replay_buffer": natural_env.REPLAY_BUFFER,
+                "replay_exclude_radius": natural_env.REPLAY_EXCLUDE_RADIUS} if replay else {}),
         }
     return {
         **shared,
