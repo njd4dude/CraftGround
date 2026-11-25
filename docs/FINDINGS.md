@@ -229,6 +229,15 @@ CraftGround training only. Stage 3 used the **gentle PPO settings** (LR 1e-4, en
    0-log episodes. In training, replayed spawns rose from 15.3 to 19.5 logs, but 51 of 118 replays
    scored 0 (many saved spawns look unsolvable), and normal spawns didn't gain.
    [All-biome spots](results/natural_all_tree_biomes.md)
+10. **A human scores 61.4 on 5 all-biome spots where the best model scores 48.0.** `play_human.py`:
+    the same spots, facing, one-hit axe and 1,000 ticks, with keyboard and mouse and the full
+    320x180 view. Spots 15, 21, 34, 68, 93 (the 10/30/50/70/90th percentile of Impala BC→PPO + CG
+    4.0M, 1 tick per decision, LR 3e-5, target_kl 0.02's per-spot scores, unfair spots left out;
+    that model's mean on them equals its overall mean). Human vs model per spot: 52 vs 14, 48 vs 33,
+    62 vs 49, 66 vs 61.5, 79 vs 82.5. So 50 is not the ceiling, and the gap is on the hard spots: on
+    easy spots the model matches a human. Spot 15 starts on a frozen lake: in videos the model
+    looks down, breaks the ice (attack is always held in MineRL mode), and falls into the water
+    (9, 0, 0, 0 logs in 4 more episodes). [Results](../results/human_ceiling.csv)
 
 ## Not proven yet
 

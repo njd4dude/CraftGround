@@ -48,6 +48,7 @@ run.bat evaluate.py <model.zip> --env natural --spots results/eval_spots_natural
 run.bat evaluate.py <model.zip>                    # score it in the arena
 run.bat experiments.py                             # rebuild the docs tables by hand
 run.bat play.py                                    # play the env yourself, seeing what the agent sees
+run.bat play_human.py                              # play evaluation spots with normal controls (human ceiling check)
 ```
 
 MineRL models (`runs/minerl/`) are detected automatically and run in MineRL mode; add
