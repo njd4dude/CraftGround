@@ -1,0 +1,6 @@
+Observations based on current best model for the "all tree biomes world":(runs\minerl_finetuned\ft2_impala-ppo_wooded_one-hit-axe_20261120_153415\videos\natural\20261121_155919_fixed_wooded_spawns_at_495292_steps).
+
+- performs bad/gets confused when there is ice underneath the agent
+- falls into cave
+- side of cliff with ravine it doesnt know how to find its way back to the trees and get up the cliff
+- performs bad/gets confused in pink tree biome
