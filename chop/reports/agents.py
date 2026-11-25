@@ -53,7 +53,7 @@ def minerl_finetune(agent: str) -> dict | None:
     # times its ticks per decision (4 unless the run set another, e.g. 1-tick fine-tunes).
     steps = steps_of(agent)
     first_cfg, base, cur, end = None, None, agent, steps
-    ticks, tick_settings, stuck, kls = 0, set(), False, set()
+    ticks, tick_settings, stuck, kls, lrs = 0, set(), False, set(), set()
     for _ in range(20):
         cfg = run_config(run_dir_of(cur)) or {}
         first_cfg = cfg if cfg else first_cfg
@@ -61,6 +61,13 @@ def minerl_finetune(agent: str) -> dict | None:
         # A tighter KL brake than the gentle settings' 0.05 (smaller policy updates, from 2026-11-24).
         if (cfg.get("ppo", {}).get("target_kl") or 0.05) < 0.05:
             kls.add(cfg["ppo"]["target_kl"])
+        # A lower learning rate with fewer epochs than the gentle settings (entropy 0.001, LR 1e-4,
+        # 10 epochs): smaller updates.
+        # (A resume that only continued a schedule keeps 10 epochs, so it doesn't count.)
+        ppo = cfg.get("ppo", {})
+        if (ppo.get("ent_coef") == 0.001 and isinstance(ppo.get("learning_rate"), float)
+                and ppo["learning_rate"] < 1e-4 and ppo.get("n_epochs", 10) < 10):
+            lrs.add(ppo["learning_rate"])
         src = normalize_agent(cfg.get("resumed_from") or "")
         if src.startswith("runs/minerl/"):
             base = minerl_model(src)
@@ -77,7 +84,8 @@ def minerl_finetune(agent: str) -> dict | None:
         cur, end = src, start
     variant = (", stuck penalty" if stuck else "") + (
         f", {min(tick_settings)} tick{'s' if min(tick_settings) > 1 else ''} per decision"
-        if tick_settings and tick_settings != {4} else "") + (f", target_kl {min(kls):g}" if kls else "")
+        if tick_settings and tick_settings != {4} else "") + (f", LR {min(lrs):.0e}".replace("e-0", "e-") if lrs else "") + (
+        f", target_kl {min(kls):g}" if kls else "")
     env = (first_cfg or {}).get("env", {})
     where = f"{env.get('world', '?')}, {env.get('spawn', 'forest')} spawns, "             f"{'one-hit' if 'diamond' in str(env.get('axe', '')) else 'iron'} axe"
     if base is None:
